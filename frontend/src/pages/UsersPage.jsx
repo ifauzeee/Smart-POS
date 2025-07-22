@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../services/api';
-import ProductFormModal from '../components/ProductFormModal';
+import { getUsers, createUser, updateUser, deleteUser } from '../services/api';
+import UserFormModal from '../components/UserFormModal';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
@@ -73,14 +73,11 @@ const Td = styled.td`
   padding: 15px 20px;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
-  vertical-align: middle;
 `;
 
 const Tr = styled.tr`
   &:last-child {
-    ${Td} {
-      border-bottom: none;
-    }
+    ${Td} { border-bottom: none; }
   }
 `;
 
@@ -93,85 +90,82 @@ const ActionButton = styled.button`
   &:hover { color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'}; }
 `;
 
-const ProductImage = styled.img`
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    object-fit: cover;
-`;
-
-function ProductsPage() {
-    const [products, setProducts] = useState([]);
+function UsersPage() {
+    const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
+    const [editingUser, setEditingUser] = useState(null);
 
-    const fetchProducts = async () => {
+    const fetchUsers = async () => {
         try {
             setLoading(true);
-            const res = await getProducts();
-            setProducts(res.data);
+            const res = await getUsers();
+            setUsers(res.data);
         } catch (error) {
-            toast.error("Gagal memuat produk.");
+            toast.error("Gagal memuat data pengguna.");
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchProducts();
+        fetchUsers();
     }, []);
 
-    const handleOpenModal = (product = null) => {
-        setEditingProduct(product);
+    const handleOpenModal = (user = null) => {
+        setEditingUser(user);
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
-        setEditingProduct(null);
+        setEditingUser(null);
     };
 
-    const handleSaveProduct = async (productData) => {
-        const promise = editingProduct
-            ? updateProduct(editingProduct.id, productData)
-            : createProduct(productData);
+    const handleSaveUser = async (userData) => {
+        const promise = editingUser
+            ? updateUser(editingUser.id, userData)
+            : createUser(userData);
 
         toast.promise(promise, {
-            pending: 'Menyimpan produk...',
-            success: 'Produk berhasil disimpan!',
-            error: 'Gagal menyimpan produk.'
+            pending: 'Menyimpan data pengguna...',
+            success: 'Data berhasil disimpan!',
+            error: 'Gagal menyimpan data.'
         });
 
         try {
             await promise;
-            fetchProducts();
-        } catch(err) {
-            console.error(err);
-        } finally {
+            fetchUsers();
             handleCloseModal();
+        } catch (error) {
+            console.error("Save user failed:", error);
         }
     };
 
-    const handleDeleteProduct = async (id) => {
-        if (window.confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-            const promise = deleteProduct(id);
+    const handleDeleteUser = async (id) => {
+        if (window.confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
+            const promise = deleteUser(id);
             toast.promise(promise, {
-                pending: 'Menghapus produk...',
-                success: 'Produk berhasil dihapus!',
-                error: 'Gagal menghapus produk.'
+                pending: 'Menghapus pengguna...',
+                success: 'Pengguna berhasil dihapus!',
+                error: 'Gagal menghapus pengguna.'
             });
-            await promise;
-            fetchProducts();
+            
+            try {
+                await promise;
+                fetchUsers();
+            } catch (error) {
+                console.error("Delete user failed:", error);
+            }
         }
     };
 
     return (
         <PageContainer>
             <PageHeader>
-                <Title>Manajemen Produk</Title>
+                <Title>Manajemen Pengguna</Title>
                 <AddButton onClick={() => handleOpenModal()}>
-                    <FiPlus /> Tambah Produk
+                    <FiPlus /> Tambah Pengguna
                 </AddButton>
             </PageHeader>
             <TableContainer>
@@ -179,30 +173,30 @@ function ProductsPage() {
                     <Table>
                         <thead>
                             <tr>
-                                <Th>Gambar</Th>
-                                <Th>Nama Produk</Th>
-                                <Th>Harga</Th>
-                                <Th>Stok</Th>
+                                <Th>ID</Th>
+                                <Th>Nama</Th>
+                                <Th>Email</Th>
+                                <Th>Peran</Th>
                                 <Th>Aksi</Th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                Array.from({ length: 5 }).map((_, index) => (
+                                 Array.from({ length: 3 }).map((_, index) => (
                                     <Tr key={index}>
                                         {[...Array(5)].map((_, i) => <Td key={i}><Skeleton /></Td>)}
                                     </Tr>
                                 ))
                             ) : (
-                                products.map(product => (
-                                    <Tr key={product.id}>
-                                        <Td><ProductImage src={product.image_url || `https://placehold.co/100/EAEBF0/1D2129?text=${product.name.charAt(0)}`} /></Td>
-                                        <Td>{product.name}</Td>
-                                        <Td>Rp {new Intl.NumberFormat('id-ID').format(product.price)}</Td>
-                                        <Td>{product.stock}</Td>
+                                users.map(user => (
+                                    <Tr key={user.id}>
+                                        <Td>{user.id}</Td>
+                                        <Td>{user.name}</Td>
+                                        <Td>{user.email}</Td>
+                                        <Td>{user.role}</Td>
                                         <Td>
-                                            <ActionButton onClick={() => handleOpenModal(product)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDeleteProduct(product.id)}><FiTrash2 size={18} /></ActionButton>
+                                            <ActionButton onClick={() => handleOpenModal(user)}><FiEdit size={18} /></ActionButton>
+                                            <ActionButton $danger onClick={() => handleDeleteUser(user.id)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
                                 ))
@@ -211,14 +205,14 @@ function ProductsPage() {
                     </Table>
                 </TableWrapper>
             </TableContainer>
-            <ProductFormModal 
+            <UserFormModal 
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                onSave={handleSaveProduct}
-                product={editingProduct}
+                onSave={handleSaveUser}
+                user={editingUser}
             />
         </PageContainer>
     );
 }
 
-export default ProductsPage;
+export default UsersPage;

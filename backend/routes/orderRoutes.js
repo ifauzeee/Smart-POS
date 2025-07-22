@@ -1,10 +1,12 @@
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
+const nodemailer = require('nodemailer');
+const { decrypt } = require('../utils/encryption');
 
 const router = express.Router();
 
-// Endpoint untuk membuat pesanan baru
+// POST /api/orders - Membuat pesanan baru
 router.post('/', protect, async (req, res) => {
   const { items } = req.body;
   const userId = req.user.id;
@@ -25,7 +27,7 @@ router.post('/', protect, async (req, res) => {
       }
       const product = products[0];
       if (product.stock < item.quantity) {
-        throw new Error(`Stok produk dengan ID ${item.productId} tidak mencukupi.`);
+        throw new Error(`Stok untuk produk ID ${item.productId} tidak mencukupi.`);
       }
       totalAmount += product.price * item.quantity;
     }
@@ -49,13 +51,14 @@ router.post('/', protect, async (req, res) => {
     res.status(201).json({ message: 'Transaksi berhasil dibuat!', orderId: orderId });
   } catch (error) {
     await connection.rollback();
+    console.error('Checkout Error:', error);
     res.status(500).json({ message: error.message || 'Transaksi gagal.' });
   } finally {
     connection.release();
   }
 });
 
-// Endpoint untuk mendapatkan semua pesanan
+// GET /api/orders - Mendapatkan semua pesanan
 router.get('/', protect, async (req, res) => {
     try {
         const query = `
@@ -67,12 +70,11 @@ router.get('/', protect, async (req, res) => {
         const [orders] = await db.query(query);
         res.json(orders);
     } catch (error) {
-        console.error('Error fetching orders:', error);
         res.status(500).json({ message: "Server Error" });
     }
 });
 
-// Endpoint untuk mendapatkan detail satu pesanan
+// GET /api/orders/:id - Mendapatkan detail satu pesanan
 router.get('/:id', protect, async (req, res) => {
     try {
         const orderQuery = `
@@ -83,9 +85,7 @@ router.get('/:id', protect, async (req, res) => {
         `;
         const [[order]] = await db.query(orderQuery, [req.params.id]);
 
-        if (!order) {
-            return res.status(404).json({ message: "Pesanan tidak ditemukan" });
-        }
+        if (!order) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
 
         const itemsQuery = `
             SELECT oi.quantity, oi.price, p.name as product_name
@@ -97,29 +97,66 @@ router.get('/:id', protect, async (req, res) => {
 
         res.json({ ...order, items });
     } catch (error) {
-        console.error(`Error fetching order ${req.params.id}:`, error);
         res.status(500).json({ message: "Server Error" });
     }
 });
 
-// Endpoint untuk menghapus pesanan
+// DELETE /api/orders/:id - Menghapus pesanan
 router.delete('/:id', protect, async (req, res) => {
     if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak. Hanya admin." });
+        return res.status(403).json({ message: "Akses ditolak." });
     }
-
     try {
         const query = 'DELETE FROM orders WHERE id = ?';
         const [result] = await db.query(query, [req.params.id]);
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: "Pesanan tidak ditemukan." });
-        }
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Pesanan tidak ditemukan." });
 
         res.json({ message: "Pesanan berhasil dihapus." });
     } catch (error) {
-        console.error(`Error deleting order ${req.params.id}:`, error);
         res.status(500).json({ message: "Server Error" });
+    }
+});
+
+// POST /api/orders/:id/send-receipt - Mengirim struk via email
+router.post('/:id/send-receipt', protect, async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: "Email tujuan harus diisi." });
+
+    try {
+        // ... (Kode untuk mengambil detail order dan items)
+        const orderQuery = `SELECT o.id, o.total_amount, o.created_at, u.name as cashier_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?`;
+        const [[order]] = await db.query(orderQuery, [req.params.id]);
+        if (!order) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
+
+        const itemsQuery = `SELECT oi.quantity, oi.price, p.name as product_name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?`;
+        const [items] = await db.query(itemsQuery, [req.params.id]);
+        
+        // ... (Kode untuk membuat HTML email)
+        const emailHtml = `...`; // (Konten HTML Anda di sini)
+
+        // ... (Kode untuk mencari kredensial admin dan mengirim email)
+        const [[admin]] = await db.query('SELECT smtp_email_user, smtp_email_pass FROM users WHERE role = "admin" LIMIT 1');
+        if (!admin || !admin.smtp_email_user || !admin.smtp_email_pass) {
+            return res.status(500).json({ message: "Setelan email admin belum dikonfigurasi." });
+        }
+        const decryptedPassword = decrypt(admin.smtp_email_pass);
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: admin.smtp_email_user, pass: decryptedPassword },
+        });
+        await transporter.sendMail({
+            from: `"${admin.smtp_email_user}" <${admin.smtp_email_user}>`,
+            to: email,
+            subject: `Struk untuk Pesanan #${order.id}`,
+            html: emailHtml,
+        });
+
+        res.json({ message: "Struk berhasil dikirim ke email." });
+
+    } catch (error) {
+        console.error('Error sending receipt:', error);
+        res.status(500).json({ message: "Gagal mengirim struk." });
     }
 });
 

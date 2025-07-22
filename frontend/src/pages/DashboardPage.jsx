@@ -5,14 +5,14 @@ import { FiTrendingUp, FiDollarSign, FiShoppingBag } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 
-// --- Styled Components untuk Dashboard ---
-
 const DashboardGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
   width: 100%;
   padding: 30px;
+  overflow-y: auto;
+  height: 100%;
 `;
 
 const StatCard = styled.div`
@@ -32,8 +32,8 @@ const StatIcon = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: ${props => props.color || 'var(--primary-color)'}20; // Warna dengan transparansi
-  color: ${props => props.color || 'var(--primary-color)'};
+  background-color: ${props => props.color}1A;
+  color: ${props => props.color};
 `;
 
 const StatInfo = styled.div``;
@@ -56,7 +56,7 @@ const ChartContainer = styled.div`
   padding: 30px;
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  grid-column: 1 / -1; /* Membuat chart mengambil lebar penuh */
+  grid-column: 1 / -1;
 `;
 
 const ChartTitle = styled.h3`
@@ -69,13 +69,19 @@ const SkeletonCard = () => (
     <StatCard>
         <Skeleton circle width={60} height={60} />
         <div>
-            <Skeleton height={36} width={150} />
+            <Skeleton height={36} width={150} style={{marginBottom: '5px'}} />
             <Skeleton height={24} width={100} />
         </div>
     </StatCard>
 );
 
-// --- Komponen React ---
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(0) + 'k';
+  }
+  return num;
+};
+
 function DashboardPage() {
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -94,13 +100,13 @@ function DashboardPage() {
         fetchData();
     }, []);
 
-    if (loading) {
+    if (loading || !summary) {
         return (
             <DashboardGrid>
                 <SkeletonCard />
                 <SkeletonCard />
                 <SkeletonCard />
-                <ChartContainer>
+                <ChartContainer style={{gridColumn: '1 / -1'}}>
                     <Skeleton height={300} />
                 </ChartContainer>
             </DashboardGrid>
@@ -110,7 +116,7 @@ function DashboardPage() {
     return (
         <DashboardGrid>
             <StatCard>
-                <StatIcon color="#6A5AF9">
+                <StatIcon color="var(--primary-color)">
                     <FiDollarSign size={28} />
                 </StatIcon>
                 <StatInfo>
@@ -120,7 +126,7 @@ function DashboardPage() {
             </StatCard>
             
             <StatCard>
-                <StatIcon color="#20C997">
+                <StatIcon color="var(--green-color)">
                     <FiShoppingBag size={28} />
                 </StatIcon>
                 <StatInfo>
@@ -130,7 +136,7 @@ function DashboardPage() {
             </StatCard>
 
             <StatCard>
-                <StatIcon color="#FA5A7D">
+                <StatIcon color="#FFA500">
                     <FiTrendingUp size={28} />
                 </StatIcon>
                 <StatInfo>
@@ -142,25 +148,25 @@ function DashboardPage() {
             <ChartContainer>
                 <ChartTitle>Penjualan 7 Hari Terakhir</ChartTitle>
                 <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={summary.salesLast7Days} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <LineChart data={summary.salesLast7Days} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                        <XAxis dataKey="date" stroke="var(--text-secondary)" />
-                        <YAxis stroke="var(--text-secondary)" />
-                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }} />
+                        <XAxis dataKey="date" tick={{ fill: 'var(--text-secondary)' }} />
+                        <YAxis tick={{ fill: 'var(--text-secondary)' }} tickFormatter={formatNumber} />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                         <Legend />
-                        <Line type="monotone" dataKey="dailySales" name="Penjualan" stroke="var(--primary-color)" strokeWidth={2} activeDot={{ r: 8 }} />
+                        <Line type="monotone" dataKey="dailySales" name="Penjualan (Rp)" stroke="var(--primary-color)" strokeWidth={3} activeDot={{ r: 8 }} />
                     </LineChart>
                 </ResponsiveContainer>
             </ChartContainer>
-
-             <ChartContainer>
+            
+            <ChartContainer>
                 <ChartTitle>Produk Terlaris</ChartTitle>
                 <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={summary.topProducts} layout="vertical" margin={{ top: 5, right: 20, left: 30, bottom: 5 }}>
+                    <BarChart data={summary.topProducts} layout="vertical" margin={{ top: 5, right: 30, left: 30, bottom: 5 }}>
                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                        <XAxis type="number" stroke="var(--text-secondary)" />
-                        <YAxis type="category" dataKey="name" width={120} stroke="var(--text-secondary)" />
-                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)' }} />
+                        <XAxis type="number" tick={{ fill: 'var(--text-secondary)' }} />
+                        <YAxis type="category" dataKey="name" width={120} tick={{ fill: 'var(--text-secondary)' }} />
+                        <Tooltip contentStyle={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '8px' }} />
                         <Legend />
                         <Bar dataKey="totalSold" name="Jumlah Terjual" fill="var(--primary-color)" />
                     </BarChart>

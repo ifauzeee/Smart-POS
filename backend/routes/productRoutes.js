@@ -1,37 +1,39 @@
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
-
 const router = express.Router();
 
-// -- RUTE-RUTE UNTUK MANAJEMEN PRODUK --
-
-// 1. CREATE: Menambah produk baru (Hanya Admin)
+// CREATE: Menambah produk baru
 router.post('/', protect, async (req, res) => {
-  // Otorisasi: Cek apakah pengguna adalah admin
+  // Otorisasi: Hanya admin yang bisa melakukan aksi ini
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Akses ditolak. Hanya admin yang bisa menambah produk.' });
+    return res.status(403).json({ message: 'Akses ditolak. Memerlukan peran admin.' });
   }
 
-  const { name, description, price, stock, category } = req.body;
-
+  const { name, description, price, stock, category_id, sub_category_id, image_url } = req.body;
   if (!name || !price || stock === undefined) {
     return res.status(400).json({ message: 'Nama, harga, dan stok harus diisi.' });
   }
 
   try {
-    const sql = 'INSERT INTO products (name, description, price, stock, category) VALUES (?, ?, ?, ?, ?)';
-    const [result] = await db.query(sql, [name, description, price, stock, category]);
+    const sql = 'INSERT INTO products (name, description, price, stock, category_id, sub_category_id, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const [result] = await db.query(sql, [name, description, price, stock, category_id || null, sub_category_id || null, image_url || null]);
     res.status(201).json({ message: 'Produk berhasil ditambahkan!', productId: result.insertId });
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 });
 
-// 2. READ: Mendapatkan semua produk
+// READ: Mendapatkan semua produk (bisa diakses semua user yang login)
 router.get('/', protect, async (req, res) => {
   try {
-    const sql = 'SELECT * FROM products ORDER BY created_at DESC';
+    const sql = `
+      SELECT p.*, c.name AS category_name, sc.name AS sub_category_name
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+      ORDER BY p.created_at DESC
+    `;
     const [products] = await db.query(sql);
     res.json(products);
   } catch (error) {
@@ -39,32 +41,18 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// 3. READ: Mendapatkan satu produk berdasarkan ID
-router.get('/:id', protect, async (req, res) => {
-  try {
-    const sql = 'SELECT * FROM products WHERE id = ?';
-    const [products] = await db.query(sql, [req.params.id]);
-
-    if (products.length === 0) {
-      return res.status(404).json({ message: 'Produk tidak ditemukan.' });
-    }
-    res.json(products[0]);
-  } catch (error) {
-    res.status(500).json({ message: 'Server Error', error: error.message });
-  }
-});
-
-// 4. UPDATE: Mengubah data produk (Hanya Admin)
+// UPDATE: Mengubah data produk
 router.put('/:id', protect, async (req, res) => {
+  // Otorisasi: Hanya admin yang bisa melakukan aksi ini
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Akses ditolak. Hanya admin yang bisa mengubah produk.' });
+    return res.status(403).json({ message: 'Akses ditolak. Memerlukan peran admin.' });
   }
 
-  const { name, description, price, stock, category } = req.body;
+  const { name, description, price, stock, category_id, sub_category_id, image_url } = req.body;
   
   try {
-    const sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ? WHERE id = ?';
-    const [result] = await db.query(sql, [name, description, price, stock, category, req.params.id]);
+    const sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category_id = ?, sub_category_id = ?, image_url = ? WHERE id = ?';
+    const [result] = await db.query(sql, [name, description, price, stock, category_id || null, sub_category_id || null, image_url || null, req.params.id]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Produk tidak ditemukan.' });
@@ -75,10 +63,11 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-// 5. DELETE: Menghapus produk (Hanya Admin)
+// DELETE: Menghapus produk
 router.delete('/:id', protect, async (req, res) => {
+  // Otorisasi: Hanya admin yang bisa melakukan aksi ini
   if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Akses ditolak. Hanya admin yang bisa menghapus produk.' });
+    return res.status(403).json({ message: 'Akses ditolak. Memerlukan peran admin.' });
   }
   
   try {

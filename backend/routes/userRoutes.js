@@ -2,26 +2,31 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
-const { protect } = require('../middleware/authMiddleware'); // ✅ Tambahan middleware
+const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Endpoint: POST /api/users/register
+// POST /api/users/register - Registrasi pengguna baru
 router.post('/register', async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Nama, email, dan password harus diisi.' });
   }
 
   try {
+    const [[{ count }]] = await db.query('SELECT COUNT(*) as count FROM users');
+    const finalRole = count === 0 ? 'admin' : 'kasir';
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const sql = 'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)';
-    await db.query(sql, [name, email, hashedPassword, role || 'kasir']);
+    const [result] = await db.query(sql, [name, email, hashedPassword, finalRole]);
 
-    res.status(201).json({ message: 'Pengguna berhasil didaftarkan!' });
+    res.status(201).json({ 
+      message: `Pengguna berhasil didaftarkan sebagai ${finalRole}!`,
+      userId: result.insertId 
+    });
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
       return res.status(409).json({ message: 'Email sudah terdaftar.' });
@@ -31,7 +36,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Endpoint: POST /api/users/login
+// POST /api/users/login - Login pengguna
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -60,27 +65,71 @@ router.post('/login', async (req, res) => {
       role: user.role
     };
 
-    const secretKey = 'RAHASIA_NEGARA_JANGAN_DIBAGI';
-    const token = jwt.sign(payload, secretKey, { expiresIn: '1h' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     res.json({
       message: 'Login berhasil!',
       token: token
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
   }
 });
 
-// Endpoint: GET /api/users/profile (Rute Terproteksi)
+// GET /api/users/profile - Mendapatkan profil user yang login
 router.get('/profile', protect, (req, res) => {
   res.json({
     id: req.user.id,
     name: req.user.name,
     role: req.user.role
   });
+});
+
+// --- RUTE KHUSUS ADMIN ---
+
+// GET /api/users - Mendapatkan semua pengguna
+router.get('/', protect, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Akses ditolak." });
+  }
+
+  try {
+    const [users] = await db.query('SELECT id, name, email, role FROM users');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+  }
+});
+
+// PUT /api/users/:id - Update pengguna
+router.put('/:id', protect, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Akses ditolak." });
+  }
+
+  const { name, email, role } = req.body;
+
+  try {
+    await db.query('UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?', [name, email, role, req.params.id]);
+    res.json({ message: 'Pengguna berhasil diperbarui.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+  }
+});
+
+// DELETE /api/users/:id - Hapus pengguna
+router.delete('/:id', protect, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: "Akses ditolak." });
+  }
+
+  try {
+    await db.query('DELETE FROM users WHERE id = ?', [req.params.id]);
+    res.json({ message: 'Pengguna berhasil dihapus.' });
+  } catch (error) {
+    res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+  }
 });
 
 module.exports = router;

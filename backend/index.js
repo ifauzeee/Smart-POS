@@ -1,32 +1,36 @@
-// backend/index.js
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const app = express();
-const port = 5000;
+const bodyParser = require('body-parser');
 
-// Import rute
+// Import semua file rute
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
-const analyticsRoutes = require('./routes/analyticsRoutes'); // <-- TAMBAHKAN INI
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+const app = express();
 
-// Gunakan rute
+// Konfigurasi CORS
+app.use(cors({
+  origin: 'http://localhost:5173'
+}));
+
+// Middleware untuk membaca JSON
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Daftarkan semua alamat API
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/analytics', analyticsRoutes); // <-- TAMBAHKAN INI
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/categories', categoryRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.send('🎉 Halo! Ini adalah server backend Smart POS Anda!');
-});
-
-// Menjalankan server
+const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`🚀 Server backend berjalan di http://localhost:${port}`);
 });

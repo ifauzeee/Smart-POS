@@ -1,15 +1,15 @@
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-// Buat pool koneksi. Pool lebih efisien daripada membuat koneksi tunggal setiap saat.
 const pool = mysql.createPool({
-  host: 'localhost',      // Alamat server database Anda
-  user: 'root',           // Username database (default XAMPP adalah 'root')
-  password: '',           // Password database (default XAMPP adalah kosong)
-  database: 'smart_pos_db', // Nama database yang kita buat
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  timezone: '+07:00'
 });
 
-// Ekspor promise-based pool agar bisa digunakan di file lain
-module.exports = pool.promise();
+module.exports = pool;

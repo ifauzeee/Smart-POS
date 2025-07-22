@@ -10,12 +10,10 @@ const AppContainer = styled.div`
   background-color: var(--bg-main);
 `;
 
-// WADAH BARU UNTUK KONTEN UTAMA
-const ContentWrapper = styled.div`
+const ContentWrapper = styled.main`
   flex: 1;
-  height: 100vh;
-  overflow-y: auto; /* Scroll hanya akan ada di sini */
-  padding: 30px;
+  height: 100vh; /* 1. Batasi tingginya seukuran layar */
+  overflow-y: auto; /* 2. Jika konten lebih panjang, tampilkan scrollbar */
 `;
 
 function Layout() {
@@ -23,7 +21,7 @@ function Layout() {
     <AppContainer>
       <Sidebar />
       <ContentWrapper>
-        <Outlet /> {/* Halaman (misal: PosPage) akan dirender di dalam wadah ini */}
+        <Outlet />
       </ContentWrapper>
     </AppContainer>
   );

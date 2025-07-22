@@ -64,7 +64,7 @@ const ActionButton = styled.button`
   color: var(--text-secondary);
   margin-right: 15px;
   &:hover { 
-    color: ${props => props.danger ? 'var(--red-color)' : 'var(--primary-color)'};
+    color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'};
   }
 `;
 
@@ -155,7 +155,7 @@ function HistoryPage() {
                                         <ActionButton onClick={() => handleViewDetail(order.id)}>
                                             <FiEye size={18} />
                                         </ActionButton>
-                                        <ActionButton danger onClick={() => handleDeleteOrder(order.id)}>
+                                        <ActionButton $danger onClick={() => handleDeleteOrder(order.id)}>
                                             <FiTrash2 size={18} />
                                         </ActionButton>
                                     </Td>

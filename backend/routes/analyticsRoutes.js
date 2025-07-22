@@ -4,23 +4,19 @@ const { protect } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-// Endpoint: GET /api/analytics/summary
-// Hanya bisa diakses oleh pengguna yang sudah login
 router.get('/summary', protect, async (req, res) => {
     try {
-        // 1. Query untuk menghitung pendapatan hari ini
-        const todayRevenueQuery = `
-            SELECT SUM(total_amount) as totalRevenue 
-            FROM orders 
-            WHERE DATE(created_at) = CURDATE()`;
+        // 1. Ambil SEMUA data transaksi dari 7 hari terakhir (dalam UTC)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        // 2. Query untuk menghitung jumlah transaksi hari ini
-        const todayTransactionsQuery = `
-            SELECT COUNT(id) as totalTransactions 
+        const recentOrdersQuery = `
+            SELECT id, total_amount, created_at 
             FROM orders 
-            WHERE DATE(created_at) = CURDATE()`;
-
-        // 3. Query untuk mendapatkan 5 produk terlaris (berdasarkan jumlah terjual)
+            WHERE created_at >= ?
+        `;
+        
+        // 2. Query untuk produk terlaris (tidak berubah)
         const topProductsQuery = `
             SELECT p.name, SUM(oi.quantity) as totalSold 
             FROM order_items oi
@@ -28,36 +24,55 @@ router.get('/summary', protect, async (req, res) => {
             GROUP BY p.name 
             ORDER BY totalSold DESC 
             LIMIT 5`;
-        
-        // 4. Query untuk mendapatkan total penjualan selama 7 hari terakhir
-        const salesLast7DaysQuery = `
-            SELECT 
-                DATE_FORMAT(created_at, '%Y-%m-%d') as date, 
-                SUM(total_amount) as dailySales 
-            FROM orders 
-            WHERE created_at >= CURDATE() - INTERVAL 6 DAY
-            GROUP BY DATE(created_at) 
-            ORDER BY date ASC`;
 
-        // Jalankan semua query secara paralel untuk efisiensi
         const [
-            [todayRevenueResult], 
-            [todayTransactionsResult],
-            [topProductsResult],
-            [salesLast7DaysResult]
+            [recentOrders],
+            [topProductsResult]
         ] = await Promise.all([
-            db.query(todayRevenueQuery),
-            db.query(todayTransactionsQuery),
-            db.query(topProductsQuery),
-            db.query(salesLast7DaysQuery)
+            db.query(recentOrdersQuery, [sevenDaysAgo]),
+            db.query(topProductsQuery)
         ]);
 
-        // Kirim semua data yang sudah diolah dalam satu objek JSON
+        // --- SEMUA LOGIKA SEKARANG DILAKUKAN DI JAVASCRIPT ---
+        const timeZone = 'Asia/Jakarta';
+        const todayString = new Date().toLocaleDateString('en-CA', { timeZone });
+        
+        let todayRevenue = 0;
+        let todayTransactions = 0;
+        
+        // Buat struktur data untuk 7 hari terakhir
+        const salesLast7DaysMap = new Map();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateString = d.toLocaleDateString('en-CA', { timeZone });
+            salesLast7DaysMap.set(dateString, { date: dateString, dailySales: 0, dailyTransactions: 0 });
+        }
+
+        // Proses setiap transaksi yang didapat
+        for (const order of recentOrders) {
+            const orderDateString = new Date(order.created_at).toLocaleDateString('en-CA', { timeZone });
+
+            // Jika transaksi terjadi hari ini, tambahkan ke total harian
+            if (orderDateString === todayString) {
+                todayRevenue += parseFloat(order.total_amount);
+                todayTransactions++;
+            }
+            
+            // Tambahkan data ke map untuk grafik
+            if (salesLast7DaysMap.has(orderDateString)) {
+                const dayData = salesLast7DaysMap.get(orderDateString);
+                dayData.dailySales += parseFloat(order.total_amount);
+            }
+        }
+        
+        const salesLast7Days = Array.from(salesLast7DaysMap.values());
+
         res.json({
-            todayRevenue: todayRevenueResult.totalRevenue || 0,
-            todayTransactions: todayTransactionsResult.totalTransactions || 0,
+            todayRevenue: todayRevenue,
+            todayTransactions: todayTransactions,
             topProducts: topProductsResult,
-            salesLast7Days: salesLast7DaysResult
+            salesLast7Days: salesLast7Days
         });
 
     } catch (error) {
