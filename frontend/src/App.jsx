@@ -4,9 +4,11 @@ import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
 
-// Import Halaman
+// Pages
 import LoginPage from './pages/LoginPage';
 import PosPage from './pages/PosPage';
 import DashboardPage from './pages/DashboardPage';
@@ -17,14 +19,14 @@ import RegisterPage from './pages/RegisterPage';
 import SettingsPage from './pages/SettingsPage';
 import CategoryPage from './pages/CategoryPage';
 import AppPasswordTutorialPage from './pages/AppPasswordTutorialPage';
+import SupplierPage from './pages/SupplierPage'; // <-- Tambahkan ini
 
-// Import Komponen
+// Components
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 
 const GlobalStyle = createGlobalStyle`
-  /* Palet Warna untuk Tema Terang (Light) - Default */
   body {
     --bg-main: #F7F8FC;
     --bg-surface: #FFFFFF;
@@ -35,7 +37,6 @@ const GlobalStyle = createGlobalStyle`
     --text-placeholder: #8A8D91;
   }
 
-  /* Palet Warna untuk Tema Gelap (Dark) */
   body[data-theme='dark'] {
     --bg-main: #000000;
     --bg-surface: #121212;
@@ -53,7 +54,11 @@ const GlobalStyle = createGlobalStyle`
     --green-color: #198754;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
   body {
     font-family: 'Poppins', sans-serif;
@@ -68,7 +73,10 @@ function AppContent() {
   const { theme } = useContext(ThemeContext);
 
   return (
-    <SkeletonTheme baseColor={theme === 'dark' ? '#121212' : '#EAEBF0'} highlightColor={theme === 'dark' ? '#2D2D2D' : '#ffffff'}>
+    <SkeletonTheme
+      baseColor={theme === 'dark' ? '#121212' : '#EAEBF0'}
+      highlightColor={theme === 'dark' ? '#2D2D2D' : '#ffffff'}
+    >
       <GlobalStyle />
       <ToastContainer position="top-right" autoClose={3000} theme={theme} />
       <BrowserRouter>
@@ -84,6 +92,7 @@ function AppContent() {
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/users" element={<UsersPage />} />
+                <Route path="/suppliers" element={<SupplierPage />} /> {/* <-- Tambahkan Route Supplier */}
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/categories" element={<CategoryPage />} />
               </Route>

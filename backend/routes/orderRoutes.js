@@ -8,7 +8,7 @@ const router = express.Router();
 
 // POST /api/orders - Membuat pesanan baru
 router.post('/', protect, async (req, res) => {
-  const { items } = req.body;
+  const { items, customer_id } = req.body;
   const userId = req.user.id;
 
   if (!items || items.length === 0) {
@@ -32,19 +32,29 @@ router.post('/', protect, async (req, res) => {
       totalAmount += product.price * item.quantity;
     }
 
-    const orderSql = 'INSERT INTO orders (user_id, total_amount) VALUES (?, ?)';
-    const [orderResult] = await connection.query(orderSql, [userId, totalAmount]);
+    const orderSql = 'INSERT INTO orders (user_id, customer_id, total_amount) VALUES (?, ?, ?)';
+    const [orderResult] = await connection.query(orderSql, [userId, customer_id || null, totalAmount]);
     const orderId = orderResult.insertId;
 
     for (const item of items) {
-      const [products] = await connection.query('SELECT price FROM products WHERE id = ?', [item.productId]);
+      const [products] = await connection.query('SELECT price, cost_price FROM products WHERE id = ?', [item.productId]);
       const currentPrice = products[0].price;
+      const currentCostPrice = products[0].cost_price;
 
-      const orderItemSql = 'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)';
-      await connection.query(orderItemSql, [orderId, item.productId, item.quantity, currentPrice]);
+      const orderItemSql = 'INSERT INTO order_items (order_id, product_id, quantity, price, cost_price) VALUES (?, ?, ?, ?, ?)';
+      await connection.query(orderItemSql, [orderId, item.productId, item.quantity, currentPrice, currentCostPrice]);
 
       const updateStockSql = 'UPDATE products SET stock = stock - ? WHERE id = ?';
       await connection.query(updateStockSql, [item.quantity, item.productId]);
+    }
+
+    // Logika Poin Loyalitas
+    if (customer_id) {
+      const pointsEarned = Math.floor(totalAmount / 10000); // 1 poin setiap 10rb
+      if (pointsEarned > 0) {
+        const updatePointsSql = 'UPDATE customers SET points = points + ? WHERE id = ?';
+        await connection.query(updatePointsSql, [pointsEarned, customer_id]);
+      }
     }
 
     await connection.commit();
@@ -124,7 +134,6 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
     if (!email) return res.status(400).json({ message: "Email tujuan harus diisi." });
 
     try {
-        // ... (Kode untuk mengambil detail order dan items)
         const orderQuery = `SELECT o.id, o.total_amount, o.created_at, u.name as cashier_name FROM orders o JOIN users u ON o.user_id = u.id WHERE o.id = ?`;
         const [[order]] = await db.query(orderQuery, [req.params.id]);
         if (!order) return res.status(404).json({ message: "Pesanan tidak ditemukan" });
@@ -132,10 +141,8 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
         const itemsQuery = `SELECT oi.quantity, oi.price, p.name as product_name FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?`;
         const [items] = await db.query(itemsQuery, [req.params.id]);
         
-        // ... (Kode untuk membuat HTML email)
         const emailHtml = `...`; // (Konten HTML Anda di sini)
 
-        // ... (Kode untuk mencari kredensial admin dan mengirim email)
         const [[admin]] = await db.query('SELECT smtp_email_user, smtp_email_pass FROM users WHERE role = "admin" LIMIT 1');
         if (!admin || !admin.smtp_email_user || !admin.smtp_email_pass) {
             return res.status(500).json({ message: "Setelan email admin belum dikonfigurasi." });

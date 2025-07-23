@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiUsers, FiSettings, FiTag } from 'react-icons/fi';
+import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiUsers, FiSettings, FiTag, FiTruck } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import { ThemeContext } from '../context/ThemeContext';
 
@@ -109,8 +109,9 @@ function Sidebar() {
             <li><NavItem to="/products"><FiPackage size={20} /> Produk</NavItem></li>
             <li><NavItem to="/history"><FiList size={20} /> Riwayat</NavItem></li>
             <li><NavItem to="/users"><FiUsers size={20} /> Pengguna</NavItem></li>
-            <li><NavItem to="/settings"><FiSettings size={20} /> Setelan</NavItem></li>
             <li><NavItem to="/categories"><FiTag size={20} /> Kategori</NavItem></li>
+            <li><NavItem to="/settings"><FiSettings size={20} /> Setelan</NavItem></li>
+            <li><NavItem to="/suppliers"><FiTruck size={20} /> Pemasok</NavItem></li>
           </>
         )}
       </NavList>
