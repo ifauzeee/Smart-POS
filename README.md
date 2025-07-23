@@ -1,65 +1,82 @@
 # 🚀 Smart Point of Sale (POS)
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Lisensi: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Status: Dalam Pengembangan](https://img.shields.io/badge/status-in%20development-yellow.svg)](https://github.com/ifauzeee/Point-of-Sale)
 
-Aplikasi web full-stack Point of Sale (POS) modern yang dibangun dari awal menggunakan stack MERN (MySQL, Express.js, React.js, Node.js). Proyek ini dirancang sebagai sistem kasir yang intuitif, cepat, dan kaya akan fitur, cocok untuk berbagai jenis bisnis ritel atau F&B.
+Aplikasi web *full-stack* Point of Sale (POS) modern yang dibangun menggunakan stack MERN (MySQL, Express.js, React.js, Node.js). Proyek ini dirancang sebagai sistem kasir yang intuitif, cepat, dan kaya fitur untuk berbagai jenis bisnis ritel atau F&B.
 
+**(Disarankan: Ambil screenshot baru dari halaman Produk atau Pemasok dan ganti link di bawah ini)**
 ![Smart POS Preview](https://i.postimg.cc/MKQQhTb8/gambar.png)
 
 ## ✨ Fitur Utama
 
-- **Otentikasi & Otorisasi:**
-  - Sistem Login & Registrasi yang aman (hashing password & JWT).
-  - Hak akses berbasis peran (Admin & Kasir) dengan tampilan menu yang dinamis.
-- **Manajemen Toko:**
-  - **Manajemen Produk:** Antarmuka CRUD (Create, Read, Update, Delete) lengkap.
-  - **Manajemen Kategori:** Membuat Kategori & Sub-kategori, termasuk gambar default.
-  - **Manajemen Pengguna:** Admin dapat mengelola akun pengguna lain (CRUD).
-- **Operasional Kasir:**
-  - Tampilan kasir (POS) dengan grid produk visual.
-  - Pencarian produk secara real-time.
-  - Keranjang belanja dinamis (tambah, kurang, hapus item).
-  - Proses checkout dengan kalkulasi kembalian.
-- **Fitur Pasca-Transaksi:**
-  - **Riwayat Transaksi:** Melihat daftar semua transaksi, detail per item, dan menghapus transaksi (khusus admin).
-  - **Struk Digital:** Mengirim struk ke email pelanggan melalui Nodemailer & Gmail.
-  - **Cetak Struk:** Fungsionalitas untuk mencetak struk fisik.
-- **Business Intelligence:**
-  - Dashboard analitik dengan statistik penjualan harian.
-  - Visualisasi data penjualan & produk terlaris dengan grafik.
-- **Pengalaman Pengguna (UX):**
-  - **Theme Switcher:** Opsi untuk beralih antara tema Terang (Light) dan Gelap (AMOLED Dark).
-  - Notifikasi Toast yang elegan untuk semua aksi.
-  - Loading skeleton untuk memuat data.
-  - Desain responsif untuk diakses melalui HP/Tablet di jaringan lokal.
+-   **Otentikasi & Otorisasi:**
+    -   Sistem Login & Registrasi aman (hashing password & JWT).
+    -   Hak akses berbasis peran (Admin & Kasir) dengan menu dinamis.
+
+-   **Manajemen Inventaris & Produk:**
+    -   CRUD (Create, Read, Update, Delete) lengkap untuk **Produk**.
+    -   Penambahan **Harga Beli (Modal)** untuk kalkulasi laba.
+    -   **Ambang Batas Stok Rendah** untuk setiap produk.
+    -   Peringatan visual di **Dashboard** untuk produk yang stoknya menipis.
+
+-   **Manajemen Toko:**
+    -   CRUD lengkap untuk **Pemasok (Supplier)**.
+    -   Menghubungkan produk ke pemasoknya.
+    -   Manajemen **Kategori & Sub-kategori** untuk pengelompokan produk.
+    -   Admin dapat mengelola akun **Pengguna** lain (CRUD).
+
+-   **Operasional Kasir:**
+    -   Tampilan kasir (POS) dengan grid produk visual.
+    -   Pencarian produk secara *real-time*.
+    -   Keranjang belanja dinamis (tambah, kurang, hapus item).
+    -   Proses checkout dengan kalkulasi kembalian.
+
+-   **Fitur Pasca-Transaksi:**
+    -   **Riwayat Transaksi** dengan detail per item.
+    -   Admin dapat menghapus transaksi.
+    -   Kirim **Struk Digital** ke email pelanggan (via Nodemailer & Gmail).
+    -   Fungsionalitas untuk **Cetak Struk Fisik**.
+
+-   **Analitik & Laporan:**
+    -   Dashboard analitik dengan statistik penjualan harian.
+    -   Visualisasi data penjualan & produk terlaris dengan grafik.
+
+-   **Pengalaman Pengguna (UX):**
+    -   **Theme Switcher**: Pilihan tema Terang (Light) dan Gelap (Dark).
+    -   Notifikasi *Toast* yang informatif untuk semua aksi.
+    -   *Loading skeleton* untuk pengalaman memuat data yang lebih baik.
+    -   Desain responsif.
 
 ## 💻 Tumpukan Teknologi (Tech Stack)
 
-- **Frontend:** React.js, Styled-Components, Framer Motion, React Router, Axios, Recharts, React-Toastify
-- **Backend:** Node.js, Express.js, MySQL (MariaDB), JWT, Bcrypt.js, Nodemailer
-- **Database:** MySQL / MariaDB
-- **Development:** Git, VS Code, Vite
+-   **Frontend:** React.js, Styled-Components, Framer Motion, React Router, Axios, Recharts, React-Toastify
+-   **Backend:** Node.js, Express.js, MySQL (MariaDB), JWT, Bcrypt.js, Nodemailer
+-   **Database:** MySQL / MariaDB
+-   **Development:** Git, VS Code, Vite, Nodemon
 
 ## 🛠️ Panduan Instalasi & Menjalankan Lokal
 
-Untuk menjalankan proyek ini di komputer Anda, ikuti langkah-langkah berikut:
-
 ### **Prasyarat**
-- [Node.js](https://nodejs.org/) (v18 atau lebih baru)
-- [Git](https://git-scm.com/)
-- [XAMPP](https://www.apachefriends.org/) (atau server MySQL/MariaDB lainnya)
+-   [Node.js](https://nodejs.org/) (v18 atau lebih baru)
+-   [Git](https://git-scm.com/)
+-   [XAMPP](https://www.apachefriends.org/) (atau server MySQL/MariaDB lainnya)
 
-### **Langkah 1: Setup Database**
+### **Langkah 1: Clone Repository**
+```bash
+git clone [https://github.com/ifauzeee/Point-of-Sale.git](https://github.com/ifauzeee/Point-of-Sale.git)
+cd Point-of-Sale
+```
 
+### **Langkah 2: Setup Database**
 1.  Nyalakan **Apache** dan **MySQL** dari XAMPP Control Panel.
 2.  Buka **phpMyAdmin** (`http://localhost/phpmyadmin`).
 3.  Buat database baru dengan nama `smart_pos_db`.
-4.  Pilih database `smart_pos_db` tersebut, lalu klik tab **"Import"**.
-5.  Klik "Choose File" dan pilih file `setup.sql` yang ada di dalam folder `database` proyek ini.
-6.  Klik **"Go"** atau **"Import"**. Semua tabel yang dibutuhkan akan otomatis dibuat.
+4.  Pilih database `smart_pos_db`, lalu klik tab **"Import"**.
+5.  Klik "Choose File" dan pilih file `database.sql` yang ada di dalam proyek ini.
+6.  Klik **"Go"** atau **"Import"**.
 
-### **Langkah 2: Setup Backend**
-
+### **Langkah 3: Setup Backend**
 1.  Buka terminal baru dan masuk ke folder backend:
     ```bash
     cd backend
@@ -68,16 +85,21 @@ Untuk menjalankan proyek ini di komputer Anda, ikuti langkah-langkah berikut:
     ```bash
     npm install
     ```
-3.  Buat file `.env` di dalam folder `backend` dengan menyalin dari `.env.example` (jika ada) atau buat baru dan isi seperti ini:
+3.  Buat file `.env` di dalam folder `backend` dan isi seperti contoh di bawah (sesuaikan dengan konfigurasi Anda):
     ```env
+    # Konfigurasi Database
     DB_HOST=localhost
     DB_USER=root
     DB_PASSWORD=
     DB_NAME=smart_pos_db
+
+    # Kunci Rahasia Enkripsi & JWT (Ganti dengan teks acak yang panjang)
     ENCRYPTION_KEY=iniadalahkuncirahasia32karakter!!
-    JWT_SECRET=INI_ADALAH_KUNCI_SANGAT_RAHASIA
+    JWT_SECRET=INI_ADALAH_KUNCI_SANGAT_RAHASIA_DAN_HARUS_DIGANTI
+
+    # Konfigurasi Email (Opsional, untuk kirim struk)
     EMAIL_USER=emailanda@gmail.com
-    EMAIL_PASS=16karakterapppasswordanda
+    EMAIL_PASS=16karakterapppasswordgoogleanda
     ```
 4.  Jalankan server backend:
     ```bash
@@ -85,8 +107,7 @@ Untuk menjalankan proyek ini di komputer Anda, ikuti langkah-langkah berikut:
     ```
     Server akan berjalan di `http://localhost:5000`.
 
-### **Langkah 3: Setup Frontend**
-
+### **Langkah 4: Setup Frontend**
 1.  Buka terminal baru dan masuk ke folder frontend:
     ```bash
     cd frontend
@@ -101,8 +122,16 @@ Untuk menjalankan proyek ini di komputer Anda, ikuti langkah-langkah berikut:
     ```
     Aplikasi akan berjalan di `http://localhost:5173`.
 
-### **Langkah 4: Akun Pertama**
--   Buka aplikasi dan pergi ke halaman registrasi untuk membuat akun pertama Anda. **Akun pertama yang dibuat akan otomatis menjadi Admin.**
+### **Langkah 5: Akun Pertama**
+- Buka aplikasi dan pergi ke halaman registrasi untuk membuat akun pertama. **Akun pertama yang dibuat akan otomatis menjadi Admin.**
+
+## 🗺️ Roadmap (Rencana Pengembangan)
+
+Berikut adalah beberapa fitur yang direncanakan untuk pengembangan selanjutnya:
+-   [ ] **Manajemen Pelanggan (CRM)**: Menyimpan data pelanggan dan melacak riwayat transaksi mereka.
+-   [ ] **Laporan Lanjutan**: Filter laporan berdasarkan tanggal dan ekspor data ke CSV/PDF.
+-   [ ] **Dukungan Barcode Scanner**: Mempercepat input produk di halaman kasir.
+-   [ ] **Manajemen Varian Produk**: Mengelola produk dengan berbagai ukuran, warna, atau tipe.
 
 ## 📜 Lisensi
 
