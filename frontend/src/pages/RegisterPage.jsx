@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { createUser } from '../services/api';
+import { createUser } from '../services/api'; // Removed checkInitialUser import
 import { toast } from 'react-toastify';
 import { FiUserPlus } from 'react-icons/fi';
 
@@ -9,7 +9,13 @@ const PageContainer = styled.div`
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: var(--bg-main); /* Latar belakang utama hitam pekat */
+  background-color: var(--bg-main);
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
 `;
 
 const BrandingPanel = styled.div`
@@ -19,6 +25,12 @@ const BrandingPanel = styled.div`
   justify-content: center;
   align-items: flex-start;
   padding: 60px;
+
+  @media (max-width: 768px) {
+    padding: 30px;
+    align-items: center;
+    text-align: center;
+  }
 `;
 
 const BrandingContent = styled.div`
@@ -31,12 +43,20 @@ const BrandingTitle = styled.h1`
   line-height: 1.2;
   margin-bottom: 15px;
   color: var(--primary-color);
+
+  @media (max-width: 768px) {
+    font-size: 2.5rem;
+  }
 `;
 
 const BrandingSubtitle = styled.p`
   font-size: 1.2rem;
   font-weight: 300;
   color: var(--text-secondary);
+
+  @media (max-width: 768px) {
+    font-size: 1rem;
+  }
 `;
 
 const FormPanel = styled.div`
@@ -46,15 +66,23 @@ const FormPanel = styled.div`
   align-items: center;
   overflow-y: auto;
   padding: 20px 0;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
 `;
 
 const FormBox = styled.div`
   width: 100%;
-  max-width: 550px; /* Lebarkan sedikit untuk 2 kolom */
+  max-width: 550px;
   padding: 40px;
   background-color: var(--bg-surface);
   border-radius: 16px;
   border: 1px solid var(--border-color);
+
+  @media (max-width: 768px) {
+    padding: 30px;
+  }
 `;
 
 const Title = styled.h2`
@@ -62,21 +90,34 @@ const Title = styled.h2`
   font-weight: 600;
   margin-bottom: 10px;
   color: var(--text-primary);
+
+  @media (max-width: 768px) {
+    font-size: 1.8rem;
+  }
 `;
 
 const Subtitle = styled.p`
   color: var(--text-secondary);
   margin-bottom: 50px;
   font-size: 1rem;
+
+  @media (max-width: 768px) {
+    margin-bottom: 30px;
+  }
 `;
 
 const Form = styled.form`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr; /* Mengubah menjadi 2 kolom */
   gap: 25px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr; /* Kembali ke 1 kolom di HP */
+  }
 `;
 
 const InputGroup = styled.div`
+  /* Defaultnya akan menempati 1 kolom, kecuali diberi prop fullWidth */
   grid-column: ${props => props.fullWidth ? '1 / -1' : 'auto'};
 `;
 
@@ -97,16 +138,6 @@ const Input = styled.input`
   color: var(--text-primary);
 `;
 
-const Select = styled.select`
-  width: 100%;
-  padding: 14px 18px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: var(--bg-main);
-  color: var(--text-primary);
-`;
-
 const Button = styled.button`
   width: 100%;
   padding: 15px;
@@ -117,7 +148,10 @@ const Button = styled.button`
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  grid-column: 1 / -1;
+  grid-column: 1 / -1; /* Tombol tetap mengisi 2 kolom */
+  &:hover {
+    background-color: var(--primary-hover);
+  }
 `;
 
 const LoginLink = styled.p`
@@ -125,7 +159,7 @@ const LoginLink = styled.p`
   margin-top: 15px;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  grid-column: 1 / -1;
+  grid-column: 1 / -1; /* Link tetap mengisi 2 kolom */
 
   a {
     color: var(--primary-color);
@@ -135,74 +169,97 @@ const LoginLink = styled.p`
   }
 `;
 
+
 function RegisterPage() {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'kasir' });
-  const navigate = useNavigate();
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', registrationKey: '' });
+    const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    // The useEffect block for checkInitialUser is no longer needed
+    // as the registration logic now relies on ADMIN_REGISTRATION_KEY.
+    // useEffect(() => {
+    //     const checkUser = async () => {
+    //         try {
+    //             const res = await checkInitialUser();
+    //             if (!res.data.setupNeeded) {
+    //                 toast.info("Registrasi publik dinonaktifkan.");
+    //                 navigate('/login');
+    //             }
+    //         } catch (error) {
+    //             toast.error("Tidak bisa terhubung ke server.");
+    //             navigate('/login');
+    //         }
+    //     };
+    //     checkUser();
+    // }, [navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const promise = createUser(formData);
-    toast.promise(promise, {
-      pending: 'Mendaftarkan pengguna...',
-      success: {
-        render(){
-          navigate('/login'); 
-          return 'Registrasi berhasil! Silakan login.';
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const promise = createUser(formData); 
+        
+        // Store the toast promise result
+        const toastResult = toast.promise(promise, {
+            pending: 'Mendaftarkan admin...',
+            success: 'Registrasi Admin berhasil! Silakan login.', // Simplified success message
+            error: {
+                render({data}){
+                    return `Gagal: ${data.response?.data?.message || 'Server error'}`;
+                }
+            }
+        });
+
+        try {
+            await toastResult; // Await the toast promise to ensure it completes
+            navigate('/login'); // Navigate after the toast promise resolves successfully
+        } catch (error) {
+            // Error handling is already done by toast.promise, but we catch it here
+            // to prevent unhandled promise rejections if needed for other logic.
+            console.error("Registration failed:", error);
         }
-      },
-      error: {
-        render({data}){
-          return `Gagal: ${data.response?.data?.message || 'Server error'}`;
-        }
-      }
-    });
-  };
+    };
 
-  return (
-    <PageContainer>
-      <BrandingPanel>
-        <BrandingContent>
-          <BrandingTitle>Buat Akun Baru</BrandingTitle>
-          <BrandingSubtitle>Hanya butuh beberapa detik untuk memulai.</BrandingSubtitle>
-        </BrandingContent>
-      </BrandingPanel>
-      <FormPanel>
-        <FormBox>
-          <Title>Mulai Sekarang</Title>
-          <Subtitle>Isi data di bawah untuk membuat akun.</Subtitle>
-          <Form onSubmit={handleSubmit}>
-            <InputGroup>
-              <Label htmlFor="name">Nama Lengkap</Label>
-              <Input id="name" name="name" type="text" onChange={handleChange} required />
-            </InputGroup>
-            <InputGroup>
-              <Label htmlFor="email">Alamat Email</Label>
-              <Input id="email" name="email" type="email" onChange={handleChange} required />
-            </InputGroup>
-            <InputGroup>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" onChange={handleChange} required />
-            </InputGroup>
-            <InputGroup>
-              <Label htmlFor="role">Peran</Label>
-              <Select name="role" value={formData.role} onChange={handleChange}>
-                <option value="kasir">Kasir</option>
-                <option value="admin">Admin</option>
-              </Select>
-            </InputGroup>
-            <Button type="submit"><FiUserPlus style={{ marginRight: '8px' }}/> Buat Akun</Button>
-            <LoginLink>
-              Sudah punya akun? <Link to="/login">Login di sini</Link>
-            </LoginLink>
-          </Form>
-        </FormBox>
-      </FormPanel>
-    </PageContainer>
-  );
+    return (
+        <PageContainer>
+            <BrandingPanel>
+                <BrandingContent>
+                    <BrandingTitle>Registrasi Admin</BrandingTitle>
+                    <BrandingSubtitle>Buat akun Administrator baru untuk mengakses sistem.</BrandingSubtitle>
+                </BrandingContent>
+            </BrandingPanel>
+            <FormPanel>
+                <FormBox>
+                    <Title>Buat Akun Admin</Title>
+                    <Subtitle>Isi data di bawah untuk membuat akun.</Subtitle>
+                    <Form onSubmit={handleSubmit}>
+                        <InputGroup>
+                            <Label htmlFor="name">Nama Lengkap</Label>
+                            <Input id="name" name="name" type="text" onChange={handleChange} required />
+                        </InputGroup>
+                        <InputGroup>
+                            <Label htmlFor="email">Alamat Email</Label>
+                            <Input id="email" name="email" type="email" onChange={handleChange} required />
+                        </InputGroup>
+                        <InputGroup>
+                            <Label htmlFor="password">Password</Label>
+                            <Input id="password" name="password" type="password" onChange={handleChange} required />
+                        </InputGroup>
+                        <InputGroup>
+                            <Label htmlFor="registrationKey">Kode Registrasi</Label>
+                            {/* NEW: Make sure this input sends the registrationKey */}
+                            <Input id="registrationKey" name="registrationKey" type="password" onChange={handleChange} required />
+                        </InputGroup>
+                        <Button type="submit"><FiUserPlus style={{ marginRight: '8px' }}/> Buat Akun Admin</Button>
+                        <LoginLink>
+                            Sudah punya akun? <Link to="/login">Login di sini</Link>
+                        </LoginLink>
+                    </Form>
+                </FormBox>
+            </FormPanel>
+        </PageContainer>
+    );
 }
 
 export default RegisterPage;

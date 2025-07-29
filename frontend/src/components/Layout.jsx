@@ -1,3 +1,5 @@
+// frontend/src/components/Layout.jsx
+
 import React from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
@@ -12,8 +14,8 @@ const AppContainer = styled.div`
 
 const ContentWrapper = styled.main`
   flex: 1;
-  height: 100vh; /* 1. Batasi tingginya seukuran layar */
-  overflow-y: auto; /* 2. Jika konten lebih panjang, tampilkan scrollbar */
+  height: 100vh;
+  overflow-y: auto;
 `;
 
 function Layout() {

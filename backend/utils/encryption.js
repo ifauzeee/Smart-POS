@@ -4,6 +4,9 @@ const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_LENGTH = 64;
 const TAG_LENGTH = 16;
+
+// NEW: Use a more robust key derivation (e.g., from an environment variable)
+// Ensure process.env.ENCRYPTION_KEY is set in your .env file and is a strong, random string.
 const KEY = crypto.scryptSync(process.env.ENCRYPTION_KEY, 'salt', 32);
 
 function encrypt(text) {

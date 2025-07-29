@@ -31,9 +31,13 @@ const Button = styled.button`
   background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'};
   color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
   &:hover { opacity: 0.9; }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
-function UserFormModal({ isOpen, onClose, onSave, user }) {
+function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
   const [formData, setFormData] = useState({});
   const isEditing = Boolean(user);
 
@@ -67,7 +71,7 @@ function UserFormModal({ isOpen, onClose, onSave, user }) {
               <ModalBody>
                 <InputGroup $fullWidth>
                   <Label>Nama</Label>
-                  <Input name="name" value={formData.name || ''} onChange={handleChange} required />
+                  <Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus />
                 </InputGroup>
                 <InputGroup $fullWidth>
                   <Label>Email</Label>
@@ -89,7 +93,9 @@ function UserFormModal({ isOpen, onClose, onSave, user }) {
               </ModalBody>
               <ModalFooter>
                 <Button type="button" onClick={onClose}>Batal</Button>
-                <Button type="submit" $primary>Simpan</Button>
+                <Button type="submit" $primary disabled={isSubmitting}>
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                </Button>
               </ModalFooter>
             </form>
           </ModalContainer>

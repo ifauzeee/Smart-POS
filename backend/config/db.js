@@ -1,3 +1,4 @@
+// backend/config/db.js
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
@@ -9,7 +10,8 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '+07:00'
+  timezone: 'local', // Pastikan timezone disetel agar sesuai dengan server MySQL Anda
+  dateStrings: true // Mengembalikan tipe DATETIME sebagai string, bukan objek Date
 });
 
 module.exports = pool;

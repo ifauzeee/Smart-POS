@@ -88,7 +88,7 @@ function AppPasswordTutorialPage() {
             <Step>
                 <StepTitle>4. Salin dan Gunakan Sandi</StepTitle>
                 <StepText>
-                    Google akan menampilkan sebuah kotak kuning berisi <strong>16 karakter sandi</strong>. Salin 16 karakter ini (tanpa spasi) dan tempelkan ke kolom "Sandi Aplikasi" di halaman Setelan SmartPOS Anda.
+                    Google akan menampilkan sebuah kotak kuning berisi **16 karakter sandi**. Salin 16 karakter ini (tanpa spasi) dan tempelkan ke kolom "Sandi Aplikasi" di halaman Setelan SmartPOS Anda.
                 </StepText>
             </Step>
         </TutorialCard>

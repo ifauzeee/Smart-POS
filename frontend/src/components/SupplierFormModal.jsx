@@ -8,7 +8,6 @@ const ModalBackdrop = styled(motion.div)`
   background-color: rgba(0, 0, 0, 0.7); display: flex;
   justify-content: center; align-items: center; z-index: 1000;
 `;
-
 const ModalContainer = styled(motion.div)`
   background-color: var(--bg-surface); border-radius: 16px;
   border: 1px solid var(--border-color); width: 100%;
@@ -62,9 +61,13 @@ const Button = styled.button`
   background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'};
   color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
   &:hover { opacity: 0.9; }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
-function SupplierFormModal({ isOpen, onClose, onSave, supplier }) {
+function SupplierFormModal({ isOpen, onClose, onSave, supplier, isSubmitting }) {
   const [formData, setFormData] = useState({});
   const isEditing = Boolean(supplier);
 
@@ -100,7 +103,7 @@ function SupplierFormModal({ isOpen, onClose, onSave, supplier }) {
               <ModalBody>
                 <InputGroup $fullWidth>
                   <Label>Nama Pemasok</Label>
-                  <Input name="name" value={formData.name || ''} onChange={handleChange} required />
+                  <Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus />
                 </InputGroup>
                 <InputGroup>
                   <Label>Narahubung</Label>
@@ -121,7 +124,9 @@ function SupplierFormModal({ isOpen, onClose, onSave, supplier }) {
               </ModalBody>
               <ModalFooter>
                 <Button type="button" onClick={onClose}>Batal</Button>
-                <Button type="submit" $primary>Simpan</Button>
+                <Button type="submit" $primary disabled={isSubmitting}>
+                    {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                </Button>
               </ModalFooter>
             </form>
           </ModalContainer>

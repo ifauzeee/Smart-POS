@@ -1,127 +1,78 @@
+// frontend/src/components/Receipt.jsx
+
 import React from 'react';
-import styled from 'styled-components';
 
-// --- Styled Components ---
-const ReceiptContainer = styled.div`
-  width: 280px; 
-  padding: 15px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #000;
-  background-color: #fff;
-`;
-
-const Header = styled.div`
-  text-align: center;
-  margin-bottom: 15px;
-`;
-
-const ShopName = styled.h2`
-  font-size: 16px;
-  margin: 0;
-  font-weight: bold;
-`;
-
-const ShopInfo = styled.p`
-  margin: 4px 0 0 0;
-  font-size: 11px;
-`;
-
-const Divider = styled.div`
-  border-top: 1px dashed #000;
-  margin: 10px 0;
-`;
-
-const DetailRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 3px;
-`;
-
-const ItemsTable = styled.table`
-  width: 100%;
-  margin: 10px 0;
-  
-  thead th {
-    text-align: left;
-    border-bottom: 1px dashed #000;
-    padding-bottom: 5px;
-    font-weight: bold;
-  }
-  
-  tbody td {
-    padding-top: 5px;
-    vertical-align: top;
-  }
-`;
-
-const Footer = styled.div`
-  text-align: center;
-  margin-top: 15px;
-`;
-// --- End of Styled Components ---
-
-// PENTING: Menggunakan kembali React.forwardRef
 const Receipt = React.forwardRef(({ order }, ref) => {
-  if (!order) return null;
+    if (!order) {
+        return <div ref={ref} style={{ display: 'none' }}></div>;
+    }
 
-  return (
-    <ReceiptContainer ref={ref}>
-      <Header>
-        <ShopName>SmartPOS</ShopName>
-        <ShopInfo>Jl. Teknologi No. 1, Cileungsi</ShopInfo>
-        <ShopInfo>021-1234-5678</ShopInfo>
-      </Header>
-      
-      <Divider />
-      
-      <DetailRow>
-        <span>No Pesanan:</span>
-        <span>#{String(order.id).padStart(6, '0')}</span>
-      </DetailRow>
-      <DetailRow>
-        <span>Tanggal:</span>
-        <span>{new Date(order.created_at).toLocaleString('id-ID')}</span>
-      </DetailRow>
-      <DetailRow>
-        <span>Kasir:</span>
-        <span>{order.cashier_name}</span>
-      </DetailRow>
-      
-      <Divider />
+    const formatCurrency = (num) => new Intl.NumberFormat('id-ID').format(num);
 
-      <ItemsTable>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th style={{ textAlign: 'center' }}>Qty</th>
-            <th style={{ textAlign: 'right' }}>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {order.items.map((item, index) => (
-            <tr key={index}>
-              <td>{item.product_name}</td>
-              <td style={{ textAlign: 'center' }}>{item.quantity}</td>
-              <td style={{ textAlign: 'right' }}>{new Intl.NumberFormat('id-ID').format(item.price * item.quantity)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </ItemsTable>
-
-      <Divider />
-
-      <DetailRow>
-        <strong>Total</strong>
-        <strong>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</strong>
-      </DetailRow>
-      
-      <Footer>
-        <p>Terima Kasih Atas Kunjungan Anda!</p>
-      </Footer>
-    </ReceiptContainer>
-  );
+    return (
+        <div ref={ref} style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#000', width: '300px', padding: '20px' }}>
+           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, fontSize: '16px' }}>Toko 27</h2>
+                <p style={{ margin: '2px 0' }}>Jl. Raya Cileungsi No. 123</p>
+                <p style={{ margin: '2px 0' }}>Telp: 0812-3456-7890</p>
+            </div>
+            
+           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span>No: #{order.id}</span>
+                <span>{new Date(order.created_at).toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'})}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                <span>Kasir: {order.cashier_name}</span>
+                <span>Pelanggan: {order.customer_name || '-'}</span>
+            </div>
+            
+            <hr style={{ border: 0, borderTop: '1px dashed #ccc', margin: '10px 0' }} />
+            
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px' }}>
+                <thead>
+                    <tr>
+                        <th style={{ textAlign: 'left', padding: '5px 0', borderBottom: '1px dashed #ccc' }}>Item</th>
+                        <th style={{ textAlign: 'center', padding: '5px 0', borderBottom: '1px dashed #ccc' }}>Qty</th>
+                        <th style={{ textAlign: 'right', padding: '5px 0', borderBottom: '1px dashed #ccc' }}>Harga</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {order.items.map((item, index) => (
+                        <tr key={index}>
+                            <td style={{ padding: '5px 0' }}>{item.product_name}{item.variant_name ? ` (${item.variant_name})` : ''}</td>
+                            <td style={{ textAlign: 'center', padding: '5px 0' }}>{item.quantity}</td>
+                            <td style={{ textAlign: 'right', padding: '5px 0' }}>{formatCurrency(item.price * item.quantity)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            
+            <hr style={{ border: 0, borderTop: '1px dashed #ccc', margin: '10px 0' }} />
+            
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                    <tr>
+                        <td><strong>Total</strong></td>
+                        <td style={{ textAlign: 'right' }} colSpan="2"><strong>Rp {formatCurrency(order.total_amount)}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Dibayar</td>
+                        <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.amount_paid)}</td>
+                    </tr>
+                    {order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) > 0 && (
+                        <tr>
+                            <td>Kembalian</td>
+                            <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.amount_paid - order.total_amount)}</td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+            
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <p>Terima Kasih!</p>
+            </div>
+        </div>
+    );
 });
 
 export default Receipt;

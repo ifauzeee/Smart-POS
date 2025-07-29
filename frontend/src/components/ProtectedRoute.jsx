@@ -1,13 +1,32 @@
+// frontend/src/components/ProtectedRoute.jsx
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+import { toast } from 'react-toastify';
 
 function ProtectedRoute() {
-  // Cek apakah ada token di local storage
   const token = localStorage.getItem('token');
 
-  // Jika ada token, tampilkan konten halaman (menggunakan <Outlet />).
-  // Jika tidak, redirect ke halaman /login.
-  return token ? <Outlet /> : <Navigate to="/login" />;
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+
+  try {
+    const decoded = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+    if (decoded.exp < currentTime) {
+      localStorage.removeItem('token');
+      toast.error('Sesi Anda telah berakhir. Silakan login kembali.');
+      return <Navigate to="/login" />;
+    }
+
+    return <Outlet />;
+  } catch (error) {
+    console.error("Invalid token:", error);
+    localStorage.removeItem('token');
+    toast.error('Sesi tidak valid, silakan login kembali.');
+    return <Navigate to="/login" />;
+  }
 }
 
 export default ProtectedRoute;
