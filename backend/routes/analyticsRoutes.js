@@ -15,26 +15,17 @@ const isAdmin = (req, res, next) => {
 // ENDPOINT STATS (Total Pendapatan, Transaksi, Laba, dll.)
 router.get('/stats', protect, isAdmin, async (req, res) => {
     try {
-        console.log('Received date range:', req.query.startDate, req.query.endDate);
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
+        const businessId = req.user.business_id;
         
-        console.log('Validated date range:', startDate, endDate);
-        
-        if (!req.user || !req.user.business_id) {
-            console.error('Missing business_id in user object');
+        if (!businessId) {
             return res.status(400).json({ message: 'Invalid business ID' });
         }
         
         if (!startDate || !endDate) {
-            return res.status(400).json({ 
-                message: "Invalid date range provided",
-                startDate: req.query.startDate,
-                endDate: req.query.endDate
-            });
+            return res.status(400).json({ message: "Invalid date range provided" });
         }
-        const businessId = req.user.business_id;
         
-        // Menggunakan COALESCE untuk memastikan nilai 0 jika tidak ada data
         const statsQuery = `
             SELECT
                 (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
@@ -45,7 +36,7 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
                         FROM order_items oi
                         JOIN orders o2 ON oi.order_id = o2.id
                         WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
-                    , 0)
+                    , 0) 
                 AS DECIMAL(15,2)) as totalProfit,
                 COALESCE((
                     SELECT SUM(oi.quantity)
@@ -58,15 +49,14 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
         `;
 
         const [[stats]] = await db.query(statsQuery, [
-            businessId, startDate, endDate, // for totalRevenue
-            businessId, startDate, endDate, // for totalTransactions
-            businessId, startDate, endDate, // for totalProfit
-            businessId, startDate, endDate, // for totalSoldUnits
-            businessId, startDate, endDate, // for newCustomers
-            businessId, startDate, endDate  // for totalExpenses
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate
         ]);
 
-        // Transform numeric strings to numbers
         const transformedStats = {
             totalRevenue: Number(stats.totalRevenue),
             totalTransactions: Number(stats.totalTransactions),
@@ -80,7 +70,6 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching stats:", error);
-        console.error("Query params:", { businessId: req.user ? req.user.business_id : 'N/A', startDate: req.query.startDate, endDate: req.query.endDate });
         res.status(500).json({ 
             message: "Failed to fetch stats data.",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -114,6 +103,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
         
         const formattedSales = dailySales.map(item => ({
             ...item,
+            sales: parseFloat(item.sales),
             date: new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
         }));
         res.json(formattedSales);
@@ -124,7 +114,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT PRODUK TERLARIS (by quantity sold - for TopProductsChart)
+// ENDPOINT PRODUK TERLARIS
 router.get('/top-products', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -133,29 +123,25 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
         const topProductsQuery = `
             SELECT 
                 p.name,
-                COALESCE(SUM(oi.quantity), 0) as totalSold,
-                p.id as product_id,
-                p.stock as current_stock,
-                GROUP_CONCAT(DISTINCT pv.name) as variants
+                COALESCE(SUM(oi.quantity), 0) as totalSold
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
-            LEFT JOIN orders o ON oi.order_id = o.id
-            WHERE p.business_id = ?
-            AND o.business_id = ? AND o.created_at BETWEEN ? AND ?
-            GROUP BY p.name, p.id, p.stock
+            LEFT JOIN orders o ON oi.order_id = o.id AND o.created_at BETWEEN ? AND ?
+            WHERE p.business_id = ? AND p.is_archived = 0
+            GROUP BY p.id, p.name
             ORDER BY totalSold DESC
             LIMIT 5
         `;
-        const [topProducts] = await db.query(topProductsQuery, [businessId, businessId, startDate, endDate]);
+        const [topProducts] = await db.query(topProductsQuery, [startDate, endDate, businessId]);
         res.json(topProducts);
     } catch (error) {
         console.error("Error fetching top products:", error);
-        res.status(500).json({ message: "Failed to fetch top products data.", error: error.message, stack: error.stack });
+        res.status(500).json({ message: "Failed to fetch top products data." });
     }
 });
 
-// ENDPOINT: MENGAMBIL PERFORMA PENJUALAN SEMUA PRODUK (Product Sales Performance - for TopProductsChart)
+// ENDPOINT PERFORMA PENJUALAN SEMUA PRODUK
 router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -163,15 +149,13 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT
-                p.id,
-                p.name,
-                COALESCE(SUM(oi.quantity), 0) as totalSold
+                p.id, p.name, COALESCE(SUM(oi.quantity), 0) as totalSold
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id AND oi.order_id IN (
                 SELECT id FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
             )
-            WHERE p.business_id = ?
+            WHERE p.business_id = ? AND p.is_archived = 0
             GROUP BY p.id, p.name
             ORDER BY totalSold DESC, p.name ASC;
         `;
@@ -184,7 +168,7 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: Performa Kasir (Cashier Performance - for InfoTabs)
+// ENDPOINT Performa Kasir
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -192,8 +176,7 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT 
-                u.id, 
-                u.name, 
+                u.id, u.name, 
                 COALESCE(COUNT(o.id), 0) as totalTransactions,
                 COALESCE(SUM(o.total_amount), 0) as totalSales
             FROM users u
@@ -210,14 +193,39 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: GET /api/analytics/notifications (for NotificationsPanel)
+// ENDPOINT: NOTIFIKASI STOK
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const notifications = [];
+        let notifications = [];
 
-        // Removed Notifikasi Stok Rendah and Notifikasi Stok Habis queries
-        // As per request, this feature is removed.
+        // 1. Notifikasi Stok Habis (stock = 0)
+        const [outOfStockProducts] = await db.query(
+            `SELECT id, name FROM products WHERE business_id = ? AND stock = 0 AND is_archived = 0`,
+            [businessId]
+        );
+        outOfStockProducts.forEach(p => {
+            notifications.push({
+                id: `oos-${p.id}`,
+                type: 'danger',
+                icon: 'FiPackage',
+                text: `Stok produk "${p.name}" telah habis.`,
+            });
+        });
+
+        // 2. Notifikasi Stok Menipis (stock <= low_stock_threshold)
+        const [lowStockProducts] = await db.query(
+            `SELECT id, name, stock, low_stock_threshold FROM products WHERE business_id = ? AND stock > 0 AND stock <= low_stock_threshold AND is_archived = 0`,
+            [businessId]
+        );
+        lowStockProducts.forEach(p => {
+            notifications.push({
+                id: `low-${p.id}`,
+                type: 'warning',
+                icon: 'FiAlertTriangle',
+                text: `Stok produk "${p.name}" menipis. Sisa ${p.stock} unit (Batas: ${p.low_stock_threshold}).`,
+            });
+        });
 
         res.json(notifications);
 
@@ -227,15 +235,12 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: STOCK INFO (for InfoTabs product stock list)
+// ENDPOINT: STOCK INFO
 router.get('/stock-info', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const [products] = await db.query(
-            `SELECT p.id, p.name, p.stock, p.image_url 
-            FROM products p
-             WHERE p.business_id = ?
-             ORDER BY p.stock ASC, p.name ASC`,
+            `SELECT p.id, p.name, p.stock, p.image_url FROM products p WHERE p.business_id = ? AND p.is_archived = 0 ORDER BY p.stock ASC, p.name ASC`,
             [businessId]
         );
         res.json(products);
@@ -245,23 +250,20 @@ router.get('/stock-info', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: Get Stale Products (produk tidak laku - for InfoTabs)
+// ENDPOINT: Get Stale Products
 router.get('/stale-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days of inactivity
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT 
-                p.id, 
-                p.name, 
-                p.stock, 
-                MAX(o.created_at) AS lastSoldDate
+                p.id, p.name, p.stock, MAX(o.created_at) AS lastSoldDate
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
             LEFT JOIN orders o ON oi.order_id = o.id AND o.business_id = p.business_id
-            WHERE p.business_id = ? 
+            WHERE p.business_id = ? AND p.is_archived = 0
             GROUP BY p.id, p.name, p.stock
             HAVING (lastSoldDate IS NULL AND p.stock > 0) OR (DATEDIFF(NOW(), lastSoldDate) > ? AND p.stock > 0)
             ORDER BY lastSoldDate ASC, p.name ASC;
@@ -273,22 +275,16 @@ router.get('/stale-products', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch stale products data." });
     }
 });
-// ENDPOINT: Get Expired Products (produk mendekati kadaluarsa atau sudah kadaluarsa - for InfoTabs)
+
+// ENDPOINT: Get Expired Products
 router.get('/expired-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to products expiring within 30 days
+        const days = parseInt(req.query.days) || 30;
         
         const query = `
-            SELECT 
-                id, 
-                name, 
-                stock, 
-                expiration_date
-            FROM products 
-            WHERE business_id = ? 
-            AND expiration_date IS NOT NULL 
-            AND expiration_date <= DATE_ADD(NOW(), INTERVAL ? DAY)
+            SELECT id, name, stock, expiration_date FROM products 
+            WHERE business_id = ? AND expiration_date IS NOT NULL AND expiration_date <= DATE_ADD(NOW(), INTERVAL ? DAY) AND is_archived = 0
             ORDER BY expiration_date ASC;
         `;
         const [expiredProducts] = await db.query(query, [businessId, days]);
@@ -299,7 +295,7 @@ router.get('/expired-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Top Customers (Pelanggan Teratas - for InfoTabs)
+// ENDPOINT: Top Customers
 router.get('/top-customers', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -307,8 +303,7 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT 
-                c.id, 
-                c.name, 
+                c.id, c.name, 
                 COALESCE(SUM(o.total_amount), 0) as totalSpent,
                 COALESCE(COUNT(o.id), 0) as totalOrders
             FROM customers c
@@ -326,16 +321,15 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Recent Suppliers (Pemasok Terbaru - berdasarkan created_at - for InfoTabs)
+// ENDPOINT: Recent Suppliers
 router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const limit = parseInt(req.query.limit) || 5;
 
         const query = `
-            SELECT id, name, created_at 
-            FROM suppliers 
-            WHERE business_id = ?
+            SELECT id, name, created_at FROM suppliers 
+            WHERE business_id = ? AND is_archived = 0
             ORDER BY created_at DESC
             LIMIT ?;
         `;
@@ -347,19 +341,18 @@ router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Insights (for NotificationsPanel)
+// ENDPOINT: Insights
 router.get('/insights', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const insights = [];
 
-        // Example Insight 1: Check if sales targets are met
         const [[revenueTarget]] = await db.query('SELECT monthly_revenue_target FROM businesses WHERE id = ?', [businessId]);
         const [[currentMonthSales]] = await db.query(
             `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?`,
             [businessId, startDate, endDate]
-        ); // Using filtered date range for current month sales
+        );
 
         if (revenueTarget && revenueTarget.monthly_revenue_target > 0) {
             if (currentMonthSales.totalSales >= revenueTarget.monthly_revenue_target) {
@@ -372,19 +365,16 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             }
         }
 
-        // Example Insight 2: High Sales Day
         const [[topDay]] = await db.query(
             `SELECT DATE(created_at) as date, SUM(total_amount) as sales 
             FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
             GROUP BY DATE(created_at) ORDER BY sales DESC LIMIT 1`,
             [businessId, startDate, endDate]
         );
-        if (topDay && topDay.sales > 0) { // Add threshold here if needed
+        if (topDay && topDay.sales > 0) {
             insights.push({ id: 'insight-high-sales-day', type: 'info', icon: 'FiDollarSign', text: `Hari penjualan tertinggi Anda adalah ${new Date(topDay.date).toLocaleDateString('id-ID')}: Rp ${new Intl.NumberFormat('id-ID').format(topDay.sales)}.` });
         }
 
-
-        // Example Insight 3: No new customers
         const [[newCustCount]] = await db.query(`SELECT COALESCE(COUNT(id), 0) as count FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?`, [businessId, startDate, endDate]);
         if (newCustCount.count === 0) {
             insights.push({ id: 'insight-no-new-customers', type: 'info', icon: 'FiUsers', text: 'Tidak ada pelanggan baru dalam periode ini. Coba program loyalitas!' });
@@ -394,6 +384,55 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error fetching insights:", error);
         res.status(500).json({ message: "Failed to fetch insights data." });
+    }
+});
+
+// ENDPOINT BARU: LAPORAN PROFITABILITAS PRODUK
+router.get('/product-profitability', protect, isAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
+        const businessId = req.user.business_id;
+
+        const profitabilityQuery = `
+            SELECT
+                p.id,
+                p.name,
+                COALESCE(SUM(oi.quantity), 0) as total_quantity_sold,
+                CAST(COALESCE(SUM(oi.quantity * oi.price), 0) AS DECIMAL(15,2)) as total_revenue,
+                CAST(COALESCE(SUM(oi.quantity * oi.cost_price), 0) AS DECIMAL(15,2)) as total_cost,
+                CAST(COALESCE(SUM(oi.quantity * (oi.price - oi.cost_price)), 0) AS DECIMAL(15,2)) as total_profit,
+                CAST(
+                    CASE
+                        WHEN SUM(oi.quantity * oi.price) > 0
+                        THEN (SUM(oi.quantity * (oi.price - oi.cost_price)) / SUM(oi.quantity * oi.price)) * 100
+                        ELSE 0
+                    END
+                AS DECIMAL(10,2)) as profit_margin_percentage
+            FROM products p
+            JOIN order_items oi ON p.id = oi.product_id
+            JOIN orders o ON oi.order_id = o.id
+            WHERE p.business_id = ? AND o.created_at BETWEEN ? AND ? AND p.is_archived = 0
+            GROUP BY p.id, p.name
+            ORDER BY total_profit DESC;
+        `;
+
+        const [results] = await db.query(profitabilityQuery, [businessId, startDate, endDate]);
+        
+        // Konversi tipe data agar konsisten
+        const formattedResults = results.map(item => ({
+            ...item,
+            total_quantity_sold: Number(item.total_quantity_sold),
+            total_revenue: Number(item.total_revenue),
+            total_cost: Number(item.total_cost),
+            total_profit: Number(item.total_profit),
+            profit_margin_percentage: Number(item.profit_margin_percentage)
+        }));
+
+        res.json(formattedResults);
+
+    } catch (error) {
+        console.error("Error fetching product profitability:", error);
+        res.status(500).json({ message: "Gagal mengambil data profitabilitas produk." });
     }
 });
 

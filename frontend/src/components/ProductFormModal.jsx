@@ -7,7 +7,7 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 // --- Styled Components ---
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
@@ -24,7 +24,6 @@ const UploadButton = styled.button` background-color: var(--primary-color); colo
 const FileInput = styled.input` display: none; `;
 const Select = styled.select` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 20px; &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); } `;
 const VariantSection = styled.div` grid-column: 1 / -1; border-top: 1px solid var(--border-color); margin-top: 10px; padding-top: 20px; `;
-// <-- PERUBAHAN BARCODE 1: Menambah satu kolom untuk Barcode (menjadi 5 kolom + tombol)
 const VariantRow = styled.div` display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
 const AddVariantButton = styled.button` display: flex; align-items: center; gap: 5px; background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { opacity: 0.9; } `;
 const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
@@ -44,9 +43,9 @@ function ProductFormPage() {
         sub_category_id: '',
         supplier_id: '',
         stock: 0,
+        low_stock_threshold: 5, // Tambahkan state baru
         image_url: '',
         expiration_date: '',
-        // <-- PERUBAHAN BARCODE 2: Menambahkan 'barcode' ke state awal varian
         variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
     });
 
@@ -73,6 +72,7 @@ function ProductFormPage() {
                     sub_category_id: product.sub_category_id || '',
                     supplier_id: product.supplier_id || '',
                     stock: product.stock || 0,
+                    low_stock_threshold: product.low_stock_threshold || 5, // Tambahkan ini
                     image_url: product.image_url || '',
                     expiration_date: product.expiration_date ? new Date(product.expiration_date).toISOString().split('T')[0] : '',
                     variants: product.variants && product.variants.length > 0
@@ -81,7 +81,7 @@ function ProductFormPage() {
                             name: v.name || '',
                             price: v.price !== undefined ? v.price : '',
                             cost_price: v.cost_price !== undefined ? v.cost_price : '',
-                            barcode: v.barcode || '', // <-- PERUBAHAN BARCODE 3: Membaca data barcode
+                            barcode: v.barcode || '',
                           }))
                         : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
                 });
@@ -133,7 +133,6 @@ function ProductFormPage() {
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
         if (field === 'price' || field === 'cost_price') {
-            // Gunakan parseRupiah di sini
             newVariants[index][field] = value === '' ? '' : parseRupiah(value);
         } else {
             newVariants[index][field] = value;
@@ -144,7 +143,6 @@ function ProductFormPage() {
     const addVariant = () => {
         setFormData({
             ...formData,
-            // <-- PERUBAHAN BARCODE 4: Menambahkan 'barcode' saat membuat varian baru
             variants: [...formData.variants, { name: '', price: '', cost_price: '', barcode: '' }]
         });
     };
@@ -275,6 +273,13 @@ function ProductFormPage() {
                         <Label>Total Stok</Label>
                         <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
                     </InputGroup>
+                    
+                    {/* Input Group Baru untuk Ambang Batas Stok */}
+                    <InputGroup>
+                        <Label>Ambang Batas Stok Rendah</Label>
+                        <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
+                    </InputGroup>
+
                     <VariantSection>
                         <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
                         {formData.variants.map((variant, index) => (
@@ -294,7 +299,6 @@ function ProductFormPage() {
                                     onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
-                                {/* <-- PERUBAHAN BARCODE 5: Input untuk barcode ditambahkan di sini --> */}
                                 <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
                                 <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
                             </VariantRow>

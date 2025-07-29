@@ -38,7 +38,7 @@ import CustomerDetailPage from './pages/CustomerDetailPage';
 import ShiftHistoryPage from './pages/ShiftHistoryPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-
+import ProductProfitabilityReport from './pages/ProductProfitabilityReport'; // <-- IMPORT BARU
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -121,6 +121,7 @@ function AppContent() {
                                 <Route path="/products/edit/:id" element={<ProductFormPage />} />
                                 <Route path="/history" element={<HistoryPage />} />
                                 <Route path="/reports" element={<ReportsPage />} />
+                                <Route path="/reports/product-profitability" element={<ProductProfitabilityReport />} /> {/* <-- ROUTE BARU */}
                                 <Route path="/shift-history" element={<ShiftHistoryPage />} />
                                 <Route path="/users" element={<UsersPage />} />
                                 <Route path="/customers" element={<CustomerPage />} />

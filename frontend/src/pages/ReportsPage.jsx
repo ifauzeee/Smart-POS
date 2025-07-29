@@ -1,135 +1,116 @@
-// frontend/src/pages/ReportsPage.jsx
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { getSalesReportPdf, getUsers, getCustomers } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { FiFileText, FiTrendingUp, FiDownload } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
-import { FiFileText, FiDownload } from 'react-icons/fi';
 
-// --- Styled Components ---
-const PageContainer = styled.div` padding: 30px; max-width: 800px; margin: 0 auto; `;
-const PageHeader = styled.header` margin-bottom: 30px; `;
-const Title = styled.h1` font-size: 1.8rem; display: flex; align-items: center; gap: 12px; `;
-const FilterCard = styled.div` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 25px; `;
-const Grid = styled.div` display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; @media (max-width: 768px) { grid-template-columns: 1fr; } `;
-const InputGroup = styled.div` display: flex; flex-direction: column; gap: 8px; `;
-const Label = styled.label` font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); `;
-const Select = styled.select` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; `;
-const DatePickerWrapper = styled.div` .react-datepicker-wrapper input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; }`;
-const ButtonContainer = styled.div` margin-top: 25px; padding-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
-const GenerateButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
+const PageContainer = styled.div`
+    padding: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+`;
+
+const PageHeader = styled.header`
+    margin-bottom: 30px;
+`;
+
+const Title = styled.h1`
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+`;
+
+const ReportGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 25px;
+`;
+
+const ReportCard = styled.div`
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary-color);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+`;
+
+const CardTitle = styled.h3`
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+`;
+
+const CardDescription = styled.p`
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    flex-grow: 1;
+`;
+
+const ActionButton = styled.button`
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-top: auto; /* Mendorong tombol ke bawah */
+
+    &:hover {
+        background-color: var(--primary-hover);
+    }
+`;
 
 function ReportsPage() {
-    const [users, setUsers] = useState([]);
-    const [customers, setCustomers] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [filters, setFilters] = useState({
-        startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
-        endDate: new Date(),
-        userId: 'all',
-        customerId: 'all',
-    });
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [usersRes, customersRes] = await Promise.all([getUsers(), getCustomers()]);
-                setUsers(usersRes.data);
-                setCustomers(customersRes.data);
-            } catch (error) {
-                toast.error("Gagal memuat data filter.");
-            }
-        };
-        fetchData();
-    }, []);
-
-    const handleFilterChange = (e) => {
-        setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleDateChange = (name, date) => {
-        setFilters(prev => ({ ...prev, [name]: date }));
-    };
-
-    const handleGenerateReport = async () => {
-        setIsLoading(true);
-        try {
-            const response = await getSalesReportPdf(filters);
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            const fileName = `laporan-penjualan-${new Date().toISOString().slice(0, 10)}.pdf`;
-            link.setAttribute('download', fileName);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode.removeChild(link);
-            window.URL.revokeObjectURL(url);
-            toast.success("Laporan PDF berhasil dibuat!");
-        } catch (error) {
-            console.error("Report generation error:", error);
-            toast.error(error.response?.data?.message || "Gagal membuat laporan.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const navigate = useNavigate();
 
     return (
         <PageContainer>
             <PageHeader>
-                <Title><FiFileText /> Buat Laporan</Title>
+                <Title><FiFileText /> Pusat Laporan</Title>
             </PageHeader>
-            <FilterCard>
-                <Grid>
-                    <InputGroup>
-                        <Label>Dari Tanggal</Label>
-                        <DatePickerWrapper>
-                            <DatePicker
-                                selected={filters.startDate}
-                                onChange={(date) => handleDateChange('startDate', date)}
-                                dateFormat="dd/MM/yyyy"
-                                maxDate={filters.endDate}
-                            />
-                        </DatePickerWrapper>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Sampai Tanggal</Label>
-                        <DatePickerWrapper>
-                            <DatePicker
-                                selected={filters.endDate}
-                                onChange={(date) => handleDateChange('endDate', date)}
-                                dateFormat="dd/MM/yyyy"
-                                minDate={filters.startDate}
-                            />
-                        </DatePickerWrapper>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Filter Berdasarkan Kasir</Label>
-                        <Select name="userId" value={filters.userId} onChange={handleFilterChange}>
-                            <option value="all">Semua Kasir</option>
-                            {users.map(user => (
-                                <option key={user.id} value={user.id}>{user.name}</option>
-                            ))}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Filter Berdasarkan Pelanggan</Label>
-                        <Select name="customerId" value={filters.customerId} onChange={handleFilterChange}>
-                            <option value="all">Semua Pelanggan</option>
-                            {customers.map(customer => (
-                                <option key={customer.id} value={customer.id}>{customer.name}</option>
-                            ))}
-                        </Select>
-                    </InputGroup>
-                </Grid>
-                <ButtonContainer>
-                    <GenerateButton onClick={handleGenerateReport} disabled={isLoading}>
-                        <FiDownload />
-                        {isLoading ? 'Membuat Laporan...' : 'Buat & Unduh PDF'}
-                    </GenerateButton>
-                </ButtonContainer>
-            </FilterCard>
+            <ReportGrid>
+                <ReportCard>
+                    <CardTitle><FiTrendingUp /> Laporan Profitabilitas Produk</CardTitle>
+                    <CardDescription>
+                        Analisis mendalam tentang produk mana yang paling menguntungkan. Lihat total pendapatan, modal, laba kotor, dan marjin profit untuk setiap item.
+                    </CardDescription>
+                    <ActionButton onClick={() => navigate('/reports/product-profitability')}>
+                        Lihat Laporan
+                    </ActionButton>
+                </ReportCard>
+
+                <ReportCard>
+                    <CardTitle><FiDownload /> Laporan Penjualan (PDF)</CardTitle>
+                    <CardDescription>
+                        Hasilkan ringkasan penjualan dalam format PDF untuk periode tertentu. Cocok untuk dokumentasi dan arsip. (Fitur ini akan dikembangkan lebih lanjut)
+                    </CardDescription>
+                    <ActionButton onClick={() => toast.info('Fitur PDF sedang dalam pengembangan.')}>
+                        Hasilkan PDF
+                    </ActionButton>
+                </ReportCard>
+
+                {/* Anda bisa menambahkan kartu laporan lain di sini di masa depan */}
+
+            </ReportGrid>
         </PageContainer>
     );
 }

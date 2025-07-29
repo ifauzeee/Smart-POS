@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({
     baseURL: 'http://localhost:5000/api',
-    timeout: 30000, // Tetapkan di 30 detik. Jangan naikkan kecuali sudah yakin backend responsif.
+    timeout: 30000,
 });
 
 API.interceptors.request.use((config) => {
@@ -10,30 +10,25 @@ API.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    // Log requests for debugging, hanya di lingkungan pengembangan
     if (import.meta.env.DEV) {
         console.log('Sending request:', config.method, config.url, config.data);
     }
     return config;
 }, (error) => {
-    // Log request errors, hanya di lingkungan pengembangan
     if (import.meta.env.DEV) {
         console.error('Request error:', error.config?.method, error.config?.url, error.message);
     }
     return Promise.reject(error);
 });
 
-// Add a response interceptor to log responses and handle common errors
 API.interceptors.response.use(
     (response) => {
-        // Log responses, hanya di lingkungan pengembangan
         if (import.meta.env.DEV) {
             console.log('Received response:', response.config.method, response.config.url, response.status, response.data);
         }
         return response;
     },
     (error) => {
-        // Log response errors, hanya di lingkungan pengembangan
         if (import.meta.env.DEV) {
             console.error('Response error:', error.response?.config?.method, error.response?.config?.url, error.response?.status, error.message);
         }
@@ -41,19 +36,14 @@ API.interceptors.response.use(
             return Promise.reject(new Error('Koneksi timeout. Pastikan backend berjalan dan terhubung dengan benar.'));
         }
         if (error.response) {
-            // Server responded with a status other than 2xx
-            // The `error.response.data.message` is the custom error message from your backend
             return Promise.reject(error.response);
         } else if (error.request) {
-            // Request was made but no response was received
             return Promise.reject(new Error('Tidak ada respons dari server. Server mungkin tidak berjalan.'));
         } else {
-            // Something happened in setting up the request that triggered an Error
             return Promise.reject(new Error('Terjadi kesalahan saat menyiapkan permintaan.'));
         }
     }
 );
-
 
 // User Routes
 export const loginUser = (userData) => API.post('/users/login', userData);
@@ -181,6 +171,7 @@ export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 export const getSubCategories = (categoryId) => API.get(`/categories/${categoryId}/subcategories`);
 export const createSubCategory = (categoryId, subCategoryData) => API.post(`/categories/${categoryId}/subcategories`, subCategoryData);
 export const deleteSubCategory = (id) => API.delete(`/categories/subcategories/${id}`);
+
 // Supplier Routes
 export const getSuppliers = () => API.get('/suppliers');
 export const createSupplier = (supplierData) => API.post('/suppliers', supplierData);
@@ -225,6 +216,7 @@ export const getSalesReportPdf = (params) => {
         responseType: 'blob',
     });
 };
+export const getProductProfitabilityReport = (params) => API.get('/analytics/product-profitability', { params });
 
 // Shift Routes
 export const getCurrentShift = () => API.get('/shifts/current');
@@ -232,4 +224,5 @@ export const startShift = (data) => API.post('/shifts/start', data);
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);
+
 export default API;

@@ -6778,36 +6778,27 @@ const isAdmin = (req, res, next) => {
 // ENDPOINT STATS (Total Pendapatan, Transaksi, Laba, dll.)
 router.get('/stats', protect, isAdmin, async (req, res) => {
     try {
-        console.log('Received date range:', req.query.startDate, req.query.endDate);
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
+        const businessId = req.user.business_id;
         
-        console.log('Validated date range:', startDate, endDate);
-        
-        if (!req.user || !req.user.business_id) {
-            console.error('Missing business_id in user object');
+        if (!businessId) {
             return res.status(400).json({ message: 'Invalid business ID' });
         }
         
         if (!startDate || !endDate) {
-            return res.status(400).json({ 
-                message: "Invalid date range provided",
-                startDate: req.query.startDate,
-                endDate: req.query.endDate
-            });
+            return res.status(400).json({ message: "Invalid date range provided" });
         }
-        const businessId = req.user.business_id;
         
-        // Menggunakan COALESCE untuk memastikan nilai 0 jika tidak ada data
         const statsQuery = `
-            SELECT 
-                CAST(COALESCE(SUM(o.total_amount), 0) AS DECIMAL(15,2)) as totalRevenue,
-                COUNT(DISTINCT o.id) as totalTransactions,
+            SELECT
+                (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
+                (SELECT COUNT(id) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalTransactions,
                 CAST(
                     COALESCE(
                         (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
                         FROM order_items oi
-                         JOIN orders o2 ON oi.order_id = o2.id
-                         WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
+                        JOIN orders o2 ON oi.order_id = o2.id
+                        WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                     , 0) 
                 AS DECIMAL(15,2)) as totalProfit,
                 COALESCE((
@@ -6818,22 +6809,17 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
                 ), 0) as totalSoldUnits,
                 (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
                 (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
-            FROM orders AS o
-            LEFT JOIN order_items AS oi ON o.id = oi.order_id
-            LEFT JOIN product_variants AS pv ON oi.variant_id = pv.id
-            LEFT JOIN products AS p ON pv.product_id = p.id
-            WHERE o.business_id = ? AND o.created_at BETWEEN ? AND ?
         `;
 
         const [[stats]] = await db.query(statsQuery, [
-            businessId, startDate, endDate, // for profit calculation
-            businessId, startDate, endDate, // for sold units
-            businessId, startDate, endDate, // for newCustomers
-            businessId, startDate, endDate, // for totalExpenses
-            businessId, startDate, endDate  // for main query
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate,
+            businessId, startDate, endDate
         ]);
 
-        // Transform numeric strings to numbers
         const transformedStats = {
             totalRevenue: Number(stats.totalRevenue),
             totalTransactions: Number(stats.totalTransactions),
@@ -6847,7 +6833,6 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching stats:", error);
-        console.error("Query params:", { businessId, startDate, endDate });
         res.status(500).json({ 
             message: "Failed to fetch stats data.",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -6874,13 +6859,14 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
                 COALESCE(SUM(o.total_amount), 0) as sales
             FROM dates
             LEFT JOIN orders o ON DATE(o.created_at) = dates.date AND o.business_id = ?
-            GROUP BY dates.date  -- Changed to group by dates.date
+            GROUP BY dates.date
             ORDER BY date ASC
         `;
         const [dailySales] = await db.query(dailySalesQuery, [startDate, endDate, businessId]);
         
         const formattedSales = dailySales.map(item => ({
             ...item,
+            sales: parseFloat(item.sales),
             date: new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
         }));
         res.json(formattedSales);
@@ -6891,7 +6877,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT PRODUK TERLARIS (by quantity sold - for TopProductsChart)
+// ENDPOINT PRODUK TERLARIS
 router.get('/top-products', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -6900,29 +6886,25 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
         const topProductsQuery = `
             SELECT 
                 p.name,
-                COALESCE(SUM(oi.quantity), 0) as totalSold,
-                p.id as product_id,
-                p.stock as current_stock,
-                GROUP_CONCAT(DISTINCT pv.name) as variants
+                COALESCE(SUM(oi.quantity), 0) as totalSold
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
-            LEFT JOIN orders o ON oi.order_id = o.id
-            WHERE p.business_id = ?
-            AND o.business_id = ? AND o.created_at BETWEEN ? AND ?
-            GROUP BY p.name, p.id, p.stock
+            LEFT JOIN orders o ON oi.order_id = o.id AND o.created_at BETWEEN ? AND ?
+            WHERE p.business_id = ? AND p.is_archived = 0
+            GROUP BY p.id, p.name
             ORDER BY totalSold DESC
             LIMIT 5
         `;
-        const [topProducts] = await db.query(topProductsQuery, [businessId, businessId, startDate, endDate]);
+        const [topProducts] = await db.query(topProductsQuery, [startDate, endDate, businessId]);
         res.json(topProducts);
     } catch (error) {
         console.error("Error fetching top products:", error);
-        res.status(500).json({ message: "Failed to fetch top products data.", error: error.message, stack: error.stack });
+        res.status(500).json({ message: "Failed to fetch top products data." });
     }
 });
 
-// ENDPOINT: MENGAMBIL PERFORMA PENJUALAN SEMUA PRODUK (Product Sales Performance - for TopProductsChart)
+// ENDPOINT PERFORMA PENJUALAN SEMUA PRODUK
 router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -6930,15 +6912,13 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT
-                p.id,
-                p.name,
-                COALESCE(SUM(oi.quantity), 0) as totalSold
+                p.id, p.name, COALESCE(SUM(oi.quantity), 0) as totalSold
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id AND oi.order_id IN (
                 SELECT id FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
             )
-            WHERE p.business_id = ?
+            WHERE p.business_id = ? AND p.is_archived = 0
             GROUP BY p.id, p.name
             ORDER BY totalSold DESC, p.name ASC;
         `;
@@ -6951,7 +6931,7 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: Performa Kasir (Cashier Performance - for InfoTabs)
+// ENDPOINT Performa Kasir
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -6959,8 +6939,7 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT 
-                u.id, 
-                u.name, 
+                u.id, u.name, 
                 COALESCE(COUNT(o.id), 0) as totalTransactions,
                 COALESCE(SUM(o.total_amount), 0) as totalSales
             FROM users u
@@ -6977,14 +6956,39 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: GET /api/analytics/notifications (for NotificationsPanel)
+// ENDPOINT: NOTIFIKASI STOK (diaktifkan kembali)
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const notifications = [];
+        let notifications = [];
 
-        // Removed Notifikasi Stok Rendah and Notifikasi Stok Habis queries
-        // As per request, this feature is removed.
+        // 1. Notifikasi Stok Habis (stock = 0)
+        const [outOfStockProducts] = await db.query(
+            `SELECT id, name FROM products WHERE business_id = ? AND stock = 0 AND is_archived = 0`,
+            [businessId]
+        );
+        outOfStockProducts.forEach(p => {
+            notifications.push({
+                id: `oos-${p.id}`,
+                type: 'danger',
+                icon: 'FiPackage',
+                text: `Stok produk "${p.name}" telah habis.`,
+            });
+        });
+
+        // 2. Notifikasi Stok Menipis (stock <= low_stock_threshold)
+        const [lowStockProducts] = await db.query(
+            `SELECT id, name, stock, low_stock_threshold FROM products WHERE business_id = ? AND stock > 0 AND stock <= low_stock_threshold AND is_archived = 0`,
+            [businessId]
+        );
+        lowStockProducts.forEach(p => {
+            notifications.push({
+                id: `low-${p.id}`,
+                type: 'warning',
+                icon: 'FiAlertTriangle',
+                text: `Stok produk "${p.name}" menipis. Sisa ${p.stock} unit (Batas: ${p.low_stock_threshold}).`,
+            });
+        });
 
         res.json(notifications);
 
@@ -6994,15 +6998,12 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: STOCK INFO (for InfoTabs product stock list)
+// ENDPOINT: STOCK INFO
 router.get('/stock-info', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const [products] = await db.query(
-            `SELECT p.id, p.name, p.stock, p.image_url 
-            FROM products p
-             WHERE p.business_id = ?
-             ORDER BY p.stock ASC, p.name ASC`,
+            `SELECT p.id, p.name, p.stock, p.image_url FROM products p WHERE p.business_id = ? AND p.is_archived = 0 ORDER BY p.stock ASC, p.name ASC`,
             [businessId]
         );
         res.json(products);
@@ -7012,23 +7013,20 @@ router.get('/stock-info', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: Get Stale Products (produk tidak laku - for InfoTabs)
+// ENDPOINT: Get Stale Products
 router.get('/stale-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days of inactivity
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT 
-                p.id, 
-                p.name, 
-                p.stock, 
-                MAX(o.created_at) AS lastSoldDate
+                p.id, p.name, p.stock, MAX(o.created_at) AS lastSoldDate
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
             LEFT JOIN orders o ON oi.order_id = o.id AND o.business_id = p.business_id
-            WHERE p.business_id = ? 
+            WHERE p.business_id = ? AND p.is_archived = 0
             GROUP BY p.id, p.name, p.stock
             HAVING (lastSoldDate IS NULL AND p.stock > 0) OR (DATEDIFF(NOW(), lastSoldDate) > ? AND p.stock > 0)
             ORDER BY lastSoldDate ASC, p.name ASC;
@@ -7040,22 +7038,16 @@ router.get('/stale-products', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch stale products data." });
     }
 });
-// ENDPOINT: Get Expired Products (produk mendekati kadaluarsa atau sudah kadaluarsa - for InfoTabs)
+
+// ENDPOINT: Get Expired Products
 router.get('/expired-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to products expiring within 30 days
+        const days = parseInt(req.query.days) || 30;
         
         const query = `
-            SELECT 
-                id, 
-                name, 
-                stock, 
-                expiration_date
-            FROM products 
-            WHERE business_id = ? 
-            AND expiration_date IS NOT NULL 
-            AND expiration_date <= DATE_ADD(NOW(), INTERVAL ? DAY)
+            SELECT id, name, stock, expiration_date FROM products 
+            WHERE business_id = ? AND expiration_date IS NOT NULL AND expiration_date <= DATE_ADD(NOW(), INTERVAL ? DAY) AND is_archived = 0
             ORDER BY expiration_date ASC;
         `;
         const [expiredProducts] = await db.query(query, [businessId, days]);
@@ -7066,7 +7058,7 @@ router.get('/expired-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Top Customers (Pelanggan Teratas - for InfoTabs)
+// ENDPOINT: Top Customers
 router.get('/top-customers', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7074,8 +7066,7 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
 
         const query = `
             SELECT 
-                c.id, 
-                c.name, 
+                c.id, c.name, 
                 COALESCE(SUM(o.total_amount), 0) as totalSpent,
                 COALESCE(COUNT(o.id), 0) as totalOrders
             FROM customers c
@@ -7093,16 +7084,15 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Recent Suppliers (Pemasok Terbaru - berdasarkan created_at - for InfoTabs)
+// ENDPOINT: Recent Suppliers
 router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const limit = parseInt(req.query.limit) || 5;
 
         const query = `
-            SELECT id, name, created_at 
-            FROM suppliers 
-            WHERE business_id = ?
+            SELECT id, name, created_at FROM suppliers 
+            WHERE business_id = ? AND is_archived = 0
             ORDER BY created_at DESC
             LIMIT ?;
         `;
@@ -7114,19 +7104,18 @@ router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: Insights (for NotificationsPanel)
+// ENDPOINT: Insights
 router.get('/insights', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const insights = [];
 
-        // Example Insight 1: Check if sales targets are met
         const [[revenueTarget]] = await db.query('SELECT monthly_revenue_target FROM businesses WHERE id = ?', [businessId]);
         const [[currentMonthSales]] = await db.query(
             `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?`,
             [businessId, startDate, endDate]
-        ); // Using filtered date range for current month sales
+        );
 
         if (revenueTarget && revenueTarget.monthly_revenue_target > 0) {
             if (currentMonthSales.totalSales >= revenueTarget.monthly_revenue_target) {
@@ -7139,19 +7128,16 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             }
         }
 
-        // Example Insight 2: High Sales Day
         const [[topDay]] = await db.query(
             `SELECT DATE(created_at) as date, SUM(total_amount) as sales 
             FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
             GROUP BY DATE(created_at) ORDER BY sales DESC LIMIT 1`,
             [businessId, startDate, endDate]
         );
-        if (topDay && topDay.sales > 0) { // Add threshold here if needed
+        if (topDay && topDay.sales > 0) {
             insights.push({ id: 'insight-high-sales-day', type: 'info', icon: 'FiDollarSign', text: `Hari penjualan tertinggi Anda adalah ${new Date(topDay.date).toLocaleDateString('id-ID')}: Rp ${new Intl.NumberFormat('id-ID').format(topDay.sales)}.` });
         }
 
-
-        // Example Insight 3: No new customers
         const [[newCustCount]] = await db.query(`SELECT COALESCE(COUNT(id), 0) as count FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?`, [businessId, startDate, endDate]);
         if (newCustCount.count === 0) {
             insights.push({ id: 'insight-no-new-customers', type: 'info', icon: 'FiUsers', text: 'Tidak ada pelanggan baru dalam periode ini. Coba program loyalitas!' });
@@ -7657,8 +7643,7 @@ const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
-const nodemailer = require('nodemailer');
-const { decrypt } = require('../utils/encryption');
+const { sendReceiptEmail } = require('../utils/emailService'); // Updated import
 const { logActivity } = require('../utils/logUtils');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
@@ -7906,170 +7891,41 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
         return res.status(400).json({ message: 'Alamat email penerima diperlukan.' });
     }
 
-    let connection;
     try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        const [[emailSettings]] = await connection.query(
-            'SELECT sender_email, app_password, sender_name FROM email_settings WHERE business_id = ?',
-            [businessId]
-        );
-
-        if (!emailSettings || !emailSettings.sender_email || !emailSettings.app_password) {
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Missing email settings for business ID ${businessId}.`);
-            return res.status(400).json({ message: 'Konfigurasi email pengirim belum lengkap di pengaturan. Harap atur email dan Sandi Aplikasi di halaman Setelan.' });
-        }
-
-        let decryptedAppPassword;
-        try {
-            decryptedAppPassword = decrypt(emailSettings.app_password);
-        } catch (decryptError) {
-            console.error("Error decrypting app password:", decryptError);
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to decrypt app password for business ID ${businessId}. Error: ${decryptError.message}`);
-            return res.status(500).json({ message: 'Gagal mendekripsi sandi aplikasi. Periksa setelan email.' });
-        }
-
+        // Ambil data order dan bisnis
         const orderSql = `
-            SELECT
-                o.id, o.created_at, o.subtotal_amount, o.tax_amount, o.total_amount, o.payment_method, u.name as cashier_name, c.name as customer_name,
-                o.amount_paid, b.receipt_footer_text, b.receipt_logo_url, b.receipt_template, b.business_name
+            SELECT o.*, u.name as cashier_name, c.name as customer_name
             FROM orders o
             JOIN users u ON o.user_id = u.id
             LEFT JOIN customers c ON o.customer_id = c.id
-            JOIN businesses b ON o.business_id = b.id
-            WHERE o.id = ? AND o.business_id = ?
-        `;
-        const [[order]] = await connection.query(orderSql, [orderId, businessId]);
+            WHERE o.id = ? AND o.business_id = ?`;
+        const [[order]] = await db.query(orderSql, [orderId, businessId]);
 
         if (!order) {
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Order ID ${orderId} not found for receipt sending.`);
+            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Order ID ${orderId} not found.`);
             return res.status(404).json({ message: 'Pesanan tidak ditemukan.' });
         }
 
-        const itemsSql = `
-            SELECT oi.quantity, oi.price, p.name as product_name, pv.name as variant_name
-            FROM order_items oi
-            JOIN products p ON oi.product_id = p.id
-            LEFT JOIN product_variants pv ON oi.variant_id = pv.id
-            WHERE oi.order_id = ?
-        `;
+        const itemsSql = `SELECT oi.quantity, oi.price, p.name as product_name, pv.name as variant_name FROM order_items oi JOIN products p ON oi.product_id = p.id LEFT JOIN product_variants pv ON oi.variant_id = pv.id WHERE oi.order_id = ?`;
         const [items] = await db.query(itemsSql, [orderId]);
         order.items = items;
 
-        let transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: emailSettings.sender_email,
-                pass: decryptedAppPassword,
-            },
-        });
+        const [[businessInfo]] = await db.query('SELECT id, business_name, receipt_footer_text, receipt_logo_url FROM businesses WHERE id = ?', [businessId]);
 
-        const orderDate = new Date(order.created_at).toLocaleString('id-ID', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        const senderDisplayName = emailSettings.sender_name || order.business_name || "Smart POS";
+        // Panggil service email dengan data yang sudah siap
+        await sendReceiptEmail(recipientEmail, order, businessInfo);
 
-        let itemsHtml = order.items.map(item => `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp ${new Intl.NumberFormat('id-ID').format(item.price)}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp ${new Intl.NumberFormat('id-ID').format(item.quantity * item.price)}</td>
-            </tr>
-        `).join('');
-
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                ${order.receipt_logo_url ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${order.receipt_logo_url}" alt="Business Logo" style="max-width: 150px; height: auto;"></div>` : ''}
-                <h2 style="text-align: center; color: #333;">Struk Pembelian ${order.business_name || ''}</h2>
-                <p><strong>Tanggal:</strong> ${orderDate}</p>
-                <p><strong>Nomor Pesanan:</strong> #${order.id}</p>
-                <p><strong>Kasir:</strong> ${order.cashier_name}</p>
-                ${order.customer_name ? `<p><strong>Pelanggan:</strong> ${order.customer_name}</p>` : ''}
-                <p><strong>Metode Pembayaran:</strong> ${order.payment_method}</p>
-                
-                <h3 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Detail Pesanan:</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <thead>
-                        <tr style="background-color: #f2f2f2;">
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left;">Item</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">Qty</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Harga Satuan</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right;"><strong>Subtotal:</strong></td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.subtotal_amount)}</td>
-                        </tr>
-                        ${order.tax_amount > 0 ? `
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right;"><strong>Pajak:</strong></td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.tax_amount)}</td>
-                        </tr>
-                        ` : ''}
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">Total Akhir:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">${formatRupiah(order.total_amount)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Dibayar:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid)}</td>
-                        </tr>
-                        ${order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) > 0 ? `
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Kembalian:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid - order.total_amount)}</td>
-                        </tr>
-                        ` : ''}
-                    </tfoot>
-                </table>
-                <p style="text-align: center; color: #555;">${order.receipt_footer_text || 'Terima kasih atas pembelian Anda!'}</p>
-                <p style="text-align: center; font-size: 0.8em; color: #888;">Struk ini dihasilkan secara otomatis.</p>
-            </div>
-        `;
-
-        await transporter.sendMail({
-            from: `"${senderDisplayName}" <${emailSettings.sender_email}>`,
-            to: recipientEmail,
-            subject: `Struk Pembelian Toko #${order.id}`,
-            html: emailHtml,
-        });
-
-        await connection.commit();
         await logActivity(businessId, userId, 'SEND_RECEIPT_SUCCESS', `Receipt for order ID ${orderId} sent to ${recipientEmail}.`);
         res.status(200).json({ message: 'Struk berhasil dikirim.' });
 
     } catch (error) {
-        if (connection) {
-            await connection.rollback();
-        }
         console.error("Error sending receipt:", error);
-        if (error.code === 'EENVELOPE' || error.responseCode === 535) {
-             res.status(500).json({ message: 'Gagal mengirim struk: Kesalahan otentikasi email pengirim. Pastikan email dan Sandi Aplikasi benar.' });
-        } else if (error.message.includes('Konfigurasi email')) {
-            res.status(400).json({ message: error.message });
-        } else if (error.responseCode === 550) {
-             res.status(500).json({ message: 'Gagal mengirim struk: Alamat email penerima tidak valid atau ditolak.' });
+        await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to send receipt for order ID ${orderId}. Error: ${error.message}`);
+
+        if (error.responseCode === 535) {
+            return res.status(500).json({ message: 'Gagal mengirim struk: Kesalahan otentikasi. Periksa setelan email Anda.' });
         }
-        else {
-            res.status(500).json({ message: 'Gagal mengirim struk: Terjadi kesalahan server.' });
-        }
-        await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to send receipt for order ID ${orderId} to ${recipientEmail}. Error: ${error.message}`);
-    } finally {
-        if (connection) {
-            connection.release();
-        }
+        res.status(500).json({ message: error.message || 'Gagal mengirim struk.' });
     }
 });
 
@@ -8191,7 +8047,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 
 module.exports = router;
 
-
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\productRoutes.js =====
 
 // backend/routes/productRoutes.js
@@ -8209,9 +8064,10 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// CREATE: Menambah produk baru dengan stok terpusat
+// CREATE: Menambah produk baru dengan stok terpusat dan ambang batas
 router.post('/', protect, isAdmin, async (req, res) => {
-    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants } = req.body;
+    // Tambahkan low_stock_threshold dari req.body
+    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants, low_stock_threshold } = req.body;
     const businessId = req.user.business_id;
 
     if (!name || !variants || variants.length === 0) {
@@ -8230,8 +8086,10 @@ router.post('/', protect, isAdmin, async (req, res) => {
         const finalSupplierId = supplier_id || null;
         const finalExpirationDate = expiration_date || null;
 
-        const productSql = 'INSERT INTO products (business_id, name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const [productResult] = await connection.query(productSql, [businessId, name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate]);
+        // Tambahkan kolom dan placeholder baru di query SQL
+        const productSql = 'INSERT INTO products (business_id, name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        // Tambahkan variabel baru ke array parameter, beri default 5 jika tidak diisi
+        const [productResult] = await connection.query(productSql, [businessId, name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, low_stock_threshold || 5]);
         const productId = productResult.insertId;
 
         for (const variant of variants) {
@@ -8256,28 +8114,26 @@ router.post('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// READ ALL: Mengambil semua produk ATAU satu produk via barcode
+// READ ALL: Mengambil semua produk (sudah dimodifikasi untuk soft delete)
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const { barcode } = req.query; // Ambil parameter barcode dari query
+        const { barcode } = req.query;
 
         let productsSql;
         let params = [];
 
         if (barcode) {
-            // Jika ada parameter barcode, cari produk spesifik berdasarkan barcode variannya
             productsSql = `
                 SELECT p.* FROM products p 
                 JOIN product_variants pv ON p.id = pv.product_id 
-                WHERE pv.barcode = ? AND p.business_id = ?
+                WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0
             `;
             params = [barcode, businessId];
         } else {
-            // Jika tidak ada, ambil semua produk seperti biasa
             productsSql = `
                 SELECT 
-                    p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date,
+                    p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold,
                     c.name AS category_name,
                     sc.name AS sub_category_name,
                     s.name as supplier_name
@@ -8285,7 +8141,7 @@ router.get('/', protect, async (req, res) => {
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
                 LEFT JOIN suppliers AS s ON p.supplier_id = s.id
-                WHERE p.business_id = ? 
+                WHERE p.business_id = ? AND p.is_archived = 0
                 ORDER BY p.created_at DESC
             `;
             params = [businessId];
@@ -8315,7 +8171,7 @@ router.get('/:id', protect, async (req, res) => {
         const businessId = req.user.business_id;
         const productSql = `
             SELECT 
-                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date,
+                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold,
                 c.name AS category_name,
                 sc.name AS sub_category_name,
                 s.name as supplier_name
@@ -8323,7 +8179,7 @@ router.get('/:id', protect, async (req, res) => {
             LEFT JOIN categories AS c ON p.category_id = c.id
             LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
             LEFT JOIN suppliers AS s ON p.supplier_id = s.id
-            WHERE p.id = ? AND p.business_id = ?
+            WHERE p.id = ? AND p.business_id = ? AND p.is_archived = 0
         `;
         const [[product]] = await db.query(productSql, [productId, businessId]);
 
@@ -8343,10 +8199,11 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// UPDATE: Memperbarui produk dengan stok terpusat
+// UPDATE: Memperbarui produk dengan stok terpusat dan ambang batas
 router.put('/:id', protect, isAdmin, async (req, res) => {
     const productId = req.params.id;
-    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants } = req.body;
+    // Tambahkan low_stock_threshold dari req.body
+    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants, low_stock_threshold } = req.body;
     const businessId = req.user.business_id;
 
     if (!name || !variants || variants.length === 0 || stock === undefined) {
@@ -8362,8 +8219,10 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
         const finalSupplierId = supplier_id || null;
         const finalExpirationDate = expiration_date || null;
 
-        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ? WHERE id = ? AND business_id = ?';
-        await connection.query(productSql, [name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, productId, businessId]);
+        // Tambahkan kolom baru di query SQL UPDATE
+        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ?, low_stock_threshold = ? WHERE id = ? AND business_id = ?';
+        // Tambahkan variabel baru ke array parameter
+        await connection.query(productSql, [name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, low_stock_threshold || 5, productId, businessId]);
 
         await connection.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
 
@@ -8389,35 +8248,22 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
     }
 });
 
-// DELETE: Menghapus produk
+// DELETE: Mengarsipkan produk (Soft Delete)
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const productId = req.params.id;
     const businessId = req.user.business_id;
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
-        
-        await connection.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
-        
-        const [result] = await connection.query('DELETE FROM products WHERE id = ? AND business_id = ?', [productId, businessId]);
+        const [result] = await db.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         
         if (result.affectedRows === 0) {
-            await connection.rollback();
             return res.status(404).json({ message: 'Produk tidak ditemukan atau Anda tidak punya akses.' });
         }
         
-        await connection.commit();
-        await logActivity(businessId, req.user.id, 'DELETE_PRODUCT', `Deleted product ID: ${productId}`);
-        res.json({ message: 'Produk berhasil dihapus.' });
+        await logActivity(businessId, req.user.id, 'DELETE_PRODUCT', `Archived product ID: ${productId}`);
+        res.json({ message: 'Produk berhasil diarsipkan.' });
     } catch (error) {
-        await connection.rollback();
-        console.error('Error deleting product:', error);
-        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-            return res.status(400).json({ message: 'Gagal menghapus: Produk ini sudah pernah ada dalam transaksi. Hapus transaksi terkait terlebih dahulu.' });
-        }
+        console.error('Error archiving product:', error);
         res.status(500).json({ message: 'Server Error' });
-    } finally {
-        connection.release();
     }
 });
 
@@ -9125,11 +8971,10 @@ module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\supplierRoutes.js =====
 
-// FILE: supplierRoutes.js
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
-const { logActivity } = require('../utils/logUtils'); // <-- TAMBAH INI
+const { logActivity } = require('../utils/logUtils'); // <-- Pastikan ini ada
 const router = express.Router();
 
 const isAdmin = (req, res, next) => {
@@ -9139,17 +8984,18 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// GET semua supplier berdasarkan business_id
+// GET semua supplier berdasarkan business_id (yang tidak diarsipkan)
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const [suppliers] = await db.query('SELECT id, name, contact_person, phone, email, address, created_at FROM suppliers WHERE business_id = ? ORDER BY name ASC', [businessId]);
+        const [suppliers] = await db.query('SELECT id, name, contact_person, phone, email, address, created_at FROM suppliers WHERE business_id = ? AND is_archived = 0 ORDER BY name ASC', [businessId]);
         res.json(suppliers);
     } catch (error) {
         console.error('Error fetching suppliers:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
 // POST buat supplier baru dengan business_id
 router.post('/', protect, isAdmin, async (req, res) => {
     const { name, contact_person, phone, email, address } = req.body;
@@ -9160,14 +9006,15 @@ router.post('/', protect, isAdmin, async (req, res) => {
             [businessId, name, contact_person || null, phone || null, email || null, address || null]
         );
         const supplierId = result.insertId;
-        await logActivity(businessId, req.user.id, 'CREATE_SUPPLIER', `Created supplier: ${name} (ID: ${supplierId}).`); // <-- LOG BERHASIL
+        await logActivity(businessId, req.user.id, 'CREATE_SUPPLIER', `Created supplier: ${name} (ID: ${supplierId}).`);
         res.status(201).json({ message: 'Supplier berhasil dibuat.', supplierId: supplierId });
     } catch (error) {
         console.error('Error creating supplier:', error);
-        await logActivity(businessId, req.user.id, 'CREATE_SUPPLIER_FAILED', `Failed to create supplier ${name}. Error: ${error.message}`); // <-- LOG GAGAL
+        await logActivity(businessId, req.user.id, 'CREATE_SUPPLIER_FAILED', `Failed to create supplier ${name}. Error: ${error.message}`);
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
 // PUT update supplier
 router.put('/:id', protect, isAdmin, async (req, res) => {
     const supplierId = req.params.id;
@@ -9179,37 +9026,43 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
             [name, contact_person || null, phone || null, email || null, address || null, supplierId, businessId]
         );
         if (result.affectedRows === 0) {
-            await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER_FAILED', `Attempted to update non-existent or unauthorized supplier ID ${supplierId}.`); // <-- LOG GAGAL
+            await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER_FAILED', `Attempted to update non-existent or unauthorized supplier ID ${supplierId}.`);
             return res.status(404).json({ message: 'Supplier tidak ditemukan atau Anda tidak punya akses.' });
         }
-        await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER', `Updated supplier ID ${supplierId} to name ${name}.`); // <-- LOG BERHASIL
+        await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER', `Updated supplier ID ${supplierId} to name ${name}.`);
         res.json({ message: 'Supplier berhasil diperbarui.' });
     } catch (error) {
         console.error('Error updating supplier:', error);
-        await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER_ERROR', `Error updating supplier ID ${supplierId}. Error: ${error.message}`); // <-- LOG ERROR SERVER
+        await logActivity(businessId, req.user.id, 'UPDATE_SUPPLIER_ERROR', `Error updating supplier ID ${supplierId}. Error: ${error.message}`);
         res.status(500).json({ message: 'Server Error' });
     }
 });
-// DELETE supplier
+
+// DELETE (Soft Delete): Mengarsipkan supplier
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const supplierId = req.params.id;
     const businessId = req.user.business_id;
     try {
+        // Opsional: Anda mungkin ingin memeriksa apakah ada produk yang masih terkait dengan supplier ini
+        // Jika ada, putuskan hubungan supplier_id menjadi NULL di tabel products
         await db.query('UPDATE products SET supplier_id = NULL WHERE supplier_id = ? AND business_id = ?', [supplierId, businessId]);
         
-        const [result] = await db.query('DELETE FROM suppliers WHERE id = ? AND business_id = ?', [supplierId, businessId]);
+        // Perubahan di sini: Update is_archived menjadi 1
+        const [result] = await db.query('UPDATE suppliers SET is_archived = 1 WHERE id = ? AND business_id = ?', [supplierId, businessId]);
+        
         if (result.affectedRows === 0) {
-            await logActivity(businessId, req.user.id, 'DELETE_SUPPLIER_FAILED', `Attempted to delete non-existent or unauthorized supplier ID ${supplierId}.`); // <-- LOG GAGAL
+            await logActivity(businessId, req.user.id, 'DELETE_SUPPLIER_FAILED', `Attempted to archive non-existent or unauthorized supplier ID ${supplierId}.`);
             return res.status(404).json({ message: 'Supplier tidak ditemukan atau Anda tidak punya akses.' });
         }
-        await logActivity(businessId, req.user.id, 'DELETE_SUPPLIER', `Deleted supplier ID ${supplierId}.`); // <-- LOG BERHASIL
-        res.json({ message: 'Supplier berhasil dihapus.' });
+        await logActivity(businessId, req.user.id, 'ARCHIVE_SUPPLIER', `Archived supplier ID ${supplierId}.`);
+        res.json({ message: 'Supplier berhasil diarsipkan.' });
     } catch (error) {
-        console.error('Error deleting supplier:', error);
-        await logActivity(businessId, req.user.id, 'DELETE_SUPPLIER_ERROR', `Error deleting supplier ID ${supplierId}. Error: ${error.message}`); // <-- LOG ERROR SERVER
+        console.error('Error archiving supplier:', error);
+        await logActivity(businessId, req.user.id, 'DELETE_SUPPLIER_ERROR', `Error archiving supplier ID ${supplierId}. Error: ${error.message}`);
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
 module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\uploadRoutes.js =====
@@ -9644,6 +9497,102 @@ const getValidDateRange = (startDateStr, endDateStr) => {
 };
 
 module.exports = { getValidDateRange };
+
+===== C:\Users\Ibnu\Project\smart-pos\backend\utils\emailService.js =====
+
+// backend/utils/emailService.js
+
+const nodemailer = require('nodemailer');
+const db = require('../config/db');
+const { decrypt } = require('./encryption');
+
+const formatRupiah = (number) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(number);
+};
+
+async function sendReceiptEmail(recipientEmail, order, businessInfo) {
+    const [[emailSettings]] = await db.query(
+        'SELECT sender_email, app_password, sender_name FROM email_settings WHERE business_id = ?',
+        [businessInfo.id]
+    );
+
+    if (!emailSettings || !emailSettings.sender_email || !emailSettings.app_password) {
+        throw new Error('Konfigurasi email pengirim belum lengkap di pengaturan.');
+    }
+
+    const decryptedAppPassword = decrypt(emailSettings.app_password);
+
+    let transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+            user: emailSettings.sender_email,
+            pass: decryptedAppPassword,
+        },
+    });
+
+    const orderDate = new Date(order.created_at).toLocaleString('id-ID', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const senderDisplayName = emailSettings.sender_name || businessInfo.business_name || "Smart POS";
+
+    let itemsHtml = order.items.map(item => `
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatRupiah(item.price)}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${formatRupiah(item.quantity * item.price)}</td>
+        </tr>
+    `).join('');
+
+    const emailHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+        ${businessInfo.receipt_logo_url ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${businessInfo.receipt_logo_url}" alt="Business Logo" style="max-width: 150px; height: auto;"></div>` : ''}
+        <h2 style="text-align: center; color: #333;">Struk Pembelian ${businessInfo.business_name || ''}</h2>
+        <p><strong>Tanggal:</strong> ${orderDate}</p>
+        <p><strong>Nomor Pesanan:</strong> #${order.id}</p>
+        <p><strong>Kasir:</strong> ${order.cashier_name}</p>
+        ${order.customer_name ? `<p><strong>Pelanggan:</strong> ${order.customer_name}</p>` : ''}
+        <p><strong>Metode Pembayaran:</strong> ${order.payment_method}</p>
+
+        <h3 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Detail Pesanan:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background-color: #f2f2f2;">
+                    <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left;">Item</th>
+                    <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">Qty</th>
+                    <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Harga Satuan</th>
+                    <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+            <tfoot>
+                <tr><td colspan="3" style="padding: 10px; text-align: right;"><strong>Subtotal:</strong></td><td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.subtotal_amount)}</td></tr>
+                ${order.tax_amount > 0 ? `<tr><td colspan="3" style="padding: 10px; text-align: right;"><strong>Pajak:</strong></td><td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.tax_amount)}</td></tr>` : ''}
+                <tr><td colspan="3" style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">Total Akhir:</td><td style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">${formatRupiah(order.total_amount)}</td></tr>
+                <tr><td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Dibayar:</td><td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid)}</td></tr>
+                ${order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) > 0 ? `<tr><td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Kembalian:</td><td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid - order.total_amount)}</td></tr>` : ''}
+            </tfoot>
+        </table>
+        <p style="text-align: center; color: #555;">${businessInfo.receipt_footer_text || 'Terima kasih atas pembelian Anda!'}</p>
+    </div>
+    `;
+
+    await transporter.sendMail({
+        from: `"${senderDisplayName}" <${emailSettings.sender_email}>`,
+        to: recipientEmail,
+        subject: `Struk Pembelian #${order.id}`,
+        html: emailHtml,
+    });
+}
+
+module.exports = { sendReceiptEmail };
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\utils\encryption.js =====
 
@@ -15442,16 +15391,7 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiDollarSign, FiCreditCard, FiSmartphone, FiBox } from 'react-icons/fi';
-
-const formatCurrency = (value) => {
-  if (!value || isNaN(value)) return '0';
-  return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(value);
-};
-
-const parseCurrency = (value) => {
-  const cleaned = String(value).replace(/[^0-9]/g, '');
-  return cleaned ? parseFloat(cleaned) : '';
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed;
@@ -15625,18 +15565,18 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
             <ModalBody>
               <InfoRow>
                 <span>Subtotal:</span>
-                <span>Rp {formatCurrency(cartTotal)}</span>
+                <span>Rp {formatRupiah(cartTotal)}</span>
               </InfoRow>
               {taxRate > 0 && (
                 <InfoRow>
                     <span>Pajak ({(taxRate * 100).toFixed(1)}%):</span>
-                    <span>Rp {formatCurrency(taxAmount)}</span>
+                    <span>Rp {formatRupiah(taxAmount)}</span>
                 </InfoRow>
               )}
               <InfoRow style={{fontSize: '1.2rem', color: 'var(--text-primary)', borderTop: '1px solid var(--border-color)', paddingTop: '15px'}}>
                 <strong>Total Akhir:</strong>
-                <strong>Rp {formatCurrency(finalTotal)}</strong>
-              </InfoRow>
+                <strong>Rp {formatRupiah(finalTotal)}</strong>
+               </InfoRow>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                   Metode Pembayaran
@@ -15647,39 +15587,39 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
                       {getPaymentIcon('Tunai')} Tunai
                     </PaymentButton>
                   ) : (
-                    paymentMethods.map((method) => (
+                     paymentMethods.map((method) => (
                       <PaymentButton
                         key={method}
                         $active={paymentMethod === method}
                         onClick={() => setPaymentMethod(method)}
-                        aria-label={`Pilih metode pembayaran ${method}`}
+                         aria-label={`Pilih metode pembayaran ${method}`}
                       >
                         {getPaymentIcon(method)} {method}
                       </PaymentButton>
                     ))
-                  )}
+                   )}
                 </PaymentMethodContainer>
               </div>
               {paymentMethod === 'Tunai' && (
                 <>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                       Uang Dibayar (Rp)
                     </label>
                     <Input
                       type="text"
-                      value={formatCurrency(amountPaid)}
-                      onChange={(e) => setAmountPaid(parseCurrency(e.target.value))}
+                      value={formatRupiah(amountPaid)}
+                      onChange={(e) => setAmountPaid(parseRupiah(e.target.value))}
                       placeholder="0"
                       autoFocus
                     />
-                  </div>
+                   </div>
                   <InfoRow>
                     <span>Kembalian:</span>
-                    <span>Rp {formatCurrency(change)}</span>
+                    <span>Rp {formatRupiah(change)}</span>
                   </InfoRow>
                 </>
-              )}
+               )}
             </ModalBody>
             <ModalFooter>
               <Button onClick={onClose}>Batal</Button>
@@ -15694,6 +15634,8 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
   );
 }
 
+export default CheckoutModal;
+
 CheckoutModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
@@ -15703,19 +15645,18 @@ CheckoutModal.propTypes = {
   taxRate: PropTypes.number,
 };
 
-export default CheckoutModal;
-
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CloseShiftModal.jsx =====
 
 // frontend/src/components/CloseShiftModal.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FiLogOut } from 'react-icons/fi';
 import { closeShift } from '../services/api';
 import { toast } from 'react-toastify';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 
 const ModalBackdrop = styled(motion.div)`
@@ -15733,14 +15674,13 @@ const Label = styled.label` font-weight: 500; color: var(--text-secondary); marg
 const Input = styled.input`
     width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary);
     
-    /* Styles to remove spin buttons (up/down arrows) */
     &[type="number"] {
-        -moz-appearance: textfield; /* Firefox */
+        -moz-appearance: textfield;
     }
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
-        -webkit-appearance: none; /* Safari, Chrome */
-        margin: 0; /* Important for Safari, Chrome to remove extra space */
+        -webkit-appearance: none;
+        margin: 0;
     }
 `;
 const Button = styled.button` padding: 12px 20px; border-radius: 8px; border: none; background-color: var(--red-color); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:disabled { opacity: 0.5; } `;
@@ -15751,7 +15691,6 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Gunakan parseFloat langsung pada state endingCash yang sudah diproses oleh parseRupiah
         const cashAmount = parseFloat(endingCash);
         if (isNaN(cashAmount) || cashAmount < 0) {
             return toast.error("Masukkan jumlah kas akhir yang valid.");
@@ -15781,13 +15720,11 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
                 <Form onSubmit={handleSubmit}>
                     <div>
                         <Label htmlFor="endingCash">Total Kas Fisik Akhir (Rp)</Label>
-                        {/* NEW: Ubah type ke text dan terapkan format/parse Rupiah */}
                         <Input
                             id="endingCash"
-                            type="text" // Mengizinkan karakter non-angka untuk format Rupiah
-                            value={formatRupiah(endingCash)} // Menampilkan nilai dalam format Rupiah
+                            type="text"
+                            value={formatRupiah(endingCash)}
                             onChange={(e) => {
-                                // Saat input berubah, bersihkan nilai dan simpan sebagai angka (atau string bersih jika tidak valid)
                                 setEndingCash(parseRupiah(e.target.value));
                             }}
                             placeholder="Hitung dan masukkan total uang tunai"
@@ -15806,9 +15743,16 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
 
 export default CloseShiftModal;
 
+CloseShiftModal.propTypes = {
+  shiftId: PropTypes.number.isRequired,
+  onShiftClosed: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerFormModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -15910,9 +15854,18 @@ function CustomerFormModal({ isOpen, onClose, onSave, customer, isSubmitting }) 
 
 export default CustomerFormModal;
 
+CustomerFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  customer: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerSelectModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiUserPlus } from 'react-icons/fi';
@@ -15982,8 +15935,7 @@ const AddButton = styled.button`
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  &:hover { opacity: 0.9; }
+  justify-content: center; &:hover { opacity: 0.9; }
 `;
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
@@ -16077,10 +16029,17 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
 
 export default CustomerSelectModal;
 
+CustomerSelectModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelectCustomer: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\DailyReport.jsx =====
 
 // frontend/src/components/DailyReport.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const DailyReport = React.forwardRef(({ data }, ref) => {
     if (!data) {
@@ -16210,14 +16169,21 @@ const DailyReport = React.forwardRef(({ data }, ref) => {
     );
 });
 
+DailyReport.displayName = 'DailyReport'; // Add display name for forwardRef components
+
 export default DailyReport;
+
+DailyReport.propTypes = {
+  data: PropTypes.object,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\EditExpenseModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { FiSave, FiX } from 'react-icons/fi';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 // Styled Components
 const ModalOverlay = styled.div`
@@ -16330,7 +16296,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
         if (name === 'amount') {
             setFormData(prev => ({
                 ...prev,
-                [name]: parseRupiah(value) // Use parseRupiah here
+                [name]: parseRupiah(value)
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -16371,7 +16337,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
                         <Input
                             name="amount"
                             type="text"
-                            value={formatRupiah(formData.amount)} // Use formatRupiah here
+                            value={formatRupiah(formData.amount)}
                             onChange={handleChange}
                             required
                         />
@@ -16387,9 +16353,18 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
 
 export default EditExpenseModal;
 
+EditExpenseModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  expense: PropTypes.object,
+  onSave: PropTypes.func.isRequired,
+  isSubmitting: PropTypes.bool.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\HeldCartsModal.jsx =====
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiChevronsRight, FiTrash2 } from 'react-icons/fi';
@@ -16458,25 +16433,25 @@ function HeldCartsModal({ isOpen, onClose, heldCarts, onResume, onDelete }) {
                <ModalBackdrop>
                     <ModalContainer>
                         <ModalHeader>
-                            <ModalTitle>Keranjang Ditahan</ModalTitle>
+                             <ModalTitle>Keranjang Ditahan</ModalTitle>
                             <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
                         </ModalHeader>
                         <ModalBody>
-                            <CartList>
+                             <CartList>
                                 {heldCarts.length > 0 ? heldCarts.map(cart => (
                                     <CartItem key={cart.id}>
-                                        <CartInfo>
+                                         <CartInfo>
                                             {cart.customer ? cart.customer.name : `Keranjang #${cart.id.slice(-4)}`}
-                                            <small>{cart.items.length} item</small>
+                                             <small>{cart.items.length} item</small>
                                         </CartInfo>
                                         <div>
-                                            <ActionButton onClick={() => onDelete(cart.id)}><FiTrash2/></ActionButton>
+                                             <ActionButton onClick={() => onDelete(cart.id)}><FiTrash2/></ActionButton>
                                             <ActionButton $resume onClick={() => onResume(cart.id)}><FiChevronsRight/> Lanjutkan</ActionButton>
                                         </div>
-                                    </CartItem>
+                                   </CartItem>
                                 )) : <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>Tidak ada keranjang yang ditahan.</p>}
                             </CartList>
-                        </ModalBody>
+                         </ModalBody>
                     </ModalContainer>
                 </ModalBackdrop>
             )}
@@ -16485,6 +16460,14 @@ function HeldCartsModal({ isOpen, onClose, heldCarts, onResume, onDelete }) {
 }
 
 export default HeldCartsModal;
+
+HeldCartsModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  heldCarts: PropTypes.array.isRequired,
+  onResume: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx =====
 
@@ -16524,6 +16507,7 @@ export default Layout;
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\OrderDetailModal.jsx =====
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPrinter } from 'react-icons/fi';
@@ -16670,7 +16654,7 @@ function OrderDetailModal({ isOpen, onClose, order, onPrint }) {
                                     <span>Pelanggan:</span>
                                     <span>{order.customer_name}</span>
                                 </InfoRow>
-                            )}
+                             )}
                             <InfoRow>
                                 <span>Metode Pembayaran:</span>
                                 <span>{order.payment_method}</span>
@@ -16725,11 +16709,19 @@ function OrderDetailModal({ isOpen, onClose, order, onPrint }) {
 
 export default OrderDetailModal;
 
+OrderDetailModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  order: PropTypes.object,
+  onPrint: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\PostCheckoutModal.jsx =====
 
 // frontend/src/components/PostCheckoutModal.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiCheckCircle, FiPrinter } from 'react-icons/fi';
@@ -16809,6 +16801,13 @@ function PostCheckoutModal({ isOpen, onClose, orderId, onPrint }) {
 
 export default PostCheckoutModal;
 
+PostCheckoutModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  orderId: PropTypes.number,
+  onPrint: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\ProductFormModal.jsx =====
 
 // frontend/src/pages/ProductFormPage.jsx
@@ -16820,7 +16819,7 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 // --- Styled Components ---
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
@@ -16837,7 +16836,6 @@ const UploadButton = styled.button` background-color: var(--primary-color); colo
 const FileInput = styled.input` display: none; `;
 const Select = styled.select` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 20px; &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); } `;
 const VariantSection = styled.div` grid-column: 1 / -1; border-top: 1px solid var(--border-color); margin-top: 10px; padding-top: 20px; `;
-// <-- PERUBAHAN BARCODE 1: Menambah satu kolom untuk Barcode (menjadi 5 kolom + tombol)
 const VariantRow = styled.div` display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
 const AddVariantButton = styled.button` display: flex; align-items: center; gap: 5px; background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { opacity: 0.9; } `;
 const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
@@ -16857,9 +16855,9 @@ function ProductFormPage() {
         sub_category_id: '',
         supplier_id: '',
         stock: 0,
+        low_stock_threshold: 5, // Tambahkan state baru
         image_url: '',
         expiration_date: '',
-        // <-- PERUBAHAN BARCODE 2: Menambahkan 'barcode' ke state awal varian
         variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
     });
 
@@ -16886,6 +16884,7 @@ function ProductFormPage() {
                     sub_category_id: product.sub_category_id || '',
                     supplier_id: product.supplier_id || '',
                     stock: product.stock || 0,
+                    low_stock_threshold: product.low_stock_threshold || 5, // Tambahkan ini
                     image_url: product.image_url || '',
                     expiration_date: product.expiration_date ? new Date(product.expiration_date).toISOString().split('T')[0] : '',
                     variants: product.variants && product.variants.length > 0
@@ -16894,7 +16893,7 @@ function ProductFormPage() {
                             name: v.name || '',
                             price: v.price !== undefined ? v.price : '',
                             cost_price: v.cost_price !== undefined ? v.cost_price : '',
-                            barcode: v.barcode || '', // <-- PERUBAHAN BARCODE 3: Membaca data barcode
+                            barcode: v.barcode || '',
                           }))
                         : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
                 });
@@ -16946,7 +16945,6 @@ function ProductFormPage() {
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
         if (field === 'price' || field === 'cost_price') {
-            // Gunakan parseRupiah di sini
             newVariants[index][field] = value === '' ? '' : parseRupiah(value);
         } else {
             newVariants[index][field] = value;
@@ -16957,7 +16955,6 @@ function ProductFormPage() {
     const addVariant = () => {
         setFormData({
             ...formData,
-            // <-- PERUBAHAN BARCODE 4: Menambahkan 'barcode' saat membuat varian baru
             variants: [...formData.variants, { name: '', price: '', cost_price: '', barcode: '' }]
         });
     };
@@ -17088,6 +17085,13 @@ function ProductFormPage() {
                         <Label>Total Stok</Label>
                         <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
                     </InputGroup>
+                    
+                    {/* Input Group Baru untuk Ambang Batas Stok */}
+                    <InputGroup>
+                        <Label>Ambang Batas Stok Rendah</Label>
+                        <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
+                    </InputGroup>
+
                     <VariantSection>
                         <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
                         {formData.variants.map((variant, index) => (
@@ -17107,7 +17111,6 @@ function ProductFormPage() {
                                     onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
-                                {/* <-- PERUBAHAN BARCODE 5: Input untuk barcode ditambahkan di sini --> */}
                                 <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
                                 <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
                             </VariantRow>
@@ -17181,6 +17184,7 @@ export default ProtectedRoute;
 // frontend/src/components/Receipt.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const Receipt = React.forwardRef(({ order }, ref) => {
     if (!order) {
@@ -17255,7 +17259,13 @@ const Receipt = React.forwardRef(({ order }, ref) => {
     );
 });
 
+Receipt.displayName = 'Receipt';
+
 export default Receipt;
+
+Receipt.propTypes = {
+  order: PropTypes.object,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Sidebar.jsx =====
 
@@ -17472,12 +17482,13 @@ export default Sidebar;
 // frontend/src/components/StartShiftModal.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
 import { startShift } from '../services/api';
 import { toast } from 'react-toastify';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 
 const ModalBackdrop = styled(motion.div)`
@@ -17495,14 +17506,13 @@ const Label = styled.label` font-weight: 500; color: var(--text-secondary); marg
 const Input = styled.input`
     width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary);
     
-    /* Styles to remove spin buttons (up/down arrows) */
     &[type="number"] {
-        -moz-appearance: textfield; /* Firefox */
+        -moz-appearance: textfield;
     }
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
-        -webkit-appearance: none; /* Safari, Chrome */
-        margin: 0; /* Important for Safari, Chrome to remove extra space */
+        -webkit-appearance: none;
+        margin: 0;
     }
 `;
 const Button = styled.button` padding: 12px 20px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:disabled { opacity: 0.5; } `;
@@ -17513,7 +17523,6 @@ function StartShiftModal({ onShiftStarted }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Gunakan parseFloat langsung pada state startingCash yang sudah diproses oleh parseRupiah
         const cashAmount = parseFloat(startingCash);
         if (isNaN(cashAmount) || cashAmount < 0) {
             return toast.error("Masukkan jumlah kas awal yang valid.");
@@ -17543,19 +17552,14 @@ function StartShiftModal({ onShiftStarted }) {
                 <Form onSubmit={handleSubmit}>
                     <div>
                         <Label htmlFor="startingCash">Kas Awal (Rp)</Label>
-                        {/* * Ubah `type="number"` menjadi `type="text"`
-                         * Gunakan `formatRupiah` untuk menampilkan nilai dengan prefiks "Rp" dan pemisah ribuan
-                         * Gunakan `parseRupiah` untuk membersihkan nilai saat perubahan input
-                         */}
                         <Input
                             id="startingCash"
-                            type="text" // Mengizinkan karakter non-angka untuk format Rupiah
-                            value={formatRupiah(startingCash)} // Menampilkan nilai dalam format Rupiah
+                            type="text"
+                            value={formatRupiah(startingCash)}
                             onChange={(e) => {
-                                // Saat input berubah, bersihkan nilai dan simpan sebagai angka (atau string bersih jika tidak valid)
                                 setStartingCash(parseRupiah(e.target.value));
                             }}
-                            placeholder="Contoh: Rp 500.000"
+                            placeholder="Contoh: 500.000"
                             required
                             autoFocus
                         />
@@ -17571,9 +17575,14 @@ function StartShiftModal({ onShiftStarted }) {
 
 export default StartShiftModal;
 
+StartShiftModal.propTypes = {
+  onShiftStarted: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\SupplierFormModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -17713,11 +17722,20 @@ function SupplierFormModal({ isOpen, onClose, onSave, supplier, isSubmitting }) 
 
 export default SupplierFormModal;
 
+SupplierFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  supplier: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\TargetChart.jsx =====
 
 // frontend/src/pages/Dashboard/components/TargetChart.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import { FiTarget } from 'react-icons/fi';
@@ -17820,9 +17838,15 @@ function TargetChart({ loading, stats }) {
 
 export default TargetChart;
 
+TargetChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  stats: PropTypes.object,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\UserFormModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -17931,14 +17955,21 @@ function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
 
 export default UserFormModal;
 
+UserFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  user: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\VariantSelectModal.jsx =====
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
-
-// --- Styled Components (dengan Perbaikan Warna) ---
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -17971,7 +18002,7 @@ const ModalTitle = styled.h3`
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
-  color: var(--text-primary); /* <-- PERBAIKAN */
+  color: var(--text-primary);
 `;
 
 const CloseButton = styled.button`
@@ -18002,7 +18033,7 @@ const VariantButton = styled(motion.button)`
   text-align: center;
   position: relative;
   overflow: hidden;
-  color: var(--text-primary); /* <-- PERBAIKAN UTAMA */
+  color: var(--text-primary);
 
   &:hover:not(:disabled) {
     border-color: var(--primary-color);
@@ -18014,7 +18045,7 @@ const VariantButton = styled(motion.button)`
     opacity: 0.6;
     cursor: not-allowed;
     background-color: var(--bg-main);
-    color: var(--text-secondary); /* <-- PERBAIKAN WARNA TEKS SAAT DISABLED */
+    color: var(--text-secondary);
   }
 `;
 
@@ -18034,7 +18065,6 @@ const OutOfStockBadge = styled.div`
     border-radius: 4px;
 `;
 
-// --- Komponen ---
 function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
     const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
     const modalVariants = {
@@ -18071,17 +18101,16 @@ function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
                                 <VariantButton 
                                     key={variant.id} 
                                     onClick={() => onSelectVariant(product, variant)}
-                                    disabled={variant.stock <= 0}
+                                    disabled={product.stock <= 0} // Logic updated to use product's total stock
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    {variant.stock <= 0 && <OutOfStockBadge>Habis</OutOfStockBadge>}
+                                    {product.stock <= 0 && <OutOfStockBadge>Habis</OutOfStockBadge>}
                                     <VariantName>{variant.name}</VariantName>
                                     <VariantPrice>Rp {new Intl.NumberFormat('id-ID').format(variant.price)}</VariantPrice>
-                                    <VariantStock>Stok: {variant.stock}</VariantStock>
                                 </VariantButton>
                             ))}
                         </VariantGrid>
@@ -18093,6 +18122,13 @@ function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
 }
 
 export default VariantSelectModal;
+
+VariantSelectModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  product: PropTypes.object,
+  onSelectVariant: PropTypes.func.isRequired,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\context\BusinessContext.jsx =====
 
@@ -24291,6 +24327,7 @@ export default DashboardPage;
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\DashboardHeader.jsx =====
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { FiRefreshCw, FiPrinter } from 'react-icons/fi';
 
@@ -24341,7 +24378,7 @@ const Button = styled.button`
   }
 `;
 
-const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint }) => {
+const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint, activeShift, onStartShift, onCloseShift }) => {
   return (
     <HeaderContainer>
       <TimeDisplay>
@@ -24368,11 +24405,22 @@ const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint }) => 
 
 export default DashboardHeader;
 
+DashboardHeader.propTypes = {
+  currentTime: PropTypes.instanceOf(Date).isRequired,
+  onRefresh: PropTypes.func.isRequired,
+  onPrint: PropTypes.func.isRequired,
+  onManualPrint: PropTypes.func.isRequired,
+  activeShift: PropTypes.object,
+  onStartShift: PropTypes.func.isRequired,
+  onCloseShift: PropTypes.func.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\InfoTabs.jsx =====
 
 // frontend/src/pages/Dashboard/components/InfoTabs.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
@@ -24406,43 +24454,15 @@ const ProductName = styled.span`
   color: var(--text-primary);
 `;
 
-const StockInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  width: 150px;
-  flex-shrink: 0;
-`;
-
-const StockBarContainer = styled.div`
-  width: 100%;
-  height: 8px;
-  background-color: var(--bg-main);
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const getStockColor = (stock, maxStock) => {
-    const percentage = (stock / maxStock) * 100;
-    if (percentage <= 10) return 'var(--red-color)';
-    if (percentage <= 40) return '#FFA500'; // Orange
-    return 'var(--green-color)';
-};
-
-const StockBarFill = styled.div`
-  height: 100%;
-  width: ${props => props.$percentage}%;
-  background-color: ${props => props.$color};
-  border-radius: 4px;
-  transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
-`;
-
 function InfoTabs({ loading, data }) {
     const [activeProductStockTab, setActiveProductStockTab] = useState('stockInfo');
     const [activeUserInfoTab, setActiveUserInfoTab] = useState('topCustomers');
-    
-    // Adjusted MAX_STOCK_ASSUMPTION, ideally this would come from business settings
-    const MAX_STOCK_ASSUMPTION = 100; // You might want to dynamically set this based on product type or average stock levels if low_stock_threshold is gone
+
+    const getStockColor = (stock) => {
+        if (stock <= 10) return 'var(--red-color)';
+        if (stock <= 40) return '#FFA500'; // Orange
+        return 'var(--green-color)';
+    };
 
     return (
         <>
@@ -24458,20 +24478,16 @@ function InfoTabs({ loading, data }) {
                             {activeProductStockTab === 'stockInfo' && (data.stockInfo?.length > 0 ? (
                                 <List>
                                     {data.stockInfo.map(p => {
-                                        const stockPercentage = (p.stock / MAX_STOCK_ASSUMPTION) * 100;
-                                        const barColor = getStockColor(p.stock, MAX_STOCK_ASSUMPTION);
+                                        const stockColor = getStockColor(p.stock);
                                         return (
                                             <ListItem key={p.id}>
                                                 <ProductInfo>
                                                     <ProductImage src={p.image_url || 'https://placehold.co/100'} alt={p.name} />
                                                     <ProductName>{p.name}</ProductName>
                                                 </ProductInfo>
-                                                <StockInfo>
-                                                    <StockBarContainer>
-                                                        <StockBarFill $percentage={stockPercentage > 100 ? 100 : stockPercentage} $color={barColor} />
-                                                    </StockBarContainer>
-                                                    <ItemValue style={{ color: barColor }}>{p.stock}</ItemValue>
-                                                </StockInfo>
+                                                <ItemValue style={{ color: stockColor, fontSize: '1.1rem', fontWeight: '700' }}>
+                                                    {p.stock} unit
+                                                </ItemValue>
                                             </ListItem>
                                         );
                                     })}
@@ -24510,11 +24526,17 @@ function InfoTabs({ loading, data }) {
 
 export default InfoTabs;
 
+InfoTabs.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.object.isRequired,
+};
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\NotificationsPanel.jsx =====
 
 // frontend/src/pages/Dashboard/components/NotificationsPanel.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
@@ -24602,7 +24624,7 @@ const EmptyStateContainer = styled.div`
 `;
 
 const getFiIconComponent = (iconName) => {
-  const IconComponent = FiIcons[iconName] || FiIcons.FiBell; // Default to FiBell if iconName is not found
+  const IconComponent = FiIcons[iconName] || FiIcons.FiBell;
   return <IconComponent size={20} />;
 };
 
@@ -24653,7 +24675,7 @@ function NotificationsPanel({ loading, notifications, insights }) {
         <EmptyStateContainer>
           <FiIcons.FiCheckCircle size={48} />
           <p style={{ marginTop: '15px' }}>
-            All clear. No important notifications at this time.
+            Semua aman. Tidak ada notifikasi penting saat ini.
           </p>
         </EmptyStateContainer>
       )}
@@ -24662,6 +24684,12 @@ function NotificationsPanel({ loading, notifications, insights }) {
 }
 
 export default NotificationsPanel;
+
+NotificationsPanel.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  notifications: PropTypes.array,
+  insights: PropTypes.array,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\QuickActionGrids.jsx =====
 
@@ -24767,6 +24795,7 @@ export default QuickActionGrids;
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\SalesChart.jsx =====
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
@@ -24802,13 +24831,20 @@ function SalesChart({ loading, data }) {
         </ChartContainer>
     );
 }
+
 export default SalesChart;
+
+SalesChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.array,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StatCardGrid.jsx =====
 
 // frontend/src/pages/Dashboard/components/StatCardGrid.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList } from 'react-icons/fi';
@@ -24846,6 +24882,13 @@ const StatCard = ({ icon, value, label, color }) => (
     </Card>
 );
 
+StatCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  label: PropTypes.string.isRequired,
+  color: PropTypes.string.isRequired,
+};
+
 const StatCardSkeleton = () => (
     <Card as="div">
         <Skeleton circle width={60} height={60} />
@@ -24873,13 +24916,21 @@ function StatCardGrid({ loading, stats, userName }) {
         </>
     );
 }
+
 export default StatCardGrid;
+
+StatCardGrid.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  stats: PropTypes.object,
+  userName: PropTypes.string,
+};
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx =====
 
 // frontend/src/pages/Dashboard/components/TopProductsChart.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
@@ -24939,6 +24990,12 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.array,
+  label: PropTypes.string,
+};
+
 const COLORS = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1'];
 
 function TopProductsChart({ loading, data }) {
@@ -24994,9 +25051,12 @@ function TopProductsChart({ loading, data }) {
 
 export default TopProductsChart;
 
-===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
+TopProductsChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.array,
+};
 
-// frontend/src/services/api.js
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
 
 import axios from 'axios';
 
@@ -25010,218 +25070,228 @@ API.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    // Log requests for debugging
-    console.log('Sending request:', config.method, config.url, config.data); 
+    // Log requests for debugging, hanya di lingkungan pengembangan
+    if (import.meta.env.DEV) {
+        console.log('Sending request:', config.method, config.url, config.data);
+    }
     return config;
 }, (error) => {
-    // Log request errors
-    console.error('Request error:', error.config?.method, error.config?.url, error.message); 
+    // Log request errors, hanya di lingkungan pengembangan
+    if (import.meta.env.DEV) {
+        console.error('Request error:', error.config?.method, error.config?.url, error.message);
+    }
     return Promise.reject(error);
 });
 
 // Add a response interceptor to log responses and handle common errors
 API.interceptors.response.use(
     (response) => {
-        console.log('Received response:', response.config.method, response.config.url, response.status, response.data); 
+        // Log responses, hanya di lingkungan pengembangan
+        if (import.meta.env.DEV) {
+            console.log('Received response:', response.config.method, response.config.url, response.status, response.data);
+        }
         return response;
     },
     (error) => {
-        console.error('Response error:', error.response?.config?.method, error.response?.config?.url, error.response?.status, error.message); 
+        // Log response errors, hanya di lingkungan pengembangan
+        if (import.meta.env.DEV) {
+            console.error('Response error:', error.response?.config?.method, error.response?.config?.url, error.response?.status, error.message);
+        }
         if (error.code === 'ECONNABORTED') {
-            return Promise.reject(new Error('Koneksi timeout. Pastikan backend berjalan dan terhubung dengan benar.')); 
+            return Promise.reject(new Error('Koneksi timeout. Pastikan backend berjalan dan terhubung dengan benar.'));
         }
         if (error.response) {
             // Server responded with a status other than 2xx
             // The `error.response.data.message` is the custom error message from your backend
-            return Promise.reject(error.response); 
+            return Promise.reject(error.response);
         } else if (error.request) {
             // Request was made but no response was received
-            return Promise.reject(new Error('Tidak ada respons dari server. Server mungkin tidak berjalan.')); 
+            return Promise.reject(new Error('Tidak ada respons dari server. Server mungkin tidak berjalan.'));
         } else {
             // Something happened in setting up the request that triggered an Error
-            return Promise.reject(new Error('Terjadi kesalahan saat menyiapkan permintaan.')); 
+            return Promise.reject(new Error('Terjadi kesalahan saat menyiapkan permintaan.'));
         }
     }
 );
 
 
 // User Routes
-export const loginUser = (userData) => API.post('/users/login', userData); 
-export const createUser = (userData) => API.post('/users/register', userData); 
-export const createUserByAdmin = (userData) => API.post('/users', userData); 
-export const getUsers = () => API.get('/users'); 
-export const updateUser = (id, userData) => API.put(`/users/${id}`, userData); 
-export const deleteUser = (id) => API.delete(`/users/${id}`); 
-export const forgotPassword = (data) => API.post('/users/forgot-password', data); 
-export const resetPassword = (token, data) => API.post(`/users/reset-password/${token}`, data); 
+export const loginUser = (userData) => API.post('/users/login', userData);
+export const createUser = (userData) => API.post('/users/register', userData);
+export const createUserByAdmin = (userData) => API.post('/users', userData);
+export const getUsers = () => API.get('/users');
+export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
+export const deleteUser = (id) => API.delete(`/users/${id}`);
+export const forgotPassword = (data) => API.post('/users/forgot-password', data);
+export const resetPassword = (token, data) => API.post(`/users/reset-password/${token}`, data);
 
 // Product Routes
-export const getProducts = (barcode = '') => { 
-    const params = new URLSearchParams(); 
-    if (barcode) { 
-        params.append('barcode', barcode); 
+export const getProducts = (barcode = '') => {
+    const params = new URLSearchParams();
+    if (barcode) {
+        params.append('barcode', barcode);
     }
-    return API.get(`/products?${params.toString()}`); 
+    return API.get(`/products?${params.toString()}`);
 };
-export const getProductById = (id) => API.get(`/products/${id}`); 
-export const createProduct = (productData) => API.post('/products', productData); 
+export const getProductById = (id) => API.get(`/products/${id}`);
+export const createProduct = (productData) => API.post('/products', productData);
 export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData);
-export const deleteProduct = (id) => API.delete(`/products/${id}`); 
-export const receiveStock = (stockData) => API.post('/products/receive-stock', stockData); 
+export const deleteProduct = (id) => API.delete(`/products/${id}`);
+export const receiveStock = (stockData) => API.post('/products/receive-stock', stockData);
 
 // Order Routes
-export const createOrder = (orderData) => API.post('/orders', orderData); 
-export const getOrders = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/orders?${params.toString()}`); 
+export const createOrder = (orderData) => API.post('/orders', orderData);
+export const getOrders = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/orders?${params.toString()}`);
 };
-export const getOrderById = (id) => API.get(`/orders/${id}`); 
-export const deleteOrder = (id) => API.delete(`/orders/${id}`); 
-export const sendReceipt = (orderId, email) => API.post(`/orders/${orderId}/send-receipt`, { email }); 
-export const clearOrderHistory = () => API.delete('/orders/clear-history'); 
-export const exportOrders = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/orders/export?${params.toString()}`, { responseType: 'blob' }); 
+export const getOrderById = (id) => API.get(`/orders/${id}`);
+export const deleteOrder = (id) => API.delete(`/orders/${id}`);
+export const sendReceipt = (orderId, email) => API.post(`/orders/${orderId}/send-receipt`, { email });
+export const clearOrderHistory = () => API.delete('/orders/clear-history');
+export const exportOrders = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/orders/export?${params.toString()}`, { responseType: 'blob' });
 };
 
 // Analytics Routes
-export const getStats = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/stats?${params.toString()}`); 
-};
-export const getDailySales = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/daily-sales?${params.toString()}`); 
-};
-export const getTopProducts = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/top-products?${params.toString()}`); 
-};
-export const getProductSalesPerformance = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/product-sales-performance?${params.toString()}`); 
-};
-export const getTopRevenueProducts = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/top-revenue-products?${params.toString()}`); 
-};
-export const getHourlySales = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/hourly-sales?${params.toString()}`); 
-};
-export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-products?days=${days}`); 
-export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`); 
-export const getLowMarginProducts = () => API.get(`/analytics/low-margin-products`); 
-export const getTopCustomers = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/top-customers?${params.toString()}`); 
-};
-export const getCashierPerformance = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
+export const getStats = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
-    return API.get(`/analytics/cashier-performance?${params.toString()}`); 
+    return API.get(`/analytics/stats?${params.toString()}`);
 };
-export const getRecentSuppliers = (limit = 5) => API.get(`/analytics/recent-suppliers?limit=${limit}`); 
-export const getActivityLogs = (limit = 5) => API.get(`/analytics/activity-logs?limit=${limit}`); 
-export const getInsights = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/insights?${params.toString()}`); 
+export const getDailySales = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/daily-sales?${params.toString()}`);
 };
-export const getNotifications = (startDate, endDate) => { 
-    const params = new URLSearchParams(); 
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
-    return API.get(`/analytics/notifications?${params.toString()}`); 
+export const getTopProducts = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/top-products?${params.toString()}`);
 };
-export const getStockInfo = () => API.get('/analytics/stock-info'); 
+export const getProductSalesPerformance = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/product-sales-performance?${params.toString()}`);
+};
+export const getTopRevenueProducts = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/top-revenue-products?${params.toString()}`);
+};
+export const getHourlySales = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/hourly-sales?${params.toString()}`);
+};
+export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-products?days=${days}`);
+export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`);
+export const getLowMarginProducts = () => API.get(`/analytics/low-margin-products`);
+export const getTopCustomers = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/top-customers?${params.toString()}`);
+};
+export const getCashierPerformance = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/cashier-performance?${params.toString()}`);
+};
+export const getRecentSuppliers = (limit = 5) => API.get(`/analytics/recent-suppliers?limit=${limit}`);
+export const getActivityLogs = (limit = 5) => API.get(`/analytics/activity-logs?limit=${limit}`);
+export const getInsights = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/insights?${params.toString()}`);
+};
+export const getNotifications = (startDate, endDate) => {
+    const params = new URLSearchParams();
+    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    return API.get(`/analytics/notifications?${params.toString()}`);
+};
+export const getStockInfo = () => API.get('/analytics/stock-info');
 
 // Settings Routes
-export const getEmailSettings = () => API.get('/settings/email'); 
-export const saveEmailSettings = (settingsData) => API.post('/settings/email', settingsData); 
-export const getRevenueTarget = () => API.get('/settings/revenue-target'); 
-export const saveRevenueTarget = (targetData) => API.post('/settings/revenue-target', targetData); 
-export const getBusinessSettings = () => API.get('/settings/business'); 
-export const saveBusinessSettings = (settingsData) => API.post('/settings/business', settingsData); 
+export const getEmailSettings = () => API.get('/settings/email');
+export const saveEmailSettings = (settingsData) => API.post('/settings/email', settingsData);
+export const getRevenueTarget = () => API.get('/settings/revenue-target');
+export const saveRevenueTarget = (targetData) => API.post('/settings/revenue-target', targetData);
+export const getBusinessSettings = () => API.get('/settings/business');
+export const saveBusinessSettings = (settingsData) => API.post('/settings/business', settingsData);
 
 // Category Routes
-export const getCategories = () => API.get('/categories'); 
-export const createCategory = (name) => API.post('/categories', { name }); 
-export const deleteCategory = (id) => API.delete(`/categories/${id}`); 
-export const getSubCategories = (categoryId) => API.get(`/categories/${categoryId}/subcategories`); 
-export const createSubCategory = (categoryId, subCategoryData) => API.post(`/categories/${categoryId}/subcategories`, subCategoryData); 
-export const deleteSubCategory = (id) => API.delete(`/categories/subcategories/${id}`); 
+export const getCategories = () => API.get('/categories');
+export const createCategory = (name) => API.post('/categories', { name });
+export const deleteCategory = (id) => API.delete(`/categories/${id}`);
+export const getSubCategories = (categoryId) => API.get(`/categories/${categoryId}/subcategories`);
+export const createSubCategory = (categoryId, subCategoryData) => API.post(`/categories/${categoryId}/subcategories`, subCategoryData);
+export const deleteSubCategory = (id) => API.delete(`/categories/subcategories/${id}`);
 // Supplier Routes
-export const getSuppliers = () => API.get('/suppliers'); 
-export const createSupplier = (supplierData) => API.post('/suppliers', supplierData); 
-export const updateSupplier = (id, supplierData) => API.put(`/suppliers/${id}`, supplierData); 
-export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`); 
+export const getSuppliers = () => API.get('/suppliers');
+export const createSupplier = (supplierData) => API.post('/suppliers', supplierData);
+export const updateSupplier = (id, supplierData) => API.put(`/suppliers/${id}`, supplierData);
+export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
 
 // Customer Routes
-export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`); 
-export const getCustomerById = (id) => API.get(`/customers/${id}`); 
-export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`); 
-export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/redeem`, data); 
-export const createCustomer = (customerData) => API.post('/customers', customerData); 
-export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData); 
-export const deleteCustomer = (id) => API.delete(`/customers/${id}`); 
+export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`);
+export const getCustomerById = (id) => API.get(`/customers/${id}`);
+export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`);
+export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/redeem`, data);
+export const createCustomer = (customerData) => API.post('/customers', customerData);
+export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData);
+export const deleteCustomer = (id) => API.delete(`/customers/${id}`);
 
 // Image Upload Route
-export const uploadImage = (formData) => API.post('/upload/image', formData, { 
-    headers: { 'Content-Type': 'multipart/form-data' }, 
+export const uploadImage = (formData) => API.post('/upload/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
 });
 
 // Expense Routes
-export const getExpenses = () => API.get('/expenses'); 
-export const createExpense = (expenseData) => API.post('/expenses', expenseData); 
-export const updateExpense = (id, expenseData) => API.put(`/expenses/${id}`, expenseData); 
-export const deleteExpense = (id) => API.delete(`/expenses/${id}`); 
+export const getExpenses = () => API.get('/expenses');
+export const createExpense = (expenseData) => API.post('/expenses', expenseData);
+export const updateExpense = (id, expenseData) => API.put(`/expenses/${id}`, expenseData);
+export const deleteExpense = (id) => API.delete(`/expenses/${id}`);
 
 // Stock Routes
-export const adjustStock = (adjustmentData) => API.post('/stock/adjust', adjustmentData); 
+export const adjustStock = (adjustmentData) => API.post('/stock/adjust', adjustmentData);
 
 // Promotion Routes
-export const getPromotions = () => API.get('/promotions'); 
-export const getPromotionById = (id) => API.get(`/promotions/${id}`); 
-export const createPromotion = (promoData) => API.post('/promotions', promoData); 
-export const updatePromotion = (id, promoData) => API.put(`/promotions/${id}`, promoData); 
-export const deletePromotion = (id) => API.delete(`/promotions/${id}`); 
-export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`); 
+export const getPromotions = () => API.get('/promotions');
+export const getPromotionById = (id) => API.get(`/promotions/${id}`);
+export const createPromotion = (promoData) => API.post('/promotions', promoData);
+export const updatePromotion = (id, promoData) => API.put(`/promotions/${id}`, promoData);
+export const deletePromotion = (id) => API.delete(`/promotions/${id}`);
+export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`);
 
 // Report Routes
-export const getSalesReportPdf = (params) => { 
-    return API.get('/reports/sales-summary', { 
-        params, 
-        responseType: 'blob', 
+export const getSalesReportPdf = (params) => {
+    return API.get('/reports/sales-summary', {
+        params,
+        responseType: 'blob',
     });
 };
 
 // Shift Routes
-export const getCurrentShift = () => API.get('/shifts/current'); 
-export const startShift = (data) => API.post('/shifts/start', data); 
-export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data); 
-export const getShiftHistory = () => API.get('/shifts/history'); 
-export const deleteShift = (id) => API.delete(`/shifts/${id}`); 
+export const getCurrentShift = () => API.get('/shifts/current');
+export const startShift = (data) => API.post('/shifts/start', data);
+export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
+export const getShiftHistory = () => API.get('/shifts/history');
+export const deleteShift = (id) => API.delete(`/shifts/${id}`);
 export default API;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js =====

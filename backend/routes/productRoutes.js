@@ -1,3 +1,5 @@
+// backend/routes/productRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
@@ -11,9 +13,10 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// CREATE: Menambah produk baru dengan stok terpusat
+// CREATE: Menambah produk baru dengan stok terpusat dan ambang batas
 router.post('/', protect, isAdmin, async (req, res) => {
-    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants } = req.body;
+    // Tambahkan low_stock_threshold dari req.body
+    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants, low_stock_threshold } = req.body;
     const businessId = req.user.business_id;
 
     if (!name || !variants || variants.length === 0) {
@@ -32,8 +35,10 @@ router.post('/', protect, isAdmin, async (req, res) => {
         const finalSupplierId = supplier_id || null;
         const finalExpirationDate = expiration_date || null;
 
-        const productSql = 'INSERT INTO products (business_id, name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-        const [productResult] = await connection.query(productSql, [businessId, name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate]);
+        // Tambahkan kolom dan placeholder baru di query SQL
+        const productSql = 'INSERT INTO products (business_id, name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, low_stock_threshold) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        // Tambahkan variabel baru ke array parameter, beri default 5 jika tidak diisi
+        const [productResult] = await connection.query(productSql, [businessId, name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, low_stock_threshold || 5]);
         const productId = productResult.insertId;
 
         for (const variant of variants) {
@@ -58,17 +63,16 @@ router.post('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// READ ALL: Mengambil semua produk ATAU satu produk via barcode (yang tidak diarsipkan)
+// READ ALL: Mengambil semua produk (sudah dimodifikasi untuk soft delete)
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const { barcode } = req.query; // Ambil parameter barcode dari query
+        const { barcode } = req.query;
 
         let productsSql;
         let params = [];
 
         if (barcode) {
-            // Jika ada parameter barcode, cari produk spesifik berdasarkan barcode variannya
             productsSql = `
                 SELECT p.* FROM products p 
                 JOIN product_variants pv ON p.id = pv.product_id 
@@ -76,10 +80,9 @@ router.get('/', protect, async (req, res) => {
             `;
             params = [barcode, businessId];
         } else {
-            // Jika tidak ada, ambil semua produk seperti biasa (yang tidak diarsipkan)
             productsSql = `
                 SELECT 
-                    p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date,
+                    p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold,
                     c.name AS category_name,
                     sc.name AS sub_category_name,
                     s.name as supplier_name
@@ -110,14 +113,14 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// READ ONE: Mengambil satu produk berdasarkan ID (termasuk yang diarsipkan jika diperlukan di masa depan, tapi saat ini hanya yang aktif)
+// READ ONE: Mengambil satu produk berdasarkan ID
 router.get('/:id', protect, async (req, res) => {
     try {
         const productId = req.params.id;
         const businessId = req.user.business_id;
         const productSql = `
             SELECT 
-                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.is_archived,
+                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold,
                 c.name AS category_name,
                 sc.name AS sub_category_name,
                 s.name as supplier_name
@@ -125,7 +128,7 @@ router.get('/:id', protect, async (req, res) => {
             LEFT JOIN categories AS c ON p.category_id = c.id
             LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
             LEFT JOIN suppliers AS s ON p.supplier_id = s.id
-            WHERE p.id = ? AND p.business_id = ?
+            WHERE p.id = ? AND p.business_id = ? AND p.is_archived = 0
         `;
         const [[product]] = await db.query(productSql, [productId, businessId]);
 
@@ -145,10 +148,11 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// UPDATE: Memperbarui produk dengan stok terpusat
+// UPDATE: Memperbarui produk dengan stok terpusat dan ambang batas
 router.put('/:id', protect, isAdmin, async (req, res) => {
     const productId = req.params.id;
-    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants } = req.body;
+    // Tambahkan low_stock_threshold dari req.body
+    const { name, description, category_id, sub_category_id, supplier_id, stock, image_url, expiration_date, variants, low_stock_threshold } = req.body;
     const businessId = req.user.business_id;
 
     if (!name || !variants || variants.length === 0 || stock === undefined) {
@@ -164,8 +168,10 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
         const finalSupplierId = supplier_id || null;
         const finalExpirationDate = expiration_date || null;
 
-        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ? WHERE id = ? AND business_id = ?';
-        await connection.query(productSql, [name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, productId, businessId]);
+        // Tambahkan kolom baru di query SQL UPDATE
+        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ?, low_stock_threshold = ? WHERE id = ? AND business_id = ?';
+        // Tambahkan variabel baru ke array parameter
+        await connection.query(productSql, [name, description || null, finalCategoryId, finalSubCategoryId, finalSupplierId, stock, image_url || null, finalExpirationDate, low_stock_threshold || 5, productId, businessId]);
 
         await connection.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
 
@@ -191,32 +197,22 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
     }
 });
 
-// DELETE (Soft Delete): Mengarsipkan produk
+// DELETE: Mengarsipkan produk (Soft Delete)
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const productId = req.params.id;
     const businessId = req.user.business_id;
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
-        
-        // Perubahan di sini: Update is_archived menjadi 1
-        const [result] = await connection.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
+        const [result] = await db.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         
         if (result.affectedRows === 0) {
-            await connection.rollback();
             return res.status(404).json({ message: 'Produk tidak ditemukan atau Anda tidak punya akses.' });
         }
         
-        await connection.commit();
-        await logActivity(businessId, req.user.id, 'ARCHIVE_PRODUCT', `Archived product ID: ${productId}`);
+        await logActivity(businessId, req.user.id, 'DELETE_PRODUCT', `Archived product ID: ${productId}`);
         res.json({ message: 'Produk berhasil diarsipkan.' });
     } catch (error) {
-        await connection.rollback();
         console.error('Error archiving product:', error);
-        // Pesan error ini mungkin perlu disesuaikan karena produk tidak benar-benar dihapus
         res.status(500).json({ message: 'Server Error' });
-    } finally {
-        connection.release();
     }
 });
 
