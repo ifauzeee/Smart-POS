@@ -7,19 +7,7 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-
-const formatCurrency = (value) => {
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    if (isNaN(number)) return String(value);
-    return `Rp ${new Intl.NumberFormat('id-ID').format(number)}`;
-};
-const parseCurrency = (value) => {
-    if (typeof value !== 'string') return value;
-    const cleanValue = value.replace(/Rp\s?|\./g, '').replace(/,/g, '.');
-    const parsed = parseFloat(cleanValue);
-    return isNaN(parsed) ? value : parsed;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
 
 // --- Styled Components ---
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
@@ -145,7 +133,8 @@ function ProductFormPage() {
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
         if (field === 'price' || field === 'cost_price') {
-            newVariants[index][field] = value === '' ? '' : parseCurrency(value);
+            // Gunakan parseRupiah di sini
+            newVariants[index][field] = value === '' ? '' : parseRupiah(value);
         } else {
             newVariants[index][field] = value;
         }
@@ -292,17 +281,17 @@ function ProductFormPage() {
                             <VariantRow key={index}>
                                 <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
                                 <Input
-                                    type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)}
+                                    type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
                                     onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
+                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
                                 <Input
-                                    type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)}
+                                    type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
                                     onChange={e => handleVariantChange(index, 'price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
+                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
                                 {/* <-- PERUBAHAN BARCODE 5: Input untuk barcode ditambahkan di sini --> */}

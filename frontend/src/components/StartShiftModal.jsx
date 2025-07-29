@@ -1,39 +1,13 @@
 // frontend/src/components/StartShiftModal.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
 import { startShift } from '../services/api';
 import { toast } from 'react-toastify';
-
-// Helper Functions for Currency Formatting
-// Fungsi ini akan memformat angka menjadi string dengan pemisah ribuan dan simbol Rp.
-const formatCurrency = (value) => {
-    // Jika nilai kosong, null, atau tidak terdefinisi, kembalikan string kosong
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    // Jika setelah di-parse masih bukan angka, kembalikan nilai aslinya (misal 'abc')
-    if (isNaN(number)) return String(number); // Mengembalikan String(number) agar NaN tidak ditampilkan
-    // Gunakan Intl.NumberFormat untuk format Rupiah tanpa desimal dan tambahkan prefiks "Rp "
-    return `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(number)}`;
-};
-
-// Fungsi ini akan membersihkan string dari format mata uang menjadi angka yang dapat di-parse
-const parseCurrency = (value) => {
-    // Pastikan nilai adalah string
-    if (typeof value !== 'string') return value;
-    // Hapus "Rp ", spasi, dan titik sebagai pemisah ribuan. Ubah koma menjadi titik untuk desimal.
-    let cleanedValue = value.trim();
-    cleanedValue = cleanedValue.replace(/Rp\s?/g, ''); // Hapus "Rp" prefix dan spasi setelahnya
-    cleanedValue = cleanedValue.replace(/\s/g, ''); // Hapus semua spasi
-    cleanedValue = cleanedValue.replace(/\./g, ''); // Hapus pemisah ribuan (titik)
-    cleanedValue = cleanedValue.replace(/,/g, '.'); // Ubah koma (jika digunakan sebagai desimal) menjadi titik
-    
-    const parsed = parseFloat(cleanedValue);
-    // Jika hasil parse bukan angka, kembalikan string asli agar input tidak jadi NaN
-    return isNaN(parsed) ? cleanedValue : parsed; 
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 
 const ModalBackdrop = styled(motion.div)`
@@ -51,14 +25,13 @@ const Label = styled.label` font-weight: 500; color: var(--text-secondary); marg
 const Input = styled.input`
     width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary);
     
-    /* Styles to remove spin buttons (up/down arrows) */
     &[type="number"] {
-        -moz-appearance: textfield; /* Firefox */
+        -moz-appearance: textfield;
     }
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
-        -webkit-appearance: none; /* Safari, Chrome */
-        margin: 0; /* Important for Safari, Chrome to remove extra space */
+        -webkit-appearance: none;
+        margin: 0;
     }
 `;
 const Button = styled.button` padding: 12px 20px; border-radius: 8px; border: none; background-color: var(--primary-color); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; &:disabled { opacity: 0.5; } `;
@@ -69,8 +42,7 @@ function StartShiftModal({ onShiftStarted }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Gunakan parseFloat langsung pada state startingCash yang sudah diproses oleh parseCurrency
-        const cashAmount = parseFloat(startingCash); 
+        const cashAmount = parseFloat(startingCash);
         if (isNaN(cashAmount) || cashAmount < 0) {
             return toast.error("Masukkan jumlah kas awal yang valid.");
         }
@@ -99,19 +71,14 @@ function StartShiftModal({ onShiftStarted }) {
                 <Form onSubmit={handleSubmit}>
                     <div>
                         <Label htmlFor="startingCash">Kas Awal (Rp)</Label>
-                        {/* * Ubah `type="number"` menjadi `type="text"`
-                         * Gunakan `formatCurrency` untuk menampilkan nilai dengan prefiks "Rp" dan pemisah ribuan
-                         * Gunakan `parseCurrency` untuk membersihkan nilai saat perubahan input
-                         */}
                         <Input
                             id="startingCash"
-                            type="text" // Mengizinkan karakter non-angka untuk format Rupiah
-                            value={formatCurrency(startingCash)} // Menampilkan nilai dalam format Rupiah
+                            type="text"
+                            value={formatRupiah(startingCash)}
                             onChange={(e) => {
-                                // Saat input berubah, bersihkan nilai dan simpan sebagai angka (atau string bersih jika tidak valid)
-                                setStartingCash(parseCurrency(e.target.value));
+                                setStartingCash(parseRupiah(e.target.value));
                             }}
-                            placeholder="Contoh: Rp 500.000"
+                            placeholder="Contoh: 500.000"
                             required
                             autoFocus
                         />
@@ -126,3 +93,7 @@ function StartShiftModal({ onShiftStarted }) {
 }
 
 export default StartShiftModal;
+
+StartShiftModal.propTypes = {
+  onShiftStarted: PropTypes.func.isRequired,
+};

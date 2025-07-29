@@ -1,7 +1,9 @@
 // frontend/src/context/BusinessContext.jsx
-import React, { useState, useEffect, createContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useCallback, useContext } from 'react';
 import { getBusinessSettings } from '../services/api';
 import { toast } from 'react-toastify';
+// Assuming you have an AuthContext that provides user information
+// import { AuthContext } from './AuthContext'; // Uncomment and import your AuthContext if you have one
 
 export const BusinessContext = createContext();
 
@@ -11,9 +13,11 @@ export const BusinessProvider = ({ children }) => {
         tax_rate: 0,
         receipt_logo_url: '',
         receipt_footer_message: 'Terima Kasih!',
-        // low_stock_threshold: 10, // Removed this line
     });
     const [loading, setLoading] = useState(true);
+
+    // Assuming AuthContext provides a user object with a 'role' property
+    // const { user } = useContext(AuthContext); // Uncomment this line if you have AuthContext
 
     const fetchBusinessSettings = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -21,6 +25,22 @@ export const BusinessProvider = ({ children }) => {
             setLoading(false);
             return;
         }
+
+        // --- Start of added role check ---
+        // Placeholder for user role check.
+        // Replace 'user?.role === 'admin'' with your actual user role check logic.
+        // For example, if you have an AuthContext, you would use:
+        // if (!user || user.role !== 'admin') {
+        //     console.log("User is not an admin, skipping business settings fetch.");
+        //     setLoading(false);
+        //     return;
+        // }
+        // For demonstration, let's assume a hardcoded admin check or that `user` is available.
+        // If `user` is not available here, you'll need to pass it as a prop or fetch it.
+        // For now, we'll proceed without a strict `user` object check, assuming the backend will handle unauthorized access.
+        // However, if you want to prevent the frontend call entirely based on role,
+        // you would need to uncomment and properly integrate the AuthContext.
+        // --- End of added role check ---
 
         setLoading(true);
         try {
@@ -31,7 +51,6 @@ export const BusinessProvider = ({ children }) => {
                     payment_methods: JSON.parse(res.data.payment_methods || '[]'),
                     tax_rate: parseFloat(res.data.tax_rate) || 0,
                     receipt_footer_message: res.data.receipt_footer_text || 'Terima Kasih!',
-                    // low_stock_threshold: parseInt(res.data.low_stock_threshold) || 10, // Removed this line
                 });
             }
         } catch (error) {
@@ -40,7 +59,7 @@ export const BusinessProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, []); // Add 'user' to dependency array if you uncomment the user check: [fetchBusinessSettings, user]
 
     useEffect(() => {
         fetchBusinessSettings();

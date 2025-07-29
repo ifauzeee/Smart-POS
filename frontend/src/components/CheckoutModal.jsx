@@ -5,16 +5,7 @@ import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiDollarSign, FiCreditCard, FiSmartphone, FiBox } from 'react-icons/fi';
-
-const formatCurrency = (value) => {
-  if (!value || isNaN(value)) return '0';
-  return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(value);
-};
-
-const parseCurrency = (value) => {
-  const cleaned = String(value).replace(/[^0-9]/g, '');
-  return cleaned ? parseFloat(cleaned) : '';
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed;
@@ -188,18 +179,18 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
             <ModalBody>
               <InfoRow>
                 <span>Subtotal:</span>
-                <span>Rp {formatCurrency(cartTotal)}</span>
+                <span>Rp {formatRupiah(cartTotal)}</span>
               </InfoRow>
               {taxRate > 0 && (
                 <InfoRow>
                     <span>Pajak ({(taxRate * 100).toFixed(1)}%):</span>
-                    <span>Rp {formatCurrency(taxAmount)}</span>
+                    <span>Rp {formatRupiah(taxAmount)}</span>
                 </InfoRow>
               )}
               <InfoRow style={{fontSize: '1.2rem', color: 'var(--text-primary)', borderTop: '1px solid var(--border-color)', paddingTop: '15px'}}>
                 <strong>Total Akhir:</strong>
-                <strong>Rp {formatCurrency(finalTotal)}</strong>
-              </InfoRow>
+                <strong>Rp {formatRupiah(finalTotal)}</strong>
+               </InfoRow>
               <div>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                   Metode Pembayaran
@@ -210,39 +201,39 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
                       {getPaymentIcon('Tunai')} Tunai
                     </PaymentButton>
                   ) : (
-                    paymentMethods.map((method) => (
+                     paymentMethods.map((method) => (
                       <PaymentButton
                         key={method}
                         $active={paymentMethod === method}
                         onClick={() => setPaymentMethod(method)}
-                        aria-label={`Pilih metode pembayaran ${method}`}
+                         aria-label={`Pilih metode pembayaran ${method}`}
                       >
                         {getPaymentIcon(method)} {method}
                       </PaymentButton>
                     ))
-                  )}
+                   )}
                 </PaymentMethodContainer>
               </div>
               {paymentMethod === 'Tunai' && (
                 <>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                     <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                       Uang Dibayar (Rp)
                     </label>
                     <Input
                       type="text"
-                      value={formatCurrency(amountPaid)}
-                      onChange={(e) => setAmountPaid(parseCurrency(e.target.value))}
+                      value={formatRupiah(amountPaid)}
+                      onChange={(e) => setAmountPaid(parseRupiah(e.target.value))}
                       placeholder="0"
                       autoFocus
                     />
-                  </div>
+                   </div>
                   <InfoRow>
                     <span>Kembalian:</span>
-                    <span>Rp {formatCurrency(change)}</span>
+                    <span>Rp {formatRupiah(change)}</span>
                   </InfoRow>
                 </>
-              )}
+               )}
             </ModalBody>
             <ModalFooter>
               <Button onClick={onClose}>Batal</Button>
@@ -257,6 +248,8 @@ function CheckoutModal({ isOpen, onClose, cartTotal, onConfirmCheckout, paymentM
   );
 }
 
+export default CheckoutModal;
+
 CheckoutModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
@@ -265,5 +258,3 @@ CheckoutModal.propTypes = {
   paymentMethods: PropTypes.arrayOf(PropTypes.string).isRequired,
   taxRate: PropTypes.number,
 };
-
-export default CheckoutModal;

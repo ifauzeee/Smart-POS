@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
@@ -34,4 +35,10 @@ function SalesChart({ loading, data }) {
         </ChartContainer>
     );
 }
+
 export default SalesChart;
+
+SalesChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.array,
+};

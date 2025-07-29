@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard/components/InfoTabs.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
@@ -34,43 +35,15 @@ const ProductName = styled.span`
   color: var(--text-primary);
 `;
 
-const StockInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  width: 150px;
-  flex-shrink: 0;
-`;
-
-const StockBarContainer = styled.div`
-  width: 100%;
-  height: 8px;
-  background-color: var(--bg-main);
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const getStockColor = (stock, maxStock) => {
-    const percentage = (stock / maxStock) * 100;
-    if (percentage <= 10) return 'var(--red-color)';
-    if (percentage <= 40) return '#FFA500'; // Orange
-    return 'var(--green-color)';
-};
-
-const StockBarFill = styled.div`
-  height: 100%;
-  width: ${props => props.$percentage}%;
-  background-color: ${props => props.$color};
-  border-radius: 4px;
-  transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
-`;
-
 function InfoTabs({ loading, data }) {
     const [activeProductStockTab, setActiveProductStockTab] = useState('stockInfo');
     const [activeUserInfoTab, setActiveUserInfoTab] = useState('topCustomers');
-    
-    // Adjusted MAX_STOCK_ASSUMPTION, ideally this would come from business settings
-    const MAX_STOCK_ASSUMPTION = 100; // You might want to dynamically set this based on product type or average stock levels if low_stock_threshold is gone
+
+    const getStockColor = (stock) => {
+        if (stock <= 10) return 'var(--red-color)';
+        if (stock <= 40) return '#FFA500'; // Orange
+        return 'var(--green-color)';
+    };
 
     return (
         <>
@@ -86,20 +59,16 @@ function InfoTabs({ loading, data }) {
                             {activeProductStockTab === 'stockInfo' && (data.stockInfo?.length > 0 ? (
                                 <List>
                                     {data.stockInfo.map(p => {
-                                        const stockPercentage = (p.stock / MAX_STOCK_ASSUMPTION) * 100;
-                                        const barColor = getStockColor(p.stock, MAX_STOCK_ASSUMPTION);
+                                        const stockColor = getStockColor(p.stock);
                                         return (
                                             <ListItem key={p.id}>
                                                 <ProductInfo>
                                                     <ProductImage src={p.image_url || 'https://placehold.co/100'} alt={p.name} />
                                                     <ProductName>{p.name}</ProductName>
                                                 </ProductInfo>
-                                                <StockInfo>
-                                                    <StockBarContainer>
-                                                        <StockBarFill $percentage={stockPercentage > 100 ? 100 : stockPercentage} $color={barColor} />
-                                                    </StockBarContainer>
-                                                    <ItemValue style={{ color: barColor }}>{p.stock}</ItemValue>
-                                                </StockInfo>
+                                                <ItemValue style={{ color: stockColor, fontSize: '1.1rem', fontWeight: '700' }}>
+                                                    {p.stock} unit
+                                                </ItemValue>
                                             </ListItem>
                                         );
                                     })}
@@ -137,3 +106,8 @@ function InfoTabs({ loading, data }) {
 }
 
 export default InfoTabs;
+
+InfoTabs.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.object.isRequired,
+};

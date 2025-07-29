@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard/components/TopProductsChart.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
@@ -60,6 +61,12 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.array,
+  label: PropTypes.string,
+};
+
 const COLORS = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1'];
 
 function TopProductsChart({ loading, data }) {
@@ -114,3 +121,8 @@ function TopProductsChart({ loading, data }) {
 }
 
 export default TopProductsChart;
+
+TopProductsChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  data: PropTypes.array,
+};

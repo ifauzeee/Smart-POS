@@ -1,28 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { FiSave, FiX } from 'react-icons/fi';
-
-// Helper Functions
-const cleanAndParseInput = (value) => {
-    if (typeof value !== 'string') {
-        value = String(value);
-    }
-    let cleanedValue = value.trim();
-    cleanedValue = cleanedValue.replace(/Rp\s?/g, ''); // Remove "Rp" prefix
-    cleanedValue = cleanedValue.replace(/\s/g, ''); // Remove spaces
-    cleanedValue = cleanedValue.replace(/\./g, ''); // Remove thousand separators
-    cleanedValue = cleanedValue.replace(/,/g, '.'); // Convert comma to decimal point
-    return isNaN(parseFloat(cleanedValue)) ? '' : cleanedValue; // Return empty string if invalid
-};
-
-const formatCurrency = (value) => {
-    if (!value || isNaN(parseFloat(value))) return '';
-    const numberToFormat = parseFloat(value);
-    return `Rp ${new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-    }).format(numberToFormat)}`;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
 // Styled Components
 const ModalOverlay = styled.div`
@@ -135,7 +115,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
         if (name === 'amount') {
             setFormData(prev => ({
                 ...prev,
-                [name]: cleanAndParseInput(value)
+                [name]: parseRupiah(value)
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -176,7 +156,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
                         <Input
                             name="amount"
                             type="text"
-                            value={formatCurrency(formData.amount)}
+                            value={formatRupiah(formData.amount)}
                             onChange={handleChange}
                             required
                         />
@@ -191,3 +171,11 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
 }
 
 export default EditExpenseModal;
+
+EditExpenseModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  expense: PropTypes.object,
+  onSave: PropTypes.func.isRequired,
+  isSubmitting: PropTypes.bool.isRequired,
+};

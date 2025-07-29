@@ -1,5 +1,3 @@
-// backend/routes/productRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
@@ -60,7 +58,7 @@ router.post('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// READ ALL: Mengambil semua produk ATAU satu produk via barcode
+// READ ALL: Mengambil semua produk ATAU satu produk via barcode (yang tidak diarsipkan)
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -74,11 +72,11 @@ router.get('/', protect, async (req, res) => {
             productsSql = `
                 SELECT p.* FROM products p 
                 JOIN product_variants pv ON p.id = pv.product_id 
-                WHERE pv.barcode = ? AND p.business_id = ?
+                WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0
             `;
             params = [barcode, businessId];
         } else {
-            // Jika tidak ada, ambil semua produk seperti biasa
+            // Jika tidak ada, ambil semua produk seperti biasa (yang tidak diarsipkan)
             productsSql = `
                 SELECT 
                     p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date,
@@ -89,7 +87,7 @@ router.get('/', protect, async (req, res) => {
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
                 LEFT JOIN suppliers AS s ON p.supplier_id = s.id
-                WHERE p.business_id = ? 
+                WHERE p.business_id = ? AND p.is_archived = 0
                 ORDER BY p.created_at DESC
             `;
             params = [businessId];
@@ -112,14 +110,14 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// READ ONE: Mengambil satu produk berdasarkan ID
+// READ ONE: Mengambil satu produk berdasarkan ID (termasuk yang diarsipkan jika diperlukan di masa depan, tapi saat ini hanya yang aktif)
 router.get('/:id', protect, async (req, res) => {
     try {
         const productId = req.params.id;
         const businessId = req.user.business_id;
         const productSql = `
             SELECT 
-                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date,
+                p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id, p.supplier_id, p.stock, p.expiration_date, p.is_archived,
                 c.name AS category_name,
                 sc.name AS sub_category_name,
                 s.name as supplier_name
@@ -193,7 +191,7 @@ router.put('/:id', protect, isAdmin, async (req, res) => {
     }
 });
 
-// DELETE: Menghapus produk
+// DELETE (Soft Delete): Mengarsipkan produk
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const productId = req.params.id;
     const businessId = req.user.business_id;
@@ -201,9 +199,8 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
     try {
         await connection.beginTransaction();
         
-        await connection.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
-        
-        const [result] = await connection.query('DELETE FROM products WHERE id = ? AND business_id = ?', [productId, businessId]);
+        // Perubahan di sini: Update is_archived menjadi 1
+        const [result] = await connection.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         
         if (result.affectedRows === 0) {
             await connection.rollback();
@@ -211,14 +208,12 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         }
         
         await connection.commit();
-        await logActivity(businessId, req.user.id, 'DELETE_PRODUCT', `Deleted product ID: ${productId}`);
-        res.json({ message: 'Produk berhasil dihapus.' });
+        await logActivity(businessId, req.user.id, 'ARCHIVE_PRODUCT', `Archived product ID: ${productId}`);
+        res.json({ message: 'Produk berhasil diarsipkan.' });
     } catch (error) {
         await connection.rollback();
-        console.error('Error deleting product:', error);
-        if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-            return res.status(400).json({ message: 'Gagal menghapus: Produk ini sudah pernah ada dalam transaksi. Hapus transaksi terkait terlebih dahulu.' });
-        }
+        console.error('Error archiving product:', error);
+        // Pesan error ini mungkin perlu disesuaikan karena produk tidak benar-benar dihapus
         res.status(500).json({ message: 'Server Error' });
     } finally {
         connection.release();

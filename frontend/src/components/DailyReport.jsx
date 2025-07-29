@@ -1,5 +1,6 @@
 // frontend/src/components/DailyReport.jsx
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const DailyReport = React.forwardRef(({ data }, ref) => {
     if (!data) {
@@ -129,4 +130,10 @@ const DailyReport = React.forwardRef(({ data }, ref) => {
     );
 });
 
+DailyReport.displayName = 'DailyReport'; // Add display name for forwardRef components
+
 export default DailyReport;
+
+DailyReport.propTypes = {
+  data: PropTypes.object,
+};

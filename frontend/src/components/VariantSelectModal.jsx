@@ -1,9 +1,8 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
-
-// --- Styled Components (dengan Perbaikan Warna) ---
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -36,7 +35,7 @@ const ModalTitle = styled.h3`
   font-size: 1.2rem;
   font-weight: 600;
   margin: 0;
-  color: var(--text-primary); /* <-- PERBAIKAN */
+  color: var(--text-primary);
 `;
 
 const CloseButton = styled.button`
@@ -67,7 +66,7 @@ const VariantButton = styled(motion.button)`
   text-align: center;
   position: relative;
   overflow: hidden;
-  color: var(--text-primary); /* <-- PERBAIKAN UTAMA */
+  color: var(--text-primary);
 
   &:hover:not(:disabled) {
     border-color: var(--primary-color);
@@ -79,7 +78,7 @@ const VariantButton = styled(motion.button)`
     opacity: 0.6;
     cursor: not-allowed;
     background-color: var(--bg-main);
-    color: var(--text-secondary); /* <-- PERBAIKAN WARNA TEKS SAAT DISABLED */
+    color: var(--text-secondary);
   }
 `;
 
@@ -99,7 +98,6 @@ const OutOfStockBadge = styled.div`
     border-radius: 4px;
 `;
 
-// --- Komponen ---
 function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
     const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
     const modalVariants = {
@@ -136,17 +134,16 @@ function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
                                 <VariantButton 
                                     key={variant.id} 
                                     onClick={() => onSelectVariant(product, variant)}
-                                    disabled={variant.stock <= 0}
+                                    disabled={product.stock <= 0} // Logic updated to use product's total stock
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.05 }}
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    {variant.stock <= 0 && <OutOfStockBadge>Habis</OutOfStockBadge>}
+                                    {product.stock <= 0 && <OutOfStockBadge>Habis</OutOfStockBadge>}
                                     <VariantName>{variant.name}</VariantName>
                                     <VariantPrice>Rp {new Intl.NumberFormat('id-ID').format(variant.price)}</VariantPrice>
-                                    <VariantStock>Stok: {variant.stock}</VariantStock>
                                 </VariantButton>
                             ))}
                         </VariantGrid>
@@ -158,3 +155,10 @@ function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
 }
 
 export default VariantSelectModal;
+
+VariantSelectModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  product: PropTypes.object,
+  onSelectVariant: PropTypes.func.isRequired,
+};

@@ -250,7 +250,7 @@ router.post('/', protect, isAdmin, async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const [userResult] = await db.query('INSERT INTO users (business_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)', [businessId, name, email, hashedPassword, role]);
-        const userId = result.insertId;
+        const userId = userResult.insertId; // Perbaikan di sini: Menggunakan userResult
         await logActivity(businessId, req.user.id, 'CREATE_USER_BY_ADMIN', `Admin created new user: ${name} (${role}).`);
         res.status(201).json({ message: 'Pengguna berhasil ditambahkan!', userId });
     } catch (error) {

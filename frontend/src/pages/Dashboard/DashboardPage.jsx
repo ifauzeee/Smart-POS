@@ -36,6 +36,11 @@ import TargetChart from '../../components/TargetChart';
 
 import { FiCalendar, FiFastForward } from 'react-icons/fi';
 
+// Import ShiftContext and Shift Modals
+import { useShift } from '../../context/ShiftContext'; // Assuming this path
+import StartShiftModal from '../../components/StartShiftModal'; // Assuming this path
+import CloseShiftModal from '../../components/CloseShiftModal'; // Assuming this path
+
 const DashboardGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -134,6 +139,20 @@ function DashboardPage() {
     });
     const [endDate, setEndDate] = useState(new Date());
     const reportRef = useRef(null);
+
+    // --- Shift Management State and Handlers ---
+    const { activeShift, refreshShiftStatus } = useShift();
+    const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
+    const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
+
+    const handleStartShift = () => {
+        setStartShiftModalOpen(true);
+    };
+
+    const handleCloseShift = () => {
+        setCloseShiftModalOpen(true);
+    };
+    // --- End Shift Management ---
 
     const handlePrint = useReactToPrint({
         content: () => reportRef.current,
@@ -247,6 +266,10 @@ function DashboardPage() {
                 onRefresh={handleRefresh}
                 onPrint={handlePrepareDailyReport}
                 onManualPrint={handleManualPrint}
+                // Pass shift-related props to DashboardHeader
+                activeShift={activeShift}
+                onStartShift={handleStartShift}
+                onCloseShift={handleCloseShift}
             />
             <FilterContainer>
                 <FiCalendar size={20} style={{color: 'var(--text-secondary)'}}/>
@@ -277,6 +300,22 @@ function DashboardPage() {
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
                 <DailyReport ref={reportRef} data={dailyReportData} />
             </div>
+
+            {/* Shift Modals */}
+            {startShiftModalOpen && (
+                <StartShiftModal
+                    isOpen={startShiftModalOpen}
+                    onClose={() => setStartShiftModalOpen(false)}
+                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift start
+                />
+            )}
+            {closeShiftModalOpen && (
+                <CloseShiftModal
+                    isOpen={closeShiftModalOpen}
+                    onClose={() => setCloseShiftModalOpen(false)}
+                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift close
+                />
+            )}
         </DashboardGrid>
     );
 }

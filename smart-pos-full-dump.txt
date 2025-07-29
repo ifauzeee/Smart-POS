@@ -58,40 +58,28 @@ SOFTWARE.
 ===== C:\Users\Ibnu\Project\smart-pos\package-lock.json =====
 
 {
-  "name": "vite-project",
-  "version": "0.0.0",
+  "name": "smart-pos",
+  "version": "1.0.0",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
-      "name": "vite-project",
-      "version": "0.0.0",
+      "name": "smart-pos",
+      "version": "1.0.0",
       "dependencies": {
-        "axios": "^1.10.0",
-        "framer-motion": "^12.23.6",
-        "jwt-decode": "^4.0.0",
-        "prop-types": "^15.8.1",
-        "react": "^19.1.0",
-        "react-datepicker": "^8.4.0",
-        "react-dom": "^19.1.0",
-        "react-icons": "^5.5.0",
+        "axios": "^1.7.7",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-icons": "^5.3.0",
         "react-loading-skeleton": "^3.5.0",
-        "react-router-dom": "^6.25.1",
-        "react-to-print": "^3.1.1",
-        "react-toastify": "^11.0.5",
-        "recharts": "^3.1.0",
-        "styled-components": "^6.1.19"
+        "react-router-dom": "^6.27.0",
+        "recharts": "^2.13.0",
+        "styled-components": "^6.1.13"
       },
       "devDependencies": {
-        "@eslint/js": "^9.30.1",
-        "@types/react": "^19.1.8",
-        "@types/react-dom": "^19.1.6",
-        "@vitejs/plugin-react": "^4.6.0",
-        "eslint": "^9.30.1",
-        "eslint-plugin-react-hooks": "^5.2.0",
-        "eslint-plugin-react-refresh": "^0.4.20",
-        "globals": "^16.3.0",
-        "vite": "^5.3.5"
+        "@vitejs/plugin-react": "^4.3.2",
+        "eslint": "^9.12.0",
+        "vite": "^5.4.8"
       }
     },
     "node_modules/@ampproject/remapping": {
@@ -340,6 +328,15 @@ SOFTWARE.
       },
       "peerDependencies": {
         "@babel/core": "^7.0.0-0"
+      }
+    },
+    "node_modules/@babel/runtime": {
+      "version": "7.28.2",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.2.tgz",
+      "integrity": "sha512-KHp2IflsnGywDjBWDkR9iEqiWSpc8GIi0lgTT3mOElT0PP1tG26P4tmFI2YvAdzgq9RGyoHZQEIEdZy6Ec5xCA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6.9.0"
       }
     },
     "node_modules/@babel/template": {
@@ -956,59 +953,6 @@ SOFTWARE.
         "node": "^18.18.0 || ^20.9.0 || >=21.1.0"
       }
     },
-    "node_modules/@floating-ui/core": {
-      "version": "1.7.2",
-      "resolved": "https://registry.npmjs.org/@floating-ui/core/-/core-1.7.2.tgz",
-      "integrity": "sha512-wNB5ooIKHQc+Kui96jE/n69rHFWAVoxn5CAzL1Xdd8FG03cgY3MLO+GF9U3W737fYDSgPWA6MReKhBQBop6Pcw==",
-      "license": "MIT",
-      "dependencies": {
-        "@floating-ui/utils": "^0.2.10"
-      }
-    },
-    "node_modules/@floating-ui/dom": {
-      "version": "1.7.2",
-      "resolved": "https://registry.npmjs.org/@floating-ui/dom/-/dom-1.7.2.tgz",
-      "integrity": "sha512-7cfaOQuCS27HD7DX+6ib2OrnW+b4ZBwDNnCcT0uTyidcmyWb03FnQqJybDBoCnpdxwBSfA94UAYlRCt7mV+TbA==",
-      "license": "MIT",
-      "dependencies": {
-        "@floating-ui/core": "^1.7.2",
-        "@floating-ui/utils": "^0.2.10"
-      }
-    },
-    "node_modules/@floating-ui/react": {
-      "version": "0.27.13",
-      "resolved": "https://registry.npmjs.org/@floating-ui/react/-/react-0.27.13.tgz",
-      "integrity": "sha512-Qmj6t9TjgWAvbygNEu1hj4dbHI9CY0ziCMIJrmYoDIn9TUAH5lRmiIeZmRd4c6QEZkzdoH7jNnoNyoY1AIESiA==",
-      "license": "MIT",
-      "dependencies": {
-        "@floating-ui/react-dom": "^2.1.4",
-        "@floating-ui/utils": "^0.2.10",
-        "tabbable": "^6.0.0"
-      },
-      "peerDependencies": {
-        "react": ">=17.0.0",
-        "react-dom": ">=17.0.0"
-      }
-    },
-    "node_modules/@floating-ui/react-dom": {
-      "version": "2.1.4",
-      "resolved": "https://registry.npmjs.org/@floating-ui/react-dom/-/react-dom-2.1.4.tgz",
-      "integrity": "sha512-JbbpPhp38UmXDDAu60RJmbeme37Jbgsm7NrHGgzYYFKmblzRUh6Pa641dII6LsjwF4XlScDrde2UAzDo/b9KPw==",
-      "license": "MIT",
-      "dependencies": {
-        "@floating-ui/dom": "^1.7.2"
-      },
-      "peerDependencies": {
-        "react": ">=16.8.0",
-        "react-dom": ">=16.8.0"
-      }
-    },
-    "node_modules/@floating-ui/utils": {
-      "version": "0.2.10",
-      "resolved": "https://registry.npmjs.org/@floating-ui/utils/-/utils-0.2.10.tgz",
-      "integrity": "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==",
-      "license": "MIT"
-    },
     "node_modules/@humanfs/core": {
       "version": "0.19.1",
       "resolved": "https://registry.npmjs.org/@humanfs/core/-/core-0.19.1.tgz",
@@ -1112,32 +1056,6 @@ SOFTWARE.
       "dependencies": {
         "@jridgewell/resolve-uri": "^3.1.0",
         "@jridgewell/sourcemap-codec": "^1.4.14"
-      }
-    },
-    "node_modules/@reduxjs/toolkit": {
-      "version": "2.8.2",
-      "resolved": "https://registry.npmjs.org/@reduxjs/toolkit/-/toolkit-2.8.2.tgz",
-      "integrity": "sha512-MYlOhQ0sLdw4ud48FoC5w0dH9VfWQjtCjreKwYTT3l+r427qYC5Y8PihNutepr8XrNaBUDQo9khWUwQxZaqt5A==",
-      "license": "MIT",
-      "dependencies": {
-        "@standard-schema/spec": "^1.0.0",
-        "@standard-schema/utils": "^0.3.0",
-        "immer": "^10.0.3",
-        "redux": "^5.0.1",
-        "redux-thunk": "^3.1.0",
-        "reselect": "^5.1.0"
-      },
-      "peerDependencies": {
-        "react": "^16.9.0 || ^17.0.0 || ^18 || ^19",
-        "react-redux": "^7.2.1 || ^8.1.3 || ^9.0.0"
-      },
-      "peerDependenciesMeta": {
-        "react": {
-          "optional": true
-        },
-        "react-redux": {
-          "optional": true
-        }
       }
     },
     "node_modules/@remix-run/router": {
@@ -1436,18 +1354,6 @@ SOFTWARE.
         "win32"
       ]
     },
-    "node_modules/@standard-schema/spec": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.0.0.tgz",
-      "integrity": "sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==",
-      "license": "MIT"
-    },
-    "node_modules/@standard-schema/utils": {
-      "version": "0.3.0",
-      "resolved": "https://registry.npmjs.org/@standard-schema/utils/-/utils-0.3.0.tgz",
-      "integrity": "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==",
-      "license": "MIT"
-    },
     "node_modules/@types/babel__core": {
       "version": "7.20.5",
       "resolved": "https://registry.npmjs.org/@types/babel__core/-/babel__core-7.20.5.tgz",
@@ -1570,36 +1476,10 @@ SOFTWARE.
       "dev": true,
       "license": "MIT"
     },
-    "node_modules/@types/react": {
-      "version": "19.1.8",
-      "resolved": "https://registry.npmjs.org/@types/react/-/react-19.1.8.tgz",
-      "integrity": "sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g==",
-      "devOptional": true,
-      "license": "MIT",
-      "dependencies": {
-        "csstype": "^3.0.2"
-      }
-    },
-    "node_modules/@types/react-dom": {
-      "version": "19.1.6",
-      "resolved": "https://registry.npmjs.org/@types/react-dom/-/react-dom-19.1.6.tgz",
-      "integrity": "sha512-4hOiT/dwO8Ko0gV1m/TJZYk3y0KBnY9vzDh7W+DH17b2HFSOGgdj33dhihPeuy3l0q23+4e+hoXHV6hCC4dCXw==",
-      "dev": true,
-      "license": "MIT",
-      "peerDependencies": {
-        "@types/react": "^19.0.0"
-      }
-    },
     "node_modules/@types/stylis": {
       "version": "4.2.5",
       "resolved": "https://registry.npmjs.org/@types/stylis/-/stylis-4.2.5.tgz",
       "integrity": "sha512-1Xve+NMN7FWjY14vLoY5tL3BVEQ/n42YLwaqJIPYhotZ9uBHt87VceMwWQpzmdEt2TNXIorIFG+YeCUUW7RInw==",
-      "license": "MIT"
-    },
-    "node_modules/@types/use-sync-external-store": {
-      "version": "0.0.6",
-      "resolved": "https://registry.npmjs.org/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz",
-      "integrity": "sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==",
       "license": "MIT"
     },
     "node_modules/@vitejs/plugin-react": {
@@ -2041,16 +1921,6 @@ SOFTWARE.
         "node": ">=12"
       }
     },
-    "node_modules/date-fns": {
-      "version": "4.1.0",
-      "resolved": "https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz",
-      "integrity": "sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==",
-      "license": "MIT",
-      "funding": {
-        "type": "github",
-        "url": "https://github.com/sponsors/kossnocorp"
-      }
-    },
     "node_modules/debug": {
       "version": "4.4.1",
       "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.1.tgz",
@@ -2089,6 +1959,16 @@ SOFTWARE.
       "license": "MIT",
       "engines": {
         "node": ">=0.4.0"
+      }
+    },
+    "node_modules/dom-helpers": {
+      "version": "5.2.1",
+      "resolved": "https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz",
+      "integrity": "sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==",
+      "license": "MIT",
+      "dependencies": {
+        "@babel/runtime": "^7.8.7",
+        "csstype": "^3.0.2"
       }
     },
     "node_modules/dunder-proto": {
@@ -2156,16 +2036,6 @@ SOFTWARE.
       "engines": {
         "node": ">= 0.4"
       }
-    },
-    "node_modules/es-toolkit": {
-      "version": "1.39.8",
-      "resolved": "https://registry.npmjs.org/es-toolkit/-/es-toolkit-1.39.8.tgz",
-      "integrity": "sha512-A8QO9TfF+rltS8BXpdu8OS+rpGgEdnRhqIVxO/ZmNvnXBYgOdSsxukT55ELyP94gZIntWJ+Li9QRrT2u1Kitpg==",
-      "license": "MIT",
-      "workspaces": [
-        "docs",
-        "benchmarks"
-      ]
     },
     "node_modules/esbuild": {
       "version": "0.21.5",
@@ -2290,29 +2160,6 @@ SOFTWARE.
         }
       }
     },
-    "node_modules/eslint-plugin-react-hooks": {
-      "version": "5.2.0",
-      "resolved": "https://registry.npmjs.org/eslint-plugin-react-hooks/-/eslint-plugin-react-hooks-5.2.0.tgz",
-      "integrity": "sha512-+f15FfK64YQwZdJNELETdn5ibXEUQmW1DZL6KXhNnc2heoy/sg9VJJeT7n8TlMWouzWqSWavFkIhHyIbIAEapg==",
-      "dev": true,
-      "license": "MIT",
-      "engines": {
-        "node": ">=10"
-      },
-      "peerDependencies": {
-        "eslint": "^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0"
-      }
-    },
-    "node_modules/eslint-plugin-react-refresh": {
-      "version": "0.4.20",
-      "resolved": "https://registry.npmjs.org/eslint-plugin-react-refresh/-/eslint-plugin-react-refresh-0.4.20.tgz",
-      "integrity": "sha512-XpbHQ2q5gUF8BGOX4dHe+71qoirYMhApEPZ7sfhF/dNnOF1UXnCMGZf79SFTBO7Bz5YEIT4TMieSlJBWhP9WBA==",
-      "dev": true,
-      "license": "MIT",
-      "peerDependencies": {
-        "eslint": ">=8.40"
-      }
-    },
     "node_modules/eslint-scope": {
       "version": "8.4.0",
       "resolved": "https://registry.npmjs.org/eslint-scope/-/eslint-scope-8.4.0.tgz",
@@ -2408,9 +2255,9 @@ SOFTWARE.
       }
     },
     "node_modules/eventemitter3": {
-      "version": "5.0.1",
-      "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.1.tgz",
-      "integrity": "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==",
+      "version": "4.0.7",
+      "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz",
+      "integrity": "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==",
       "license": "MIT"
     },
     "node_modules/fast-deep-equal": {
@@ -2419,6 +2266,15 @@ SOFTWARE.
       "integrity": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       "dev": true,
       "license": "MIT"
+    },
+    "node_modules/fast-equals": {
+      "version": "5.2.2",
+      "resolved": "https://registry.npmjs.org/fast-equals/-/fast-equals-5.2.2.tgz",
+      "integrity": "sha512-V7/RktU11J3I36Nwq2JnZEM7tNm17eBJz+u25qdxBZeCKiX6BkVSZQjwWIr+IobgnZy+ag73tTZgZi7tr0LrBw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6.0.0"
+      }
     },
     "node_modules/fast-json-stable-stringify": {
       "version": "2.1.0",
@@ -2521,33 +2377,6 @@ SOFTWARE.
         "node": ">= 6"
       }
     },
-    "node_modules/framer-motion": {
-      "version": "12.23.9",
-      "resolved": "https://registry.npmjs.org/framer-motion/-/framer-motion-12.23.9.tgz",
-      "integrity": "sha512-TqEHXj8LWfQSKqfdr5Y4mYltYLw96deu6/K9kGDd+ysqRJPNwF9nb5mZcrLmybHbU7gcJ+HQar41U3UTGanbbQ==",
-      "license": "MIT",
-      "dependencies": {
-        "motion-dom": "^12.23.9",
-        "motion-utils": "^12.23.6",
-        "tslib": "^2.4.0"
-      },
-      "peerDependencies": {
-        "@emotion/is-prop-valid": "*",
-        "react": "^18.0.0 || ^19.0.0",
-        "react-dom": "^18.0.0 || ^19.0.0"
-      },
-      "peerDependenciesMeta": {
-        "@emotion/is-prop-valid": {
-          "optional": true
-        },
-        "react": {
-          "optional": true
-        },
-        "react-dom": {
-          "optional": true
-        }
-      }
-    },
     "node_modules/fsevents": {
       "version": "2.3.3",
       "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
@@ -2632,19 +2461,6 @@ SOFTWARE.
         "node": ">=10.13.0"
       }
     },
-    "node_modules/globals": {
-      "version": "16.3.0",
-      "resolved": "https://registry.npmjs.org/globals/-/globals-16.3.0.tgz",
-      "integrity": "sha512-bqWEnJ1Nt3neqx2q5SFfGS8r/ahumIakg3HcwtNlrVlwXIeNumWn/c7Pn/wKzGhf6SaW6H6uWXLqC30STCMchQ==",
-      "dev": true,
-      "license": "MIT",
-      "engines": {
-        "node": ">=18"
-      },
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      }
-    },
     "node_modules/gopd": {
       "version": "1.2.0",
       "resolved": "https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz",
@@ -2714,16 +2530,6 @@ SOFTWARE.
       "license": "MIT",
       "engines": {
         "node": ">= 4"
-      }
-    },
-    "node_modules/immer": {
-      "version": "10.1.1",
-      "resolved": "https://registry.npmjs.org/immer/-/immer-10.1.1.tgz",
-      "integrity": "sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==",
-      "license": "MIT",
-      "funding": {
-        "type": "opencollective",
-        "url": "https://opencollective.com/immer"
       }
     },
     "node_modules/import-fresh": {
@@ -2858,15 +2664,6 @@ SOFTWARE.
         "node": ">=6"
       }
     },
-    "node_modules/jwt-decode": {
-      "version": "4.0.0",
-      "resolved": "https://registry.npmjs.org/jwt-decode/-/jwt-decode-4.0.0.tgz",
-      "integrity": "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==",
-      "license": "MIT",
-      "engines": {
-        "node": ">=18"
-      }
-    },
     "node_modules/keyv": {
       "version": "4.5.4",
       "resolved": "https://registry.npmjs.org/keyv/-/keyv-4.5.4.tgz",
@@ -2906,6 +2703,12 @@ SOFTWARE.
       "funding": {
         "url": "https://github.com/sponsors/sindresorhus"
       }
+    },
+    "node_modules/lodash": {
+      "version": "4.17.21",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
+      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==",
+      "license": "MIT"
     },
     "node_modules/lodash.merge": {
       "version": "4.6.2",
@@ -2978,21 +2781,6 @@ SOFTWARE.
       "engines": {
         "node": "*"
       }
-    },
-    "node_modules/motion-dom": {
-      "version": "12.23.9",
-      "resolved": "https://registry.npmjs.org/motion-dom/-/motion-dom-12.23.9.tgz",
-      "integrity": "sha512-6Sv++iWS8XMFCgU1qwKj9l4xuC47Hp4+2jvPfyTXkqDg2tTzSgX6nWKD4kNFXk0k7llO59LZTPuJigza4A2K1A==",
-      "license": "MIT",
-      "dependencies": {
-        "motion-utils": "^12.23.6"
-      }
-    },
-    "node_modules/motion-utils": {
-      "version": "12.23.6",
-      "resolved": "https://registry.npmjs.org/motion-utils/-/motion-utils-12.23.6.tgz",
-      "integrity": "sha512-eAWoPgr4eFEOFfg2WjIsMoqJTW6Z8MTUCgn/GZ3VRpClWBdnbjryiA3ZSNLyxCTmCQx4RmYX6jX1iWHbenUPNQ==",
-      "license": "MIT"
     },
     "node_modules/ms": {
       "version": "2.1.3",
@@ -3209,39 +2997,28 @@ SOFTWARE.
       }
     },
     "node_modules/react": {
-      "version": "19.1.0",
-      "resolved": "https://registry.npmjs.org/react/-/react-19.1.0.tgz",
-      "integrity": "sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==",
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
+      "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
       "license": "MIT",
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      },
       "engines": {
         "node": ">=0.10.0"
       }
     },
-    "node_modules/react-datepicker": {
-      "version": "8.4.0",
-      "resolved": "https://registry.npmjs.org/react-datepicker/-/react-datepicker-8.4.0.tgz",
-      "integrity": "sha512-6nPDnj8vektWCIOy9ArS3avus9Ndsyz5XgFCJ7nBxXASSpBdSL6lG9jzNNmViPOAOPh6T5oJyGaXuMirBLECag==",
-      "license": "MIT",
-      "dependencies": {
-        "@floating-ui/react": "^0.27.3",
-        "clsx": "^2.1.1",
-        "date-fns": "^4.1.0"
-      },
-      "peerDependencies": {
-        "react": "^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc",
-        "react-dom": "^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc"
-      }
-    },
     "node_modules/react-dom": {
-      "version": "19.1.0",
-      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.1.0.tgz",
-      "integrity": "sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==",
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
+      "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
       "license": "MIT",
       "dependencies": {
-        "scheduler": "^0.26.0"
+        "loose-envify": "^1.1.0",
+        "scheduler": "^0.23.2"
       },
       "peerDependencies": {
-        "react": "^19.1.0"
+        "react": "^18.3.1"
       }
     },
     "node_modules/react-icons": {
@@ -3254,11 +3031,10 @@ SOFTWARE.
       }
     },
     "node_modules/react-is": {
-      "version": "19.1.0",
-      "resolved": "https://registry.npmjs.org/react-is/-/react-is-19.1.0.tgz",
-      "integrity": "sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg==",
-      "license": "MIT",
-      "peer": true
+      "version": "18.3.1",
+      "resolved": "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz",
+      "integrity": "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==",
+      "license": "MIT"
     },
     "node_modules/react-loading-skeleton": {
       "version": "3.5.0",
@@ -3267,29 +3043,6 @@ SOFTWARE.
       "license": "MIT",
       "peerDependencies": {
         "react": ">=16.8.0"
-      }
-    },
-    "node_modules/react-redux": {
-      "version": "9.2.0",
-      "resolved": "https://registry.npmjs.org/react-redux/-/react-redux-9.2.0.tgz",
-      "integrity": "sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==",
-      "license": "MIT",
-      "dependencies": {
-        "@types/use-sync-external-store": "^0.0.6",
-        "use-sync-external-store": "^1.4.0"
-      },
-      "peerDependencies": {
-        "@types/react": "^18.2.25 || ^19",
-        "react": "^18.0 || ^19",
-        "redux": "^5.0.0"
-      },
-      "peerDependenciesMeta": {
-        "@types/react": {
-          "optional": true
-        },
-        "redux": {
-          "optional": true
-        }
       }
     },
     "node_modules/react-refresh": {
@@ -3334,75 +3087,68 @@ SOFTWARE.
         "react-dom": ">=16.8"
       }
     },
-    "node_modules/react-to-print": {
-      "version": "3.1.1",
-      "resolved": "https://registry.npmjs.org/react-to-print/-/react-to-print-3.1.1.tgz",
-      "integrity": "sha512-N0MUMhpl8nkGri13BjP7zusj3B/j+1eMOTt8N8PYuhBYGzA4PqTXqcihJ9cZw996dvhV6mBdwafIQCg3Ap5bKg==",
-      "license": "MIT",
-      "peerDependencies": {
-        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ~19"
-      }
-    },
-    "node_modules/react-toastify": {
-      "version": "11.0.5",
-      "resolved": "https://registry.npmjs.org/react-toastify/-/react-toastify-11.0.5.tgz",
-      "integrity": "sha512-EpqHBGvnSTtHYhCPLxML05NLY2ZX0JURbAdNYa6BUkk+amz4wbKBQvoKQAB0ardvSarUBuY4Q4s1sluAzZwkmA==",
+    "node_modules/react-smooth": {
+      "version": "4.0.4",
+      "resolved": "https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz",
+      "integrity": "sha512-gnGKTpYwqL0Iii09gHobNolvX4Kiq4PKx6eWBCYYix+8cdw+cGo3do906l1NBPKkSWx1DghC1dlWG9L2uGd61Q==",
       "license": "MIT",
       "dependencies": {
-        "clsx": "^2.1.1"
-      },
-      "peerDependencies": {
-        "react": "^18 || ^19",
-        "react-dom": "^18 || ^19"
-      }
-    },
-    "node_modules/recharts": {
-      "version": "3.1.0",
-      "resolved": "https://registry.npmjs.org/recharts/-/recharts-3.1.0.tgz",
-      "integrity": "sha512-NqAqQcGBmLrfDs2mHX/bz8jJCQtG2FeXfE0GqpZmIuXIjkpIwj8sd9ad0WyvKiBKPd8ZgNG0hL85c8sFDwascw==",
-      "license": "MIT",
-      "dependencies": {
-        "@reduxjs/toolkit": "1.x.x || 2.x.x",
-        "clsx": "^2.1.1",
-        "decimal.js-light": "^2.5.1",
-        "es-toolkit": "^1.39.3",
-        "eventemitter3": "^5.0.1",
-        "immer": "^10.1.1",
-        "react-redux": "8.x.x || 9.x.x",
-        "reselect": "5.1.1",
-        "tiny-invariant": "^1.3.3",
-        "use-sync-external-store": "^1.2.2",
-        "victory-vendor": "^37.0.2"
-      },
-      "engines": {
-        "node": ">=18"
+        "fast-equals": "^5.0.1",
+        "prop-types": "^15.8.1",
+        "react-transition-group": "^4.4.5"
       },
       "peerDependencies": {
         "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-        "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-        "react-is": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+        "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
       }
     },
-    "node_modules/redux": {
-      "version": "5.0.1",
-      "resolved": "https://registry.npmjs.org/redux/-/redux-5.0.1.tgz",
-      "integrity": "sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w==",
-      "license": "MIT"
-    },
-    "node_modules/redux-thunk": {
-      "version": "3.1.0",
-      "resolved": "https://registry.npmjs.org/redux-thunk/-/redux-thunk-3.1.0.tgz",
-      "integrity": "sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw==",
-      "license": "MIT",
+    "node_modules/react-transition-group": {
+      "version": "4.4.5",
+      "resolved": "https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz",
+      "integrity": "sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "@babel/runtime": "^7.5.5",
+        "dom-helpers": "^5.0.1",
+        "loose-envify": "^1.4.0",
+        "prop-types": "^15.6.2"
+      },
       "peerDependencies": {
-        "redux": "^5.0.0"
+        "react": ">=16.6.0",
+        "react-dom": ">=16.6.0"
       }
     },
-    "node_modules/reselect": {
-      "version": "5.1.1",
-      "resolved": "https://registry.npmjs.org/reselect/-/reselect-5.1.1.tgz",
-      "integrity": "sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==",
-      "license": "MIT"
+    "node_modules/recharts": {
+      "version": "2.15.4",
+      "resolved": "https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz",
+      "integrity": "sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw==",
+      "license": "MIT",
+      "dependencies": {
+        "clsx": "^2.0.0",
+        "eventemitter3": "^4.0.1",
+        "lodash": "^4.17.21",
+        "react-is": "^18.3.1",
+        "react-smooth": "^4.0.4",
+        "recharts-scale": "^0.4.4",
+        "tiny-invariant": "^1.3.1",
+        "victory-vendor": "^36.6.8"
+      },
+      "engines": {
+        "node": ">=14"
+      },
+      "peerDependencies": {
+        "react": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+      }
+    },
+    "node_modules/recharts-scale": {
+      "version": "0.4.5",
+      "resolved": "https://registry.npmjs.org/recharts-scale/-/recharts-scale-0.4.5.tgz",
+      "integrity": "sha512-kivNFO+0OcUNu7jQquLXAxz1FIwZj8nrj+YkOKc5694NbjCvcT6aSZiIzNzd2Kul4o4rTto8QVR9lMNtxD4G1w==",
+      "license": "MIT",
+      "dependencies": {
+        "decimal.js-light": "^2.4.1"
+      }
     },
     "node_modules/resolve-from": {
       "version": "4.0.0",
@@ -3455,10 +3201,13 @@ SOFTWARE.
       }
     },
     "node_modules/scheduler": {
-      "version": "0.26.0",
-      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.26.0.tgz",
-      "integrity": "sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==",
-      "license": "MIT"
+      "version": "0.23.2",
+      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",
+      "integrity": "sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==",
+      "license": "MIT",
+      "dependencies": {
+        "loose-envify": "^1.1.0"
+      }
     },
     "node_modules/semver": {
       "version": "6.3.1",
@@ -3574,23 +3323,11 @@ SOFTWARE.
         "node": ">=8"
       }
     },
-    "node_modules/tabbable": {
-      "version": "6.2.0",
-      "resolved": "https://registry.npmjs.org/tabbable/-/tabbable-6.2.0.tgz",
-      "integrity": "sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew==",
-      "license": "MIT"
-    },
     "node_modules/tiny-invariant": {
       "version": "1.3.3",
       "resolved": "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz",
       "integrity": "sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==",
       "license": "MIT"
-    },
-    "node_modules/tslib": {
-      "version": "2.8.1",
-      "resolved": "https://registry.npmjs.org/tslib/-/tslib-2.8.1.tgz",
-      "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
-      "license": "0BSD"
     },
     "node_modules/type-check": {
       "version": "0.4.0",
@@ -3646,19 +3383,10 @@ SOFTWARE.
         "punycode": "^2.1.0"
       }
     },
-    "node_modules/use-sync-external-store": {
-      "version": "1.5.0",
-      "resolved": "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.5.0.tgz",
-      "integrity": "sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==",
-      "license": "MIT",
-      "peerDependencies": {
-        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
-      }
-    },
     "node_modules/victory-vendor": {
-      "version": "37.3.6",
-      "resolved": "https://registry.npmjs.org/victory-vendor/-/victory-vendor-37.3.6.tgz",
-      "integrity": "sha512-SbPDPdDBYp+5MJHhBCAyI7wKM3d5ivekigc2Dk2s7pgbZ9wIgIBYGVw4zGHBml/qTFbexrofXW6Gu4noGxrOwQ==",
+      "version": "36.9.2",
+      "resolved": "https://registry.npmjs.org/victory-vendor/-/victory-vendor-36.9.2.tgz",
+      "integrity": "sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==",
       "license": "MIT AND ISC",
       "dependencies": {
         "@types/d3-array": "^3.0.3",
@@ -3803,29 +3531,21 @@ SOFTWARE.
   },
   "dependencies": {
     "axios": "^1.7.7",
-    "framer-motion": "^12.0.0",
-    "jwt-decode": "^4.0.0",
     "react": "^18.3.1",
-    "react-datepicker": "^7.4.0",
     "react-dom": "^18.3.1",
     "react-icons": "^5.3.0",
     "react-loading-skeleton": "^3.5.0",
     "react-router-dom": "^6.27.0",
-    "react-to-print": "^2.15.1",
-    "react-toastify": "^10.0.6",
     "recharts": "^2.13.0",
     "styled-components": "^6.1.13"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.2",
     "eslint": "^9.12.0",
-    "eslint-plugin-react": "^7.37.1",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "eslint-plugin-react-refresh": "^0.4.12",
-    "prettier": "^3.3.3",
     "vite": "^5.4.8"
   }
 }
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\README.md =====
 
@@ -7041,8 +6761,6 @@ module.exports = { protect };
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\analyticsRoutes.js =====
 
-// backend/routes/analyticsRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
@@ -7087,7 +6805,7 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
                 CAST(
                     COALESCE(
                         (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
-                         FROM order_items oi
+                        FROM order_items oi
                          JOIN orders o2 ON oi.order_id = o2.id
                          WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                     , 0) 
@@ -7156,7 +6874,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
                 COALESCE(SUM(o.total_amount), 0) as sales
             FROM dates
             LEFT JOIN orders o ON DATE(o.created_at) = dates.date AND o.business_id = ?
-            GROUP BY DATE(o.created_at)
+            GROUP BY dates.date  -- Changed to group by dates.date
             ORDER BY date ASC
         `;
         const [dailySales] = await db.query(dailySalesQuery, [startDate, endDate, businessId]);
@@ -7191,7 +6909,7 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
             LEFT JOIN orders o ON oi.order_id = o.id
             WHERE p.business_id = ?
-              AND o.business_id = ? AND o.created_at BETWEEN ? AND ?
+            AND o.business_id = ? AND o.created_at BETWEEN ? AND ?
             GROUP BY p.name, p.id, p.stock
             ORDER BY totalSold DESC
             LIMIT 5
@@ -7265,41 +6983,8 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
         const businessId = req.user.business_id;
         const notifications = [];
 
-        // Notifikasi Stok Rendah
-        const [lowStockProducts] = await db.query(
-            `SELECT p.id, 
-                    p.name, 
-                    COALESCE(p.stock, 0) as stock 
-             FROM products p
-             WHERE p.business_id = ? 
-             AND p.stock <= 10 
-             AND p.stock >= 0 
-             ORDER BY p.stock ASC 
-             LIMIT 3`,
-            [businessId]
-        );
-        lowStockProducts.forEach(product => {
-            notifications.push({ 
-                id: `low-stock-${product.id}`, 
-                type: 'warning', 
-                icon: 'FiAlertCircle', 
-                text: `Produk "${product.name}" tinggal ${product.stock} unit.` 
-            });
-        });
-
-        // Notifikasi Stok Habis
-        const [outOfStockProducts] = await db.query(
-            `SELECT id, name FROM products WHERE business_id = ? AND stock = 0 LIMIT 3`,
-            [businessId]
-        );
-        outOfStockProducts.forEach(product => {
-            notifications.push({ 
-                id: `out-of-stock-${product.id}`, 
-                type: 'danger', 
-                icon: 'FiAlertCircle', 
-                text: `Produk "${product.name}" habis!` 
-            });
-        });
+        // Removed Notifikasi Stok Rendah and Notifikasi Stok Habis queries
+        // As per request, this feature is removed.
 
         res.json(notifications);
 
@@ -7315,7 +7000,7 @@ router.get('/stock-info', protect, isAdmin, async (req, res) => {
         const businessId = req.user.business_id;
         const [products] = await db.query(
             `SELECT p.id, p.name, p.stock, p.image_url 
-             FROM products p
+            FROM products p
              WHERE p.business_id = ?
              ORDER BY p.stock ASC, p.name ASC`,
             [businessId]
@@ -7355,7 +7040,6 @@ router.get('/stale-products', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch stale products data." });
     }
 });
-
 // ENDPOINT: Get Expired Products (produk mendekati kadaluarsa atau sudah kadaluarsa - for InfoTabs)
 router.get('/expired-products', protect, isAdmin, async (req, res) => {
     try {
@@ -7479,7 +7163,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch insights data." });
     }
 });
-
 
 module.exports = router;
 
@@ -8105,7 +7788,7 @@ router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-       
+        
         const exportsDir = path.join(__dirname, '..', 'exports');
         if (!fs.existsSync(exportsDir)) {
             fs.mkdirSync(exportsDir, { recursive: true });
@@ -8414,11 +8097,42 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
             await connection.commit();
             console.log("Seluruh riwayat transaksi untuk bisnis ini berhasil dihapus.");
             await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders.`);
-            res.status(200).json({ message: 'Semua riwayat transaksi untuk bisnis Anda telah dihapus.' });
+
+            // Reset auto-increment ID for orders table
+            try {
+                await db.query('ALTER TABLE orders AUTO_INCREMENT = 1');
+                console.log("Auto-increment ID for 'orders' table reset to 1.");
+                await logActivity(businessId, userId, 'RESET_ORDER_ID_COUNTER', 'Order ID counter reset to 1 after clearing history.');
+            } catch (resetError) {
+                console.error("Failed to reset auto-increment ID:", resetError);
+                await logActivity(businessId, userId, 'RESET_ORDER_ID_COUNTER_FAILED', `Failed to reset order ID counter. Error: ${resetError.message}`);
+                // You can choose to send this error to the frontend
+                // or just log it. For now, we'll continue.
+            }
+
+            // --- ADDED CODE START ---
+            // Reset loyalty points for all customers for this business
+            // Assuming the customers table has a loyalty_points column and business_id
+            try {
+                const [resetPointsResult] = await connection.query(
+                    'UPDATE customers SET points = 0 WHERE business_id = ?',
+                    [businessId]
+                );
+                console.log(`Loyalty points for ${resetPointsResult.affectedRows} customers reset to 0.`);
+                await logActivity(businessId, userId, 'RESET_LOYALTY_POINTS', `Reset loyalty points for ${resetPointsResult.affectedRows} customers after clearing order history.`);
+            } catch (resetPointsError) {
+                console.error("Failed to reset loyalty points:", resetPointsError);
+                await logActivity(businessId, userId, 'RESET_LOYALTY_POINTS_FAILED', `Failed to reset loyalty points after clearing history. Error: ${resetPointsError.message}`);
+                // Can choose to send this error to the frontend or just log
+                // For now, we log and continue with the successful deletion response
+            }
+            // --- ADDED CODE END ---
+
+            res.status(200).json({ message: 'Semua riwayat transaksi dan poin loyalitas pelanggan untuk bisnis Anda telah direset.' });
 
         } else {
             await connection.commit();
-            console.log("Tidak ada pesanan ditemukan untuk dihapus dalam bisnis ini.");
+            console.log("No orders found to delete in this business.");
             res.status(200).json({ message: 'Tidak ada riwayat transaksi untuk dihapus.' });
         }
     } catch (error) {
@@ -8437,7 +8151,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         await connection.beginTransaction();
         const businessId = req.user.business_id;
         const userId = req.user.id;
-        console.log(`Mencoba menghapus pesanan ID: ${req.params.id} untuk bisnis: ${businessId}`);
+        console.log(`Attempting to delete order ID: ${req.params.id} for business: ${businessId}`);
 
         const [orderItemsToRevert] = await connection.query(
              `SELECT oi.product_id, oi.quantity
@@ -8476,6 +8190,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\productRoutes.js =====
 
@@ -8983,6 +8698,8 @@ module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\settingsRoutes.js =====
 
+// backend/routes/settingsRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
@@ -9052,9 +8769,9 @@ router.post('/email', protect, isAdmin, async (req, res) => {
 router.get('/business', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        // NEW: Tambahkan low_stock_threshold dan enable_email_notifications
+        // Removed low_stock_threshold from query
         const [[settings]] = await db.query(
-            'SELECT payment_methods, receipt_logo_url, receipt_footer_text, tax_rate, low_stock_threshold FROM businesses WHERE id = ?',
+            'SELECT payment_methods, receipt_logo_url, receipt_footer_text, tax_rate FROM businesses WHERE id = ?',
             [businessId]
         );
 
@@ -9069,9 +8786,8 @@ router.get('/business', protect, isAdmin, async (req, res) => {
 });
 
 router.post('/business', protect, isAdmin, async (req, res) => {
-    // Properti yang diterima dari frontend sekarang adalah `receipt_footer_message`
-    // NEW: Tambahkan low_stock_threshold
-    const { payment_methods, receipt_logo_url, receipt_footer_message, tax_rate, low_stock_threshold } = req.body;
+    // Removed low_stock_threshold from request body
+    const { payment_methods, receipt_logo_url, receipt_footer_message, tax_rate } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
@@ -9082,17 +8798,14 @@ router.post('/business', protect, isAdmin, async (req, res) => {
     if (tax_rate === undefined || isNaN(parseFloat(tax_rate)) || parseFloat(tax_rate) < 0) {
         return res.status(400).json({ message: 'Tarif pajak tidak valid.' });
     }
-    // NEW: Validasi low_stock_threshold
-    if (low_stock_threshold === undefined || isNaN(parseInt(low_stock_threshold)) || parseInt(low_stock_threshold) < 0) {
-        return res.status(400).json({ message: 'Ambang batas stok rendah tidak valid.' });
-    }
+    // Removed validation for low_stock_threshold
 
 
     try {
-        // NEW: Tambahkan low_stock_threshold ke query UPDATE
+        // Removed low_stock_threshold from query UPDATE
         await db.query(
-            'UPDATE businesses SET payment_methods = ?, receipt_logo_url = ?, receipt_footer_text = ?, tax_rate = ?, low_stock_threshold = ? WHERE id = ?',
-            [JSON.stringify(payment_methods), receipt_logo_url, receipt_footer_message, parseFloat(tax_rate), parseInt(low_stock_threshold), businessId]
+            'UPDATE businesses SET payment_methods = ?, receipt_logo_url = ?, receipt_footer_text = ?, tax_rate = ? WHERE id = ?',
+            [JSON.stringify(payment_methods), receipt_logo_url, receipt_footer_message, parseFloat(tax_rate), businessId]
         );
 
         await logActivity(businessId, userId, 'UPDATE_BUSINESS_SETTINGS', 'Business settings updated.');
@@ -9793,7 +9506,7 @@ router.post('/', protect, isAdmin, async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const [userResult] = await db.query('INSERT INTO users (business_id, name, email, password, role) VALUES (?, ?, ?, ?, ?)', [businessId, name, email, hashedPassword, role]);
-        const userId = result.insertId;
+        const userId = userResult.insertId; // Perbaikan di sini: Menggunakan userResult
         await logActivity(businessId, req.user.id, 'CREATE_USER_BY_ADMIN', `Admin created new user: ${name} (${role}).`);
         res.status(201).json({ message: 'Pengguna berhasil ditambahkan!', userId });
     } catch (error) {
@@ -9887,6 +9600,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 
 module.exports = router;
 
+
 ===== C:\Users\Ibnu\Project\smart-pos\backend\utils\dateUtils.js =====
 
 // backend/utils/dateUtils.js
@@ -9933,34 +9647,56 @@ module.exports = { getValidDateRange };
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\utils\encryption.js =====
 
+// backend/utils/encryption.js
 const crypto = require('crypto');
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const SALT_LENGTH = 64;
 const TAG_LENGTH = 16;
+const KEY_LENGTH = 32; // Kunci harus 32 byte untuk aes-256-gcm
 
-// NEW: Use a more robust key derivation (e.g., from an environment variable)
-// Ensure process.env.ENCRYPTION_KEY is set in your .env file and is a strong, random string.
-const KEY = crypto.scryptSync(process.env.ENCRYPTION_KEY, 'salt', 32);
+// Kunci utama dari environment variable, JANGAN DIUBAH SEMBARANGAN
+const MASTER_KEY = process.env.ENCRYPTION_KEY;
 
 function encrypt(text) {
-    const iv = crypto.randomBytes(IV_LENGTH);
+    // 1. Buat salt acak untuk setiap enkripsi
     const salt = crypto.randomBytes(SALT_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, KEY, iv);
+
+    // 2. Buat kunci enkripsi unik menggunakan master key dan salt acak
+    // Setiap enkripsi akan memiliki kunci turunan yang berbeda karena salt acak yang berbeda
+    const key = crypto.scryptSync(MASTER_KEY, salt, KEY_LENGTH); // <-- PERBAIKAN: Gunakan salt acak di sini
+
+    // 3. Buat IV (Initialization Vector) acak
+    const iv = crypto.randomBytes(IV_LENGTH);
+    
+    // 4. Enkripsi data
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv); // <-- Gunakan key turunan yang unik
     const encrypted = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final()]);
     const tag = cipher.getAuthTag();
+
+    // 5. Gabungkan salt, iv, tag, dan data terenkripsi untuk disimpan
+    // Salt harus disimpan bersama data terenkripsi agar bisa digunakan saat dekripsi
     return Buffer.concat([salt, iv, tag, encrypted]).toString('hex');
 }
 
 function decrypt(encryptedText) {
     const data = Buffer.from(String(encryptedText), 'hex');
+
+    // 1. Ekstrak salt, iv, tag, dan data terenkripsi dari hasil gabungan
     const salt = data.slice(0, SALT_LENGTH);
     const iv = data.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
     const tag = data.slice(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
     const encrypted = data.slice(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
-    const decipher = crypto.createDecipheriv(ALGORITHM, KEY, iv);
+
+    // 2. Buat kembali kunci enkripsi yang sama persis menggunakan master key dan salt yang diekstrak
+    // Ini memastikan kunci yang sama digunakan untuk dekripsi
+    const key = crypto.scryptSync(MASTER_KEY, salt, KEY_LENGTH); // <-- PERBAIKAN: Gunakan salt yang diekstrak di sini
+
+    // 3. Dekripsi data
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv); // <-- Gunakan key turunan yang unik
     decipher.setAuthTag(tag);
+
     return decipher.update(encrypted, 'hex', 'utf8') + decipher.final('utf8');
 }
 
@@ -15495,8 +15231,8 @@ import React, { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -15586,7 +15322,12 @@ function AppContent() {
         >
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
-            <BrowserRouter>
+            <BrowserRouter
+                future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true
+                }}
+            >
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
@@ -15645,6 +15386,7 @@ function App() {
 }
 
 export default App;
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\main.jsx =====
 
@@ -15973,27 +15715,7 @@ import { motion } from 'framer-motion';
 import { FiLogOut } from 'react-icons/fi';
 import { closeShift } from '../services/api';
 import { toast } from 'react-toastify';
-
-// Helper Functions for Currency Formatting (copied from StartShiftModal.jsx)
-const formatCurrency = (value) => {
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    if (isNaN(number)) return String(number);
-    return `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(number)}`;
-};
-
-const parseCurrency = (value) => {
-    if (typeof value !== 'string') return value;
-    let cleanedValue = value.trim();
-    cleanedValue = cleanedValue.replace(/Rp\s?/g, ''); // Hapus "Rp" prefix dan spasi setelahnya
-    cleanedValue = cleanedValue.replace(/\s/g, ''); // Hapus semua spasi
-    cleanedValue = cleanedValue.replace(/\./g, ''); // Hapus pemisah ribuan (titik)
-    cleanedValue = cleanedValue.replace(/,/g, '.'); // Ubah koma (jika digunakan sebagai desimal) menjadi titik
-    
-    const parsed = parseFloat(cleanedValue);
-    // Jika hasil parse bukan angka, kembalikan string asli agar input tidak jadi NaN
-    return isNaN(parsed) ? cleanedValue : parsed; 
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
 
 
 const ModalBackdrop = styled(motion.div)`
@@ -16029,7 +15751,7 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Gunakan parseFloat langsung pada state endingCash yang sudah diproses oleh parseCurrency
+        // Gunakan parseFloat langsung pada state endingCash yang sudah diproses oleh parseRupiah
         const cashAmount = parseFloat(endingCash);
         if (isNaN(cashAmount) || cashAmount < 0) {
             return toast.error("Masukkan jumlah kas akhir yang valid.");
@@ -16063,10 +15785,10 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
                         <Input
                             id="endingCash"
                             type="text" // Mengizinkan karakter non-angka untuk format Rupiah
-                            value={formatCurrency(endingCash)} // Menampilkan nilai dalam format Rupiah
+                            value={formatRupiah(endingCash)} // Menampilkan nilai dalam format Rupiah
                             onChange={(e) => {
                                 // Saat input berubah, bersihkan nilai dan simpan sebagai angka (atau string bersih jika tidak valid)
-                                setEndingCash(parseCurrency(e.target.value));
+                                setEndingCash(parseRupiah(e.target.value));
                             }}
                             placeholder="Hitung dan masukkan total uang tunai"
                             required
@@ -16495,28 +16217,7 @@ export default DailyReport;
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FiSave, FiX } from 'react-icons/fi';
-
-// Helper Functions
-const cleanAndParseInput = (value) => {
-    if (typeof value !== 'string') {
-        value = String(value);
-    }
-    let cleanedValue = value.trim();
-    cleanedValue = cleanedValue.replace(/Rp\s?/g, ''); // Remove "Rp" prefix
-    cleanedValue = cleanedValue.replace(/\s/g, ''); // Remove spaces
-    cleanedValue = cleanedValue.replace(/\./g, ''); // Remove thousand separators
-    cleanedValue = cleanedValue.replace(/,/g, '.'); // Convert comma to decimal point
-    return isNaN(parseFloat(cleanedValue)) ? '' : cleanedValue; // Return empty string if invalid
-};
-
-const formatCurrency = (value) => {
-    if (!value || isNaN(parseFloat(value))) return '';
-    const numberToFormat = parseFloat(value);
-    return `Rp ${new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-    }).format(numberToFormat)}`;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
 
 // Styled Components
 const ModalOverlay = styled.div`
@@ -16629,7 +16330,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
         if (name === 'amount') {
             setFormData(prev => ({
                 ...prev,
-                [name]: cleanAndParseInput(value)
+                [name]: parseRupiah(value) // Use parseRupiah here
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -16670,7 +16371,7 @@ function EditExpenseModal({ isOpen, onClose, expense, onSave, isSubmitting }) {
                         <Input
                             name="amount"
                             type="text"
-                            value={formatCurrency(formData.amount)}
+                            value={formatRupiah(formData.amount)} // Use formatRupiah here
                             onChange={handleChange}
                             required
                         />
@@ -17119,19 +16820,7 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-
-const formatCurrency = (value) => {
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    if (isNaN(number)) return String(value);
-    return `Rp ${new Intl.NumberFormat('id-ID').format(number)}`;
-};
-const parseCurrency = (value) => {
-    if (typeof value !== 'string') return value;
-    const cleanValue = value.replace(/Rp\s?|\./g, '').replace(/,/g, '.');
-    const parsed = parseFloat(cleanValue);
-    return isNaN(parsed) ? value : parsed;
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
 
 // --- Styled Components ---
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
@@ -17257,7 +16946,8 @@ function ProductFormPage() {
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
         if (field === 'price' || field === 'cost_price') {
-            newVariants[index][field] = value === '' ? '' : parseCurrency(value);
+            // Gunakan parseRupiah di sini
+            newVariants[index][field] = value === '' ? '' : parseRupiah(value);
         } else {
             newVariants[index][field] = value;
         }
@@ -17404,17 +17094,17 @@ function ProductFormPage() {
                             <VariantRow key={index}>
                                 <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
                                 <Input
-                                    type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)}
+                                    type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
                                     onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
+                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
                                 <Input
-                                    type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)}
+                                    type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
                                     onChange={e => handleVariantChange(index, 'price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
+                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
                                     required
                                 />
                                 {/* <-- PERUBAHAN BARCODE 5: Input untuk barcode ditambahkan di sini --> */}
@@ -17571,10 +17261,10 @@ export default Receipt;
 
 // frontend/src/components/Sidebar.jsx
 
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiUsers, FiSettings, FiZap, FiPower } from 'react-icons/fi'; // Hapus FiFileText, FiClock, FiTag, FiUserCheck
+import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiSettings, FiZap, FiPower, FiClock, FiFileText } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import { useShift } from '../context/ShiftContext';
 import CloseShiftModal from './CloseShiftModal';
@@ -17582,35 +17272,49 @@ import { toast } from 'react-toastify';
 
 const SidebarContainer = styled.div`
   width: 250px;
-  background-color: var(--bg-surface); border-right: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 25px 20px;
+  padding: 20px; /* Sedikit dikurangi padding atas/bawah */
+  height: 100vh;
+  box-sizing: border-box;
+  /* Gunakan gap untuk jarak antar anak langsung (Logo, NavList, ActionButtonsContainer) */
+  gap: 30px; /* Jarak utama antar blok */
 `;
+
 const Logo = styled.h1`
   font-size: 1.8rem;
   font-weight: 700;
   color: var(--primary-color);
   text-align: center;
-  margin-bottom: 50px;
+  margin: 0; /* Hapus margin default */
 `;
+
 const NavList = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  /* Gunakan gap untuk jarak antar item menu */
+  gap: 6px; /* Jarak antar item menu */
   flex-grow: 1;
+  /* Scroll jika konten terlalu panjang */
+  overflow-y: auto;
 `;
+
 const NavItem = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 15px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 12px 20px;
+  padding: 12px 15px; /* Sedikit dikurangi padding horizontal */
   border-radius: 8px;
-  margin-bottom: 8px;
   font-weight: 500;
   transition: all 0.2s ease-in-out;
+  /* Hilangkan margin-bottom karena sudah pakai gap */
 
   &:hover {
     background-color: var(--bg-main);
@@ -17622,28 +17326,39 @@ const NavItem = styled(NavLink)`
     color: white;
   }
 `;
+
+// Container baru untuk tombol-tombol aksi di bawah
+const ActionButtonsContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  /* Gunakan gap untuk jarak antar tombol dalam container ini */
+  gap: 12px; /* Jarak antar tombol Tutup Shift dan Logout */
+  /* Margin top untuk memberi jeda dari NavList */
+  margin-top: 20px; /* JEDA UTAMA DARI MENU UTAMA */
+`;
+
 // Styled component untuk tombol Tutup Shift
 const CloseShiftButton = styled.button`
   display: flex;
   align-items: center;
   gap: 15px;
   width: 100%;
-  background-color: var(--red-color); /* Warna merah untuk aksi tutup */
+  background-color: var(--red-color);
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 12px 20px;
-  font-weight: 600; /* Lebih tebal */
+  padding: 12px 15px; /* Sesuaikan padding */
+  font-weight: 600;
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
   cursor: pointer;
-  margin-top: 25px; /* Jarak dari item di atasnya */
-  box-shadow: 0 4px 10px rgba(229, 62, 62, 0.3); /* Sedikit bayangan */
+  box-shadow: 0 4px 10px rgba(229, 62, 62, 0.3);
   transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  /* Hilangkan margin-top karena sudah pakai gap di container */
 
   &:hover {
-    background-color: #CC2222; /* Merah yang sedikit lebih gelap saat hover */
-    transform: translateY(-2px); /* Efek angkat sedikit */
+    background-color: #CC2222;
+    transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(229, 62, 62, 0.4);
   }
 
@@ -17651,6 +17366,7 @@ const CloseShiftButton = styled.button`
     opacity: 0.5;
     cursor: not-allowed;
     box-shadow: none;
+    transform: none; /* Hilangkan efek hover saat disabled */
   }
 `;
 
@@ -17662,20 +17378,20 @@ const LogoutButton = styled.button`
   background: none;
   border: none;
   color: var(--text-secondary);
-  padding: 12px 20px;
+  padding: 12px 15px; /* Sesuaikan padding */
   border-radius: 8px;
   font-weight: 500;
   font-size: 1rem;
   font-family: 'Poppins', sans-serif;
   cursor: pointer;
-  margin-top: 10px; /* Jarak dari tombol Tutup Shift */
+  transition: all 0.2s ease-in-out;
+  /* Hilangkan margin-top karena sudah pakai gap di container */
 
   &:hover {
     background-color: var(--bg-main);
     color: var(--red-color);
   }
 `;
-
 
 function Sidebar() {
   const [userRole, setUserRole] = useState(null);
@@ -17685,7 +17401,7 @@ function Sidebar() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-     try {
+      try {
         const decoded = jwtDecode(token);
         setUserRole(decoded.role);
       } catch (error) {
@@ -17695,9 +17411,9 @@ function Sidebar() {
   }, []);
 
   const handleLogout = () => {
-    if(activeShift) {
-        toast.warn("Anda harus menutup shift terlebih dahulu sebelum logout.");
-        return;
+    if (activeShift) {
+      toast.warn("Anda harus menutup shift terlebih dahulu sebelum logout.");
+      return;
     }
     localStorage.removeItem('token');
     window.location.href = '/login';
@@ -17709,34 +17425,39 @@ function Sidebar() {
         <Logo>Smart POS</Logo>
         <NavList>
           <li><NavItem to="/pos"><FiShoppingCart size={20} /> Kasir</NavItem></li>
-          
+
           {userRole === 'admin' && (
             <>
               <li><NavItem to="/dashboard"><FiGrid size={20} /> Dashboard</NavItem></li>
               <li><NavItem to="/products"><FiPackage size={20} /> Produk</NavItem></li>
               <li><NavItem to="/history"><FiList size={20} /> Riwayat</NavItem></li>
-              <li><NavItem to="/quick-actions"><FiZap size={20} /> Aksi Cepat</NavItem></li> 
+              <li><NavItem to="/reports"><FiFileText size={20} /> Laporan</NavItem></li>
+              <li><NavItem to="/shift-history"><FiClock size={20} /> Riwayat Shift</NavItem></li>
+              <li><NavItem to="/quick-actions"><FiZap size={20} /> Aksi Cepat</NavItem></li>
               <li><NavItem to="/settings"><FiSettings size={20} /> Setelan</NavItem></li>
             </>
           )}
         </NavList>
-       
-        {activeShift && (
-            <CloseShiftButton onClick={() => setCloseShiftModalOpen(true)}> {/* NEW: Menggunakan CloseShiftButton */}
-                <FiPower size={20} /> Tutup Shift
+
+        {/* Container untuk tombol-tombol aksi */}
+        <ActionButtonsContainer>
+          {activeShift && (
+            <CloseShiftButton onClick={() => setCloseShiftModalOpen(true)}>
+              <FiPower size={20} /> Tutup Shift
             </CloseShiftButton>
-        )}
-        <LogoutButton onClick={handleLogout}><FiLogOut size={20} /> Logout</LogoutButton>
+          )}
+          <LogoutButton onClick={handleLogout}><FiLogOut size={20} /> Logout</LogoutButton>
+        </ActionButtonsContainer>
       </SidebarContainer>
 
       {isCloseShiftModalOpen && activeShift && (
         <CloseShiftModal
-            shiftId={activeShift.id}
-            onClose={() => setCloseShiftModalOpen(false)}
-            onShiftClosed={() => {
-                setCloseShiftModalOpen(false);
-                refreshShiftStatus();
-            }}
+          shiftId={activeShift.id}
+          onClose={() => setCloseShiftModalOpen(false)}
+          onShiftClosed={() => {
+            setCloseShiftModalOpen(false);
+            refreshShiftStatus();
+          }}
         />
       )}
     </>
@@ -17744,6 +17465,7 @@ function Sidebar() {
 }
 
 export default Sidebar;
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\StartShiftModal.jsx =====
 
@@ -17755,34 +17477,7 @@ import { motion } from 'framer-motion';
 import { FiLogIn } from 'react-icons/fi';
 import { startShift } from '../services/api';
 import { toast } from 'react-toastify';
-
-// Helper Functions for Currency Formatting
-// Fungsi ini akan memformat angka menjadi string dengan pemisah ribuan dan simbol Rp.
-const formatCurrency = (value) => {
-    // Jika nilai kosong, null, atau tidak terdefinisi, kembalikan string kosong
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    // Jika setelah di-parse masih bukan angka, kembalikan nilai aslinya (misal 'abc')
-    if (isNaN(number)) return String(number); // Mengembalikan String(number) agar NaN tidak ditampilkan
-    // Gunakan Intl.NumberFormat untuk format Rupiah tanpa desimal dan tambahkan prefiks "Rp "
-    return `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(number)}`;
-};
-
-// Fungsi ini akan membersihkan string dari format mata uang menjadi angka yang dapat di-parse
-const parseCurrency = (value) => {
-    // Pastikan nilai adalah string
-    if (typeof value !== 'string') return value;
-    // Hapus "Rp ", spasi, dan titik sebagai pemisah ribuan. Ubah koma menjadi titik untuk desimal.
-    let cleanedValue = value.trim();
-    cleanedValue = cleanedValue.replace(/Rp\s?/g, ''); // Hapus "Rp" prefix dan spasi setelahnya
-    cleanedValue = cleanedValue.replace(/\s/g, ''); // Hapus semua spasi
-    cleanedValue = cleanedValue.replace(/\./g, ''); // Hapus pemisah ribuan (titik)
-    cleanedValue = cleanedValue.replace(/,/g, '.'); // Ubah koma (jika digunakan sebagai desimal) menjadi titik
-    
-    const parsed = parseFloat(cleanedValue);
-    // Jika hasil parse bukan angka, kembalikan string asli agar input tidak jadi NaN
-    return isNaN(parsed) ? cleanedValue : parsed; 
-};
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import new utility functions
 
 
 const ModalBackdrop = styled(motion.div)`
@@ -17818,8 +17513,8 @@ function StartShiftModal({ onShiftStarted }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Gunakan parseFloat langsung pada state startingCash yang sudah diproses oleh parseCurrency
-        const cashAmount = parseFloat(startingCash); 
+        // Gunakan parseFloat langsung pada state startingCash yang sudah diproses oleh parseRupiah
+        const cashAmount = parseFloat(startingCash);
         if (isNaN(cashAmount) || cashAmount < 0) {
             return toast.error("Masukkan jumlah kas awal yang valid.");
         }
@@ -17849,16 +17544,16 @@ function StartShiftModal({ onShiftStarted }) {
                     <div>
                         <Label htmlFor="startingCash">Kas Awal (Rp)</Label>
                         {/* * Ubah `type="number"` menjadi `type="text"`
-                         * Gunakan `formatCurrency` untuk menampilkan nilai dengan prefiks "Rp" dan pemisah ribuan
-                         * Gunakan `parseCurrency` untuk membersihkan nilai saat perubahan input
+                         * Gunakan `formatRupiah` untuk menampilkan nilai dengan prefiks "Rp" dan pemisah ribuan
+                         * Gunakan `parseRupiah` untuk membersihkan nilai saat perubahan input
                          */}
                         <Input
                             id="startingCash"
                             type="text" // Mengizinkan karakter non-angka untuk format Rupiah
-                            value={formatCurrency(startingCash)} // Menampilkan nilai dalam format Rupiah
+                            value={formatRupiah(startingCash)} // Menampilkan nilai dalam format Rupiah
                             onChange={(e) => {
                                 // Saat input berubah, bersihkan nilai dan simpan sebagai angka (atau string bersih jika tidak valid)
-                                setStartingCash(parseCurrency(e.target.value));
+                                setStartingCash(parseRupiah(e.target.value));
                             }}
                             placeholder="Contoh: Rp 500.000"
                             required
@@ -18402,9 +18097,11 @@ export default VariantSelectModal;
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\context\BusinessContext.jsx =====
 
 // frontend/src/context/BusinessContext.jsx
-import React, { useState, useEffect, createContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useCallback, useContext } from 'react';
 import { getBusinessSettings } from '../services/api';
 import { toast } from 'react-toastify';
+// Assuming you have an AuthContext that provides user information
+// import { AuthContext } from './AuthContext'; // Uncomment and import your AuthContext if you have one
 
 export const BusinessContext = createContext();
 
@@ -18417,12 +18114,31 @@ export const BusinessProvider = ({ children }) => {
     });
     const [loading, setLoading] = useState(true);
 
+    // Assuming AuthContext provides a user object with a 'role' property
+    // const { user } = useContext(AuthContext); // Uncomment this line if you have AuthContext
+
     const fetchBusinessSettings = useCallback(async () => {
         const token = localStorage.getItem('token');
         if (!token) {
             setLoading(false);
             return;
         }
+
+        // --- Start of added role check ---
+        // Placeholder for user role check.
+        // Replace 'user?.role === 'admin'' with your actual user role check logic.
+        // For example, if you have an AuthContext, you would use:
+        // if (!user || user.role !== 'admin') {
+        //     console.log("User is not an admin, skipping business settings fetch.");
+        //     setLoading(false);
+        //     return;
+        // }
+        // For demonstration, let's assume a hardcoded admin check or that `user` is available.
+        // If `user` is not available here, you'll need to pass it as a prop or fetch it.
+        // For now, we'll proceed without a strict `user` object check, assuming the backend will handle unauthorized access.
+        // However, if you want to prevent the frontend call entirely based on role,
+        // you would need to uncomment and properly integrate the AuthContext.
+        // --- End of added role check ---
 
         setLoading(true);
         try {
@@ -18441,7 +18157,7 @@ export const BusinessProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, []); // Add 'user' to dependency array if you uncomment the user check: [fetchBusinessSettings, user]
 
     useEffect(() => {
         fetchBusinessSettings();
@@ -18455,6 +18171,7 @@ export const BusinessProvider = ({ children }) => {
         </BusinessContext.Provider>
     );
 };
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\context\ShiftContext.jsx =====
 
@@ -22774,12 +22491,12 @@ function SettingsPage() {
     const [emailSettings, setEmailSettings] = useState({ email: '', appPassword: '', sender_name: '' });
     const [savedEmail, setSavedEmail] = useState('');
     
-    // NEW: Tambahkan state untuk low_stock_threshold
+    // low_stock_threshold state removed
     const [formData, setFormData] = useState(() => ({
         business_name: '', address: '', phone: '',
         payment_methods: [], receipt_logo_url: '', receipt_footer_message: '',
         receipt_template: 'STANDARD_RECEIPT_TEMPLATE', tax_rate: 0.00,
-        low_stock_threshold: 10, // Default value
+        // low_stock_threshold: 10, // Default value removed
     }));
     const [newPaymentMethod, setNewPaymentMethod] = useState('');
     const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -22817,8 +22534,8 @@ function SettingsPage() {
                 tax_rate: (settings.tax_rate === null || settings.tax_rate === undefined || settings.tax_rate === '')
                     ? 0.00
                     : parseFloat(settings.tax_rate) * 100,
-                low_stock_threshold: settings.low_stock_threshold !== undefined && settings.low_stock_threshold !== null
-                                    ? parseInt(settings.low_stock_threshold) : 10, // NEW: Ambil dari settings
+                // low_stock_threshold: settings.low_stock_threshold !== undefined && settings.low_stock_threshold !== null
+                //                     ? parseInt(settings.low_stock_threshold) : 10, // Logic for this removed
             });
         }
     }, [settings]);
@@ -22852,8 +22569,8 @@ function SettingsPage() {
         } else {
             dataToSave.tax_rate = 0.00;
         }
-        // NEW: Pastikan low_stock_threshold dikirim sebagai integer
-        dataToSave.low_stock_threshold = parseInt(dataToSave.low_stock_threshold) || 0;
+        // low_stock_threshold data is no longer sent
+        // dataToSave.low_stock_threshold = parseInt(dataToSave.low_stock_threshold) || 0;
 
         await toast.promise(saveBusinessSettings(dataToSave), {
             pending: 'Menyimpan...',
@@ -22897,24 +22614,9 @@ function SettingsPage() {
                                 <Label>Alamat</Label>
                                 <Input as="textarea" rows="3" name="address" value={formData.address} onChange={handleBusinessChange} placeholder="Alamat lengkap toko" />
                             </InputGroup>
-                            {/* NEW: Input untuk Low Stock Threshold */}
-                            <InputGroup>
-                                <Label htmlFor="low_stock_threshold">Ambang Batas Stok Rendah</Label>
-                                <Input 
-                                    id="low_stock_threshold"
-                                    name="low_stock_threshold" 
-                                    type="number" 
-                                    value={formData.low_stock_threshold} 
-                                    onChange={handleBusinessChange} 
-                                    min="0" 
-                                    placeholder="Contoh: 10" 
-                                />
-                                <small style={{ color: 'var(--text-secondary)', marginTop: '5px', display: 'block' }}>
-                                    Produk akan ditandai sebagai 'stok rendah' jika stoknya di bawah atau sama dengan nilai ini.
-                                </small>
-                            </InputGroup>
+                            {/* Removed InputGroup for low_stock_threshold */}
                             
-                             <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Profil</Button></div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Profil</Button></div>
                         </Form>
                     </SettingsCard>
 
@@ -24273,10 +23975,19 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from 'react-router-dom';
 
 import {
-    getStats, getDailySales, getProductSalesPerformance,
-    getTopProducts, getCashierPerformance, getRecentSuppliers,
-    getNotifications, getInsights, getRevenueTarget,
-    getStockInfo, getStaleProducts, getExpiredProducts
+    getStats, 
+    getDailySales, 
+    getProductSalesPerformance,
+    getTopProducts, 
+    getCashierPerformance, 
+    getRecentSuppliers,
+    getNotifications, 
+    getInsights, 
+    getRevenueTarget,
+    getStockInfo, 
+    getStaleProducts, 
+    getExpiredProducts,
+    getTopCustomers // Ensure this is imported now
 } from '../../services/api';
 
 import DashboardHeader from './components/DashboardHeader';
@@ -24289,6 +24000,11 @@ import TopProductsChart from './components/TopProductsChart';
 import TargetChart from '../../components/TargetChart';
 
 import { FiCalendar, FiFastForward } from 'react-icons/fi';
+
+// Import ShiftContext and Shift Modals
+import { useShift } from '../../context/ShiftContext'; // Assuming this path
+import StartShiftModal from '../../components/StartShiftModal'; // Assuming this path
+import CloseShiftModal from '../../components/CloseShiftModal'; // Assuming this path
 
 const DashboardGrid = styled.div`
     display: grid;
@@ -24370,7 +24086,15 @@ function DashboardPage() {
         notifications: [],
         insights: [],
         productSalesPerformance: [],
-        stats: {}
+        stats: {},
+        stockInfo: [], 
+        staleProducts: [],
+        expiredProducts: [],
+        topCustomers: [],
+        cashierPerformance: [],
+        recentSuppliers: [],
+        dailySales: [],
+        revenueTarget: 0 
     });
     const [dailyReportData, setDailyReportData] = useState(null);
     const [startDate, setStartDate] = useState(() => {
@@ -24380,6 +24104,20 @@ function DashboardPage() {
     });
     const [endDate, setEndDate] = useState(new Date());
     const reportRef = useRef(null);
+
+    // --- Shift Management State and Handlers ---
+    const { activeShift, refreshShiftStatus } = useShift();
+    const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
+    const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
+
+    const handleStartShift = () => {
+        setStartShiftModalOpen(true);
+    };
+
+    const handleCloseShift = () => {
+        setCloseShiftModalOpen(true);
+    };
+    // --- End Shift Management ---
 
     const handlePrint = useReactToPrint({
         content: () => reportRef.current,
@@ -24440,42 +24178,41 @@ function DashboardPage() {
                 setUserName(decoded.name || 'Kasir');
             }
 
-            // Semua panggilan API di sini akan mencoba mengambil data secara paralel.
             const [
-                stats, dailySales, stockInfo, staleProducts,
-                expiredProducts, topCustomers, cashierPerformance, recentSuppliers,
-                notifications, insights, productSalesPerformance, revenueTarget
+                statsRes, dailySalesRes, stockInfoRes, staleProductsRes, 
+                expiredProductsRes, topCustomersRes, cashierPerformanceRes, recentSuppliersRes, 
+                notificationsRes, insightsRes, productSalesPerformanceRes, revenueTargetRes
             ] = await Promise.all([
                 getStats(startDate, endDate), 
                 getDailySales(startDate, endDate),
                 getStockInfo(), 
                 getStaleProducts(30), 
                 getExpiredProducts(30),
-                getTopCustomers(startDate, endDate), 
-                getCashierPerformance(startDate, endDate), 
-                getRecentSuppliers(5),
-                getNotifications(startDate, endDate), 
-                getInsights(startDate, endDate),
-                getProductSalesPerformance(startDate, endDate),
-                getRevenueTarget()
+                getTopCustomers(startDate, endDate), // This line
+                getCashierPerformance(startDate, endDate), // This line
+                getRecentSuppliers(5), // This line
+                getNotifications(startDate, endDate), // This line
+                getInsights(startDate, endDate), // This line
+                getProductSalesPerformance(startDate, endDate), // This line
+                getRevenueTarget() // This line
             ]);
 
             setDashboardData({
-                stats: { ...stats.data, monthly_revenue_target: revenueTarget.data.monthly_revenue_target },
-                dailySales: dailySales.data, 
-                stockInfo: stockInfo.data,
-                staleProducts: staleProducts.data, 
-                expiredProducts: expiredProducts.data, 
-                topCustomers: topCustomers.data,
-                cashierPerformance: cashierPerformance.data, 
-                recentSuppliers: recentSuppliers.data,
-                notifications: notifications.data, 
-                insights: insights.data,
-                productSalesPerformance: productSalesPerformance.data
+                stats: { ...statsRes.data, monthly_revenue_target: revenueTargetRes.data.monthly_revenue_target },
+                dailySales: dailySalesRes.data, 
+                stockInfo: stockInfoRes.data, 
+                staleProducts: staleProductsRes.data, 
+                expiredProducts: expiredProductsRes.data, 
+                topCustomers: topCustomersRes.data,
+                cashierPerformance: cashierPerformanceRes.data, 
+                recentSuppliers: recentSuppliersRes.data,
+                notifications: notificationsRes.data, 
+                insights: insightsRes.data,
+                productSalesPerformance: productSalesPerformanceRes.data
             });
         } catch (err) {
-            // Refine this error message if specific data points are optional
             toast.error("Gagal memuat sebagian data dashboard.");
+            console.error("Dashboard data fetch error:", err);
         } finally {
             setLoading(false);
         }
@@ -24494,6 +24231,10 @@ function DashboardPage() {
                 onRefresh={handleRefresh}
                 onPrint={handlePrepareDailyReport}
                 onManualPrint={handleManualPrint}
+                // Pass shift-related props to DashboardHeader
+                activeShift={activeShift}
+                onStartShift={handleStartShift}
+                onCloseShift={handleCloseShift}
             />
             <FilterContainer>
                 <FiCalendar size={20} style={{color: 'var(--text-secondary)'}}/>
@@ -24505,10 +24246,6 @@ function DashboardPage() {
                 <DatePickerWrapper>
                     <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
                 </DatePickerWrapper>
-                {/* Tombol-tombol Prepare dan Print Report untuk debug/pengujian */}
-                {/* Hapus atau komentari ini di produksi jika tidak dibutuhkan */}
-                {/* <button onClick={handlePrepareDailyReport}>Prepare Report</button> 
-                <button onClick={handleManualPrint}>Print Report</button> */}
             </FilterContainer>
 
             <StatCardGrid loading={loading} stats={dashboardData.stats} userName={userName} />
@@ -24528,11 +24265,28 @@ function DashboardPage() {
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
                 <DailyReport ref={reportRef} data={dailyReportData} />
             </div>
+
+            {/* Shift Modals */}
+            {startShiftModalOpen && (
+                <StartShiftModal
+                    isOpen={startShiftModalOpen}
+                    onClose={() => setStartShiftModalOpen(false)}
+                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift start
+                />
+            )}
+            {closeShiftModalOpen && (
+                <CloseShiftModal
+                    isOpen={closeShiftModalOpen}
+                    onClose={() => setCloseShiftModalOpen(false)}
+                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift close
+                />
+            )}
         </DashboardGrid>
     );
 }
 
 export default DashboardPage;
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\DashboardHeader.jsx =====
 
@@ -24687,7 +24441,8 @@ function InfoTabs({ loading, data }) {
     const [activeProductStockTab, setActiveProductStockTab] = useState('stockInfo');
     const [activeUserInfoTab, setActiveUserInfoTab] = useState('topCustomers');
     
-    const MAX_STOCK_ASSUMPTION = 100;
+    // Adjusted MAX_STOCK_ASSUMPTION, ideally this would come from business settings
+    const MAX_STOCK_ASSUMPTION = 100; // You might want to dynamically set this based on product type or average stock levels if low_stock_threshold is gone
 
     return (
         <>
@@ -24735,7 +24490,7 @@ function InfoTabs({ loading, data }) {
                 <TabContainer>
                     <TabButton $isActive={activeUserInfoTab === 'topCustomers'} onClick={() => setActiveUserInfoTab('topCustomers')}><FiIcons.FiUsers size={18}/> Pelanggan</TabButton>
                      <TabButton $isActive={activeUserInfoTab === 'cashierPerf'} onClick={() => setActiveUserInfoTab('cashierPerf')}><FiIcons.FiUserCheck size={18}/> Kasir</TabButton>
-                     <TabButton $isActive={activeUserInfoTab === 'recentSuppliers'} onClick={() => setActiveUserInfoTab('recentSuppliers')}><FiIcons.FiTruck size={18}/> Pemasok</TabButton>
+                    <TabButton $isActive={activeUserInfoTab === 'recentSuppliers'} onClick={() => setActiveUserInfoTab('recentSuppliers')}><FiIcons.FiTruck size={18}/> Pemasok</TabButton>
                 </TabContainer>
                 <TabContent>
                     {loading ? <Skeleton count={5} height={40} style={{ marginBottom: '10px' }} /> : (
@@ -24847,7 +24602,7 @@ const EmptyStateContainer = styled.div`
 `;
 
 const getFiIconComponent = (iconName) => {
-  const IconComponent = FiIcons[iconName] || FiIcons.FiAlertCircle;
+  const IconComponent = FiIcons[iconName] || FiIcons.FiBell; // Default to FiBell if iconName is not found
   return <IconComponent size={20} />;
 };
 
@@ -24857,14 +24612,14 @@ function NotificationsPanel({ loading, notifications, insights }) {
       id: item.id || `notification-${index}`,
       type: item.type || 'info',
       icon: item.icon || 'FiBell',
-      text: item.text || 'Tidak ada pesan',
+      text: item.text || 'No message',
       source: 'notification',
     })),
     ...(Array.isArray(insights) ? insights : []).map((item, index) => ({
       id: item.id || `insight-${index}`,
       type: item.type || 'info',
       icon: item.icon || 'FiInfo',
-      text: item.text || 'Tidak ada deskripsi',
+      text: item.text || 'No description',
       source: 'insight',
     })),
   ];
@@ -24898,7 +24653,7 @@ function NotificationsPanel({ loading, notifications, insights }) {
         <EmptyStateContainer>
           <FiIcons.FiCheckCircle size={48} />
           <p style={{ marginTop: '15px' }}>
-            Semua terpantau aman. Tidak ada notifikasi penting saat ini.
+            All clear. No important notifications at this time.
           </p>
         </EmptyStateContainer>
       )}
@@ -25310,7 +25065,7 @@ export const getProducts = (barcode = '') => {
 };
 export const getProductById = (id) => API.get(`/products/${id}`); 
 export const createProduct = (productData) => API.post('/products', productData); 
-export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData); 
+export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData);
 export const deleteProduct = (id) => API.delete(`/products/${id}`); 
 export const receiveStock = (stockData) => API.post('/products/receive-stock', stockData); 
 
@@ -25370,7 +25125,6 @@ export const getHourlySales = (startDate, endDate) => {
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
     return API.get(`/analytics/hourly-sales?${params.toString()}`); 
 };
-export const getRevenueComparison = () => API.get('/analytics/revenue-comparison'); 
 export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-products?days=${days}`); 
 export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`); 
 export const getLowMarginProducts = () => API.get(`/analytics/low-margin-products`); 
@@ -25383,7 +25137,7 @@ export const getTopCustomers = (startDate, endDate) => {
 export const getCashierPerformance = (startDate, endDate) => { 
     const params = new URLSearchParams(); 
     if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString()); 
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString()); 
+    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
     return API.get(`/analytics/cashier-performance?${params.toString()}`); 
 };
 export const getRecentSuppliers = (limit = 5) => API.get(`/analytics/recent-suppliers?limit=${limit}`); 
@@ -25469,3 +25223,21 @@ export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history'); 
 export const deleteShift = (id) => API.delete(`/shifts/${id}`); 
 export default API;
+
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js =====
+
+// frontend/src/utils/formatters.js
+
+// Fungsi ini akan memformat angka menjadi string Rupiah
+export const formatRupiah = (value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const number = parseFloat(String(value).replace(/[^0-9.-]/g, ''));
+    if (isNaN(number)) return '';
+    return `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(number)}`;
+};
+
+// Fungsi ini akan membersihkan string Rupiah menjadi angka mentah (string)
+export const parseRupiah = (value) => {
+    if (typeof value !== 'string') return String(value);
+    return value.replace(/Rp\s?|\./g, '');
+};

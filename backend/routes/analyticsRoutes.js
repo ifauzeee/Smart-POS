@@ -1,5 +1,3 @@
-// backend/routes/analyticsRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
@@ -38,16 +36,16 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
         
         // Menggunakan COALESCE untuk memastikan nilai 0 jika tidak ada data
         const statsQuery = `
-            SELECT 
-                CAST(COALESCE(SUM(o.total_amount), 0) AS DECIMAL(15,2)) as totalRevenue,
-                COUNT(DISTINCT o.id) as totalTransactions,
+            SELECT
+                (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
+                (SELECT COUNT(id) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalTransactions,
                 CAST(
                     COALESCE(
                         (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
                         FROM order_items oi
-                         JOIN orders o2 ON oi.order_id = o2.id
-                         WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
-                    , 0) 
+                        JOIN orders o2 ON oi.order_id = o2.id
+                        WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
+                    , 0)
                 AS DECIMAL(15,2)) as totalProfit,
                 COALESCE((
                     SELECT SUM(oi.quantity)
@@ -57,19 +55,15 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
                 ), 0) as totalSoldUnits,
                 (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
                 (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
-            FROM orders AS o
-            LEFT JOIN order_items AS oi ON o.id = oi.order_id
-            LEFT JOIN product_variants AS pv ON oi.variant_id = pv.id
-            LEFT JOIN products AS p ON pv.product_id = p.id
-            WHERE o.business_id = ? AND o.created_at BETWEEN ? AND ?
         `;
 
         const [[stats]] = await db.query(statsQuery, [
-            businessId, startDate, endDate, // for profit calculation
-            businessId, startDate, endDate, // for sold units
+            businessId, startDate, endDate, // for totalRevenue
+            businessId, startDate, endDate, // for totalTransactions
+            businessId, startDate, endDate, // for totalProfit
+            businessId, startDate, endDate, // for totalSoldUnits
             businessId, startDate, endDate, // for newCustomers
-            businessId, startDate, endDate, // for totalExpenses
-            businessId, startDate, endDate  // for main query
+            businessId, startDate, endDate  // for totalExpenses
         ]);
 
         // Transform numeric strings to numbers
@@ -86,7 +80,7 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching stats:", error);
-        console.error("Query params:", { businessId, startDate, endDate });
+        console.error("Query params:", { businessId: req.user ? req.user.business_id : 'N/A', startDate: req.query.startDate, endDate: req.query.endDate });
         res.status(500).json({ 
             message: "Failed to fetch stats data.",
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -113,7 +107,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
                 COALESCE(SUM(o.total_amount), 0) as sales
             FROM dates
             LEFT JOIN orders o ON DATE(o.created_at) = dates.date AND o.business_id = ?
-            GROUP BY dates.date  -- Changed to group by dates.date
+            GROUP BY dates.date
             ORDER BY date ASC
         `;
         const [dailySales] = await db.query(dailySalesQuery, [startDate, endDate, businessId]);
@@ -402,6 +396,5 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch insights data." });
     }
 });
-
 
 module.exports = router;

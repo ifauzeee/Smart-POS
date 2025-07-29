@@ -1,6 +1,7 @@
 // frontend/src/components/PostCheckoutModal.jsx
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSend, FiCheckCircle, FiPrinter } from 'react-icons/fi';
@@ -79,3 +80,10 @@ function PostCheckoutModal({ isOpen, onClose, orderId, onPrint }) {
 }
 
 export default PostCheckoutModal;
+
+PostCheckoutModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  orderId: PropTypes.number,
+  onPrint: PropTypes.func.isRequired,
+};

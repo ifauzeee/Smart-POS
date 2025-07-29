@@ -1,6 +1,7 @@
 // frontend/src/components/Receipt.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const Receipt = React.forwardRef(({ order }, ref) => {
     if (!order) {
@@ -75,4 +76,10 @@ const Receipt = React.forwardRef(({ order }, ref) => {
     );
 });
 
+Receipt.displayName = 'Receipt';
+
 export default Receipt;
+
+Receipt.propTypes = {
+  order: PropTypes.object,
+};

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -137,3 +138,11 @@ function SupplierFormModal({ isOpen, onClose, onSave, supplier, isSubmitting }) 
 }
 
 export default SupplierFormModal;
+
+SupplierFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  supplier: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};

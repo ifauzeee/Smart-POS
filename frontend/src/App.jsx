@@ -4,8 +4,8 @@ import React, { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from 'react-toastify';
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -95,7 +95,12 @@ function AppContent() {
         >
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
-            <BrowserRouter>
+            <BrowserRouter
+                future={{
+                    v7_startTransition: true,
+                    v7_relativeSplatPath: true
+                }}
+            >
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />

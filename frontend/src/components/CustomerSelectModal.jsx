@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiUserPlus } from 'react-icons/fi';
@@ -68,8 +69,7 @@ const AddButton = styled.button`
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  &:hover { opacity: 0.9; }
+  justify-content: center; &:hover { opacity: 0.9; }
 `;
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
@@ -162,3 +162,9 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
 }
 
 export default CustomerSelectModal;
+
+CustomerSelectModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSelectCustomer: PropTypes.func.isRequired,
+};

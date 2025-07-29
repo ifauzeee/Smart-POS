@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard/components/NotificationsPanel.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
@@ -88,7 +89,7 @@ const EmptyStateContainer = styled.div`
 `;
 
 const getFiIconComponent = (iconName) => {
-  const IconComponent = FiIcons[iconName] || FiIcons.FiBell; // Default to FiBell if iconName is not found
+  const IconComponent = FiIcons[iconName] || FiIcons.FiBell;
   return <IconComponent size={20} />;
 };
 
@@ -139,7 +140,7 @@ function NotificationsPanel({ loading, notifications, insights }) {
         <EmptyStateContainer>
           <FiIcons.FiCheckCircle size={48} />
           <p style={{ marginTop: '15px' }}>
-            All clear. No important notifications at this time.
+            Semua aman. Tidak ada notifikasi penting saat ini.
           </p>
         </EmptyStateContainer>
       )}
@@ -148,3 +149,9 @@ function NotificationsPanel({ loading, notifications, insights }) {
 }
 
 export default NotificationsPanel;
+
+NotificationsPanel.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  notifications: PropTypes.array,
+  insights: PropTypes.array,
+};

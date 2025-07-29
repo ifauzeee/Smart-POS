@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard/components/StatCardGrid.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList } from 'react-icons/fi';
@@ -38,6 +39,13 @@ const StatCard = ({ icon, value, label, color }) => (
     </Card>
 );
 
+StatCard.propTypes = {
+  icon: PropTypes.node.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  label: PropTypes.string.isRequired,
+  color: PropTypes.string.isRequired,
+};
+
 const StatCardSkeleton = () => (
     <Card as="div">
         <Skeleton circle width={60} height={60} />
@@ -65,4 +73,11 @@ function StatCardGrid({ loading, stats, userName }) {
         </>
     );
 }
+
 export default StatCardGrid;
+
+StatCardGrid.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  stats: PropTypes.object,
+  userName: PropTypes.string,
+};

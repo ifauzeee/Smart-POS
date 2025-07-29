@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { FiRefreshCw, FiPrinter } from 'react-icons/fi';
 
@@ -49,7 +50,7 @@ const Button = styled.button`
   }
 `;
 
-const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint }) => {
+const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint, activeShift, onStartShift, onCloseShift }) => {
   return (
     <HeaderContainer>
       <TimeDisplay>
@@ -75,3 +76,13 @@ const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint }) => 
 };
 
 export default DashboardHeader;
+
+DashboardHeader.propTypes = {
+  currentTime: PropTypes.instanceOf(Date).isRequired,
+  onRefresh: PropTypes.func.isRequired,
+  onPrint: PropTypes.func.isRequired,
+  onManualPrint: PropTypes.func.isRequired,
+  activeShift: PropTypes.object,
+  onStartShift: PropTypes.func.isRequired,
+  onCloseShift: PropTypes.func.isRequired,
+};

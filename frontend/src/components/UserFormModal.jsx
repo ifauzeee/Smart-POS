@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -106,3 +107,11 @@ function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
 }
 
 export default UserFormModal;
+
+UserFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  user: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};

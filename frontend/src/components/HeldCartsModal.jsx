@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiChevronsRight, FiTrash2 } from 'react-icons/fi';
@@ -67,25 +68,25 @@ function HeldCartsModal({ isOpen, onClose, heldCarts, onResume, onDelete }) {
                <ModalBackdrop>
                     <ModalContainer>
                         <ModalHeader>
-                            <ModalTitle>Keranjang Ditahan</ModalTitle>
+                             <ModalTitle>Keranjang Ditahan</ModalTitle>
                             <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
                         </ModalHeader>
                         <ModalBody>
-                            <CartList>
+                             <CartList>
                                 {heldCarts.length > 0 ? heldCarts.map(cart => (
                                     <CartItem key={cart.id}>
-                                        <CartInfo>
+                                         <CartInfo>
                                             {cart.customer ? cart.customer.name : `Keranjang #${cart.id.slice(-4)}`}
-                                            <small>{cart.items.length} item</small>
+                                             <small>{cart.items.length} item</small>
                                         </CartInfo>
                                         <div>
-                                            <ActionButton onClick={() => onDelete(cart.id)}><FiTrash2/></ActionButton>
+                                             <ActionButton onClick={() => onDelete(cart.id)}><FiTrash2/></ActionButton>
                                             <ActionButton $resume onClick={() => onResume(cart.id)}><FiChevronsRight/> Lanjutkan</ActionButton>
                                         </div>
-                                    </CartItem>
+                                   </CartItem>
                                 )) : <p style={{textAlign: 'center', color: 'var(--text-secondary)'}}>Tidak ada keranjang yang ditahan.</p>}
                             </CartList>
-                        </ModalBody>
+                         </ModalBody>
                     </ModalContainer>
                 </ModalBackdrop>
             )}
@@ -94,3 +95,11 @@ function HeldCartsModal({ isOpen, onClose, heldCarts, onResume, onDelete }) {
 }
 
 export default HeldCartsModal;
+
+HeldCartsModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  heldCarts: PropTypes.array.isRequired,
+  onResume: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+};

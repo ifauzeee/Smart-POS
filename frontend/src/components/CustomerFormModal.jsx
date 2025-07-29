@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX } from 'react-icons/fi';
@@ -99,3 +100,11 @@ function CustomerFormModal({ isOpen, onClose, onSave, customer, isSubmitting }) 
 }
 
 export default CustomerFormModal;
+
+CustomerFormModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  customer: PropTypes.object,
+  isSubmitting: PropTypes.bool.isRequired,
+};

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiPrinter } from 'react-icons/fi';
@@ -145,7 +146,7 @@ function OrderDetailModal({ isOpen, onClose, order, onPrint }) {
                                     <span>Pelanggan:</span>
                                     <span>{order.customer_name}</span>
                                 </InfoRow>
-                            )}
+                             )}
                             <InfoRow>
                                 <span>Metode Pembayaran:</span>
                                 <span>{order.payment_method}</span>
@@ -199,3 +200,10 @@ function OrderDetailModal({ isOpen, onClose, order, onPrint }) {
 }
 
 export default OrderDetailModal;
+
+OrderDetailModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  order: PropTypes.object,
+  onPrint: PropTypes.func.isRequired,
+};

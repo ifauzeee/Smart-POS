@@ -3,8 +3,7 @@ const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
-const nodemailer = require('nodemailer');
-const { decrypt } = require('../utils/encryption');
+const { sendReceiptEmail } = require('../utils/emailService'); // Updated import
 const { logActivity } = require('../utils/logUtils');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
@@ -134,7 +133,7 @@ router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-       
+        
         const exportsDir = path.join(__dirname, '..', 'exports');
         if (!fs.existsSync(exportsDir)) {
             fs.mkdirSync(exportsDir, { recursive: true });
@@ -252,170 +251,41 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
         return res.status(400).json({ message: 'Alamat email penerima diperlukan.' });
     }
 
-    let connection;
     try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        const [[emailSettings]] = await connection.query(
-            'SELECT sender_email, app_password, sender_name FROM email_settings WHERE business_id = ?',
-            [businessId]
-        );
-
-        if (!emailSettings || !emailSettings.sender_email || !emailSettings.app_password) {
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Missing email settings for business ID ${businessId}.`);
-            return res.status(400).json({ message: 'Konfigurasi email pengirim belum lengkap di pengaturan. Harap atur email dan Sandi Aplikasi di halaman Setelan.' });
-        }
-
-        let decryptedAppPassword;
-        try {
-            decryptedAppPassword = decrypt(emailSettings.app_password);
-        } catch (decryptError) {
-            console.error("Error decrypting app password:", decryptError);
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to decrypt app password for business ID ${businessId}. Error: ${decryptError.message}`);
-            return res.status(500).json({ message: 'Gagal mendekripsi sandi aplikasi. Periksa setelan email.' });
-        }
-
+        // Ambil data order dan bisnis
         const orderSql = `
-            SELECT
-                o.id, o.created_at, o.subtotal_amount, o.tax_amount, o.total_amount, o.payment_method, u.name as cashier_name, c.name as customer_name,
-                o.amount_paid, b.receipt_footer_text, b.receipt_logo_url, b.receipt_template, b.business_name
+            SELECT o.*, u.name as cashier_name, c.name as customer_name
             FROM orders o
             JOIN users u ON o.user_id = u.id
             LEFT JOIN customers c ON o.customer_id = c.id
-            JOIN businesses b ON o.business_id = b.id
-            WHERE o.id = ? AND o.business_id = ?
-        `;
-        const [[order]] = await connection.query(orderSql, [orderId, businessId]);
+            WHERE o.id = ? AND o.business_id = ?`;
+        const [[order]] = await db.query(orderSql, [orderId, businessId]);
 
         if (!order) {
-            await connection.rollback();
-            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Order ID ${orderId} not found for receipt sending.`);
+            await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Order ID ${orderId} not found.`);
             return res.status(404).json({ message: 'Pesanan tidak ditemukan.' });
         }
 
-        const itemsSql = `
-            SELECT oi.quantity, oi.price, p.name as product_name, pv.name as variant_name
-            FROM order_items oi
-            JOIN products p ON oi.product_id = p.id
-            LEFT JOIN product_variants pv ON oi.variant_id = pv.id
-            WHERE oi.order_id = ?
-        `;
+        const itemsSql = `SELECT oi.quantity, oi.price, p.name as product_name, pv.name as variant_name FROM order_items oi JOIN products p ON oi.product_id = p.id LEFT JOIN product_variants pv ON oi.variant_id = pv.id WHERE oi.order_id = ?`;
         const [items] = await db.query(itemsSql, [orderId]);
         order.items = items;
 
-        let transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-                user: emailSettings.sender_email,
-                pass: decryptedAppPassword,
-            },
-        });
+        const [[businessInfo]] = await db.query('SELECT id, business_name, receipt_footer_text, receipt_logo_url FROM businesses WHERE id = ?', [businessId]);
 
-        const orderDate = new Date(order.created_at).toLocaleString('id-ID', {
-            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        const senderDisplayName = emailSettings.sender_name || order.business_name || "Smart POS";
+        // Panggil service email dengan data yang sudah siap
+        await sendReceiptEmail(recipientEmail, order, businessInfo);
 
-        let itemsHtml = order.items.map(item => `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: left;">${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: center;">${item.quantity}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp ${new Intl.NumberFormat('id-ID').format(item.price)}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">Rp ${new Intl.NumberFormat('id-ID').format(item.quantity * item.price)}</td>
-            </tr>
-        `).join('');
-
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-                ${order.receipt_logo_url ? `<div style="text-align: center; margin-bottom: 20px;"><img src="${order.receipt_logo_url}" alt="Business Logo" style="max-width: 150px; height: auto;"></div>` : ''}
-                <h2 style="text-align: center; color: #333;">Struk Pembelian ${order.business_name || ''}</h2>
-                <p><strong>Tanggal:</strong> ${orderDate}</p>
-                <p><strong>Nomor Pesanan:</strong> #${order.id}</p>
-                <p><strong>Kasir:</strong> ${order.cashier_name}</p>
-                ${order.customer_name ? `<p><strong>Pelanggan:</strong> ${order.customer_name}</p>` : ''}
-                <p><strong>Metode Pembayaran:</strong> ${order.payment_method}</p>
-                
-                <h3 style="color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">Detail Pesanan:</h3>
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <thead>
-                        <tr style="background-color: #f2f2f2;">
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left;">Item</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">Qty</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Harga Satuan</th>
-                            <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right;"><strong>Subtotal:</strong></td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.subtotal_amount)}</td>
-                        </tr>
-                        ${order.tax_amount > 0 ? `
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right;"><strong>Pajak:</strong></td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.tax_amount)}</td>
-                        </tr>
-                        ` : ''}
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">Total Akhir:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold; border-top: 1px solid #ddd;">${formatRupiah(order.total_amount)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Dibayar:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid)}</td>
-                        </tr>
-                        ${order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) > 0 ? `
-                        <tr>
-                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Kembalian:</td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold;">${formatRupiah(order.amount_paid - order.total_amount)}</td>
-                        </tr>
-                        ` : ''}
-                    </tfoot>
-                </table>
-                <p style="text-align: center; color: #555;">${order.receipt_footer_text || 'Terima kasih atas pembelian Anda!'}</p>
-                <p style="text-align: center; font-size: 0.8em; color: #888;">Struk ini dihasilkan secara otomatis.</p>
-            </div>
-        `;
-
-        await transporter.sendMail({
-            from: `"${senderDisplayName}" <${emailSettings.sender_email}>`,
-            to: recipientEmail,
-            subject: `Struk Pembelian Toko #${order.id}`,
-            html: emailHtml,
-        });
-
-        await connection.commit();
         await logActivity(businessId, userId, 'SEND_RECEIPT_SUCCESS', `Receipt for order ID ${orderId} sent to ${recipientEmail}.`);
         res.status(200).json({ message: 'Struk berhasil dikirim.' });
 
     } catch (error) {
-        if (connection) {
-            await connection.rollback();
-        }
         console.error("Error sending receipt:", error);
-        if (error.code === 'EENVELOPE' || error.responseCode === 535) {
-             res.status(500).json({ message: 'Gagal mengirim struk: Kesalahan otentikasi email pengirim. Pastikan email dan Sandi Aplikasi benar.' });
-        } else if (error.message.includes('Konfigurasi email')) {
-            res.status(400).json({ message: error.message });
-        } else if (error.responseCode === 550) {
-             res.status(500).json({ message: 'Gagal mengirim struk: Alamat email penerima tidak valid atau ditolak.' });
+        await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to send receipt for order ID ${orderId}. Error: ${error.message}`);
+
+        if (error.responseCode === 535) {
+            return res.status(500).json({ message: 'Gagal mengirim struk: Kesalahan otentikasi. Periksa setelan email Anda.' });
         }
-        else {
-            res.status(500).json({ message: 'Gagal mengirim struk: Terjadi kesalahan server.' });
-        }
-        await logActivity(businessId, userId, 'SEND_RECEIPT_FAILED', `Failed to send receipt for order ID ${orderId} to ${recipientEmail}. Error: ${error.message}`);
-    } finally {
-        if (connection) {
-            connection.release();
-        }
+        res.status(500).json({ message: error.message || 'Gagal mengirim struk.' });
     }
 });
 
@@ -443,11 +313,42 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
             await connection.commit();
             console.log("Seluruh riwayat transaksi untuk bisnis ini berhasil dihapus.");
             await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders.`);
-            res.status(200).json({ message: 'Semua riwayat transaksi untuk bisnis Anda telah dihapus.' });
+
+            // Reset auto-increment ID for orders table
+            try {
+                await db.query('ALTER TABLE orders AUTO_INCREMENT = 1');
+                console.log("Auto-increment ID for 'orders' table reset to 1.");
+                await logActivity(businessId, userId, 'RESET_ORDER_ID_COUNTER', 'Order ID counter reset to 1 after clearing history.');
+            } catch (resetError) {
+                console.error("Failed to reset auto-increment ID:", resetError);
+                await logActivity(businessId, userId, 'RESET_ORDER_ID_COUNTER_FAILED', `Failed to reset order ID counter. Error: ${resetError.message}`);
+                // You can choose to send this error to the frontend
+                // or just log it. For now, we'll continue.
+            }
+
+            // --- ADDED CODE START ---
+            // Reset loyalty points for all customers for this business
+            // Assuming the customers table has a loyalty_points column and business_id
+            try {
+                const [resetPointsResult] = await connection.query(
+                    'UPDATE customers SET points = 0 WHERE business_id = ?',
+                    [businessId]
+                );
+                console.log(`Loyalty points for ${resetPointsResult.affectedRows} customers reset to 0.`);
+                await logActivity(businessId, userId, 'RESET_LOYALTY_POINTS', `Reset loyalty points for ${resetPointsResult.affectedRows} customers after clearing order history.`);
+            } catch (resetPointsError) {
+                console.error("Failed to reset loyalty points:", resetPointsError);
+                await logActivity(businessId, userId, 'RESET_LOYALTY_POINTS_FAILED', `Failed to reset loyalty points after clearing history. Error: ${resetPointsError.message}`);
+                // Can choose to send this error to the frontend or just log
+                // For now, we log and continue with the successful deletion response
+            }
+            // --- ADDED CODE END ---
+
+            res.status(200).json({ message: 'Semua riwayat transaksi dan poin loyalitas pelanggan untuk bisnis Anda telah direset.' });
 
         } else {
             await connection.commit();
-            console.log("Tidak ada pesanan ditemukan untuk dihapus dalam bisnis ini.");
+            console.log("No orders found to delete in this business.");
             res.status(200).json({ message: 'Tidak ada riwayat transaksi untuk dihapus.' });
         }
     } catch (error) {
@@ -466,7 +367,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         await connection.beginTransaction();
         const businessId = req.user.business_id;
         const userId = req.user.id;
-        console.log(`Mencoba menghapus pesanan ID: ${req.params.id} untuk bisnis: ${businessId}`);
+        console.log(`Attempting to delete order ID: ${req.params.id} for business: ${businessId}`);
 
         const [orderItemsToRevert] = await connection.query(
              `SELECT oi.product_id, oi.quantity

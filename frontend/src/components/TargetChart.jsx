@@ -1,6 +1,7 @@
 // frontend/src/pages/Dashboard/components/TargetChart.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import { FiTarget } from 'react-icons/fi';
@@ -102,3 +103,8 @@ function TargetChart({ loading, stats }) {
 }
 
 export default TargetChart;
+
+TargetChart.propTypes = {
+  loading: PropTypes.bool.isRequired,
+  stats: PropTypes.object,
+};
