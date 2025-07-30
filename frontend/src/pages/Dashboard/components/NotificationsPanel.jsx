@@ -1,10 +1,9 @@
-// frontend/src/pages/Dashboard/components/NotificationsPanel.jsx
-
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom'; // <-- 1. IMPORT useNavigate
 
 const PanelContainer = styled.div`
   background-color: var(--bg-surface);
@@ -45,37 +44,25 @@ const NotificationItem = styled.div`
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   font-size: 0.95rem;
+  /* --- 2. Tambahkan cursor pointer untuk item yang bisa di-klik --- */
+  cursor: ${props => props.isActionable ? 'pointer' : 'default'};
+  transition: all 0.2s ease-in-out;
 
+  &:hover {
+    background-color: ${props => props.isActionable ? 'var(--bg-surface)' : 'var(--bg-main)'};
+    border-color: ${props => props.isActionable ? 'var(--primary-color)' : 'var(--border-color)'};
+  }
+  
   svg {
     flex-shrink: 0;
     margin-top: 3px;
     color: var(--text-secondary);
   }
 
-  &.warning {
-    border-left: 4px solid #ffa500;
-    svg {
-      color: #ffa500;
-    }
-  }
-  &.danger {
-    border-left: 4px solid var(--red-color);
-    svg {
-      color: var(--red-color);
-    }
-  }
-  &.info {
-    border-left: 4px solid var(--primary-color);
-    svg {
-      color: var(--primary-color);
-    }
-  }
-  &.success {
-    border-left: 4px solid var(--green-color);
-    svg {
-      color: var(--green-color);
-    }
-  }
+  &.warning { border-left: 4px solid #ffa500; svg { color: #ffa500; } }
+  &.danger { border-left: 4px solid var(--red-color); svg { color: var(--red-color); } }
+  &.info { border-left: 4px solid var(--primary-color); svg { color: var(--primary-color); } }
+  &.success { border-left: 4px solid var(--green-color); svg { color: var(--green-color); } }
 `;
 
 const EmptyStateContainer = styled.div`
@@ -94,6 +81,17 @@ const getFiIconComponent = (iconName) => {
 };
 
 function NotificationsPanel({ loading, notifications, insights }) {
+    const navigate = useNavigate(); // <-- 3. Inisialisasi useNavigate
+
+    // --- 4. Fungsi untuk menangani klik pada notifikasi ---
+    const handleNotificationClick = (item) => {
+        // Hanya notifikasi stok (danger atau warning) yang bisa ditindaklanjuti
+        if (item.type === 'danger' || item.type === 'warning') {
+            navigate('/purchase-orders/new');
+            toast.info('Buat Purchase Order baru untuk memesan ulang stok.');
+        }
+    };
+
   const allItems = [
     ...(Array.isArray(notifications) ? notifications : []).map((item, index) => ({
       id: item.id || `notification-${index}`,
@@ -129,12 +127,20 @@ function NotificationsPanel({ loading, notifications, insights }) {
       </PanelTitle>
       {allItems.length > 0 ? (
         <NotificationList>
-          {allItems.map((item, index) => (
-            <NotificationItem key={`${item.source}-${item.id}-${index}`} className={item.type}>
-              {getFiIconComponent(item.icon)}
-              <span>{item.text}</span>
-            </NotificationItem>
-          ))}
+          {allItems.map((item, index) => {
+              const isActionable = item.source === 'notification' && (item.type === 'danger' || item.type === 'warning');
+              return (
+                <NotificationItem 
+                    key={`${item.source}-${item.id}-${index}`} 
+                    className={item.type}
+                    isActionable={isActionable}
+                    onClick={() => isActionable && handleNotificationClick(item)}
+                >
+                    {getFiIconComponent(item.icon)}
+                    <span>{item.text}</span>
+                </NotificationItem>
+              );
+          })}
         </NotificationList>
       ) : (
         <EmptyStateContainer>
@@ -148,10 +154,10 @@ function NotificationsPanel({ loading, notifications, insights }) {
   );
 }
 
-export default NotificationsPanel;
-
 NotificationsPanel.propTypes = {
   loading: PropTypes.bool.isRequired,
   notifications: PropTypes.array,
   insights: PropTypes.array,
 };
+
+export default NotificationsPanel;

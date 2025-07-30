@@ -12,61 +12,77 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// ENDPOINT STATS (Total Pendapatan, Transaksi, Laba, dll.)
+// --- NEW HELPER FUNCTION TO FETCH STATS FOR A GIVEN PERIOD ---
+const getStatsForPeriod = async (businessId, startDate, endDate) => {
+    // Basic validation for dates
+    if (!startDate || !endDate) {
+        throw new Error("Invalid date range provided for stats query.");
+    }
+
+    const statsQuery = `
+        SELECT
+            (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
+            (SELECT COUNT(id) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalTransactions,
+            CAST(
+                COALESCE(
+                    (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
+                    FROM order_items oi
+                    JOIN orders o2 ON oi.order_id = o2.id
+                    WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
+                , 0) 
+            AS DECIMAL(15,2)) as totalProfit,
+            COALESCE((
+                SELECT SUM(oi.quantity)
+                FROM order_items oi
+                JOIN orders o2 ON oi.order_id = o2.id
+                WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?
+            ), 0) as totalSoldUnits,
+            (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
+            (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
+    `;
+    const params = [
+        businessId, startDate, endDate,
+        businessId, startDate, endDate,
+        businessId, startDate, endDate,
+        businessId, startDate, endDate,
+        businessId, startDate, endDate,
+        businessId, startDate, endDate
+    ];
+    const [[stats]] = await db.query(statsQuery, params);
+    return {
+        totalRevenue: Number(stats.totalRevenue),
+        totalTransactions: Number(stats.totalTransactions),
+        totalProfit: Number(stats.totalProfit),
+        totalSoldUnits: Number(stats.totalSoldUnits),
+        newCustomers: Number(stats.newCustomers),
+        totalExpenses: Number(stats.totalExpenses),
+    };
+};
+
+// --- UPDATED STATS ENDPOINT (Total Revenue, Transactions, Profit, etc.) ---
 router.get('/stats', protect, isAdmin, async (req, res) => {
     try {
-        const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
         
         if (!businessId) {
             return res.status(400).json({ message: 'Invalid business ID' });
         }
-        
-        if (!startDate || !endDate) {
-            return res.status(400).json({ message: "Invalid date range provided" });
+
+        // Get stats for the current period
+        const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
+        const currentPeriodStats = await getStatsForPeriod(businessId, startDate, endDate);
+
+        let previousPeriodStats = null;
+        // If comparison dates are provided, get stats for the previous period
+        if (req.query.compareStartDate && req.query.compareEndDate) {
+            const { startDate: compareStartDate, endDate: compareEndDate } = getValidDateRange(req.query.compareStartDate, req.query.compareEndDate);
+            previousPeriodStats = await getStatsForPeriod(businessId, compareStartDate, compareEndDate);
         }
-        
-        const statsQuery = `
-            SELECT
-                (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
-                (SELECT COUNT(id) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalTransactions,
-                CAST(
-                    COALESCE(
-                        (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
-                        FROM order_items oi
-                        JOIN orders o2 ON oi.order_id = o2.id
-                        WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
-                    , 0) 
-                AS DECIMAL(15,2)) as totalProfit,
-                COALESCE((
-                    SELECT SUM(oi.quantity)
-                    FROM order_items oi
-                    JOIN orders o2 ON oi.order_id = o2.id
-                    WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?
-                ), 0) as totalSoldUnits,
-                (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
-                (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
-        `;
 
-        const [[stats]] = await db.query(statsQuery, [
-            businessId, startDate, endDate,
-            businessId, startDate, endDate,
-            businessId, startDate, endDate,
-            businessId, startDate, endDate,
-            businessId, startDate, endDate,
-            businessId, startDate, endDate
-        ]);
-
-        const transformedStats = {
-            totalRevenue: Number(stats.totalRevenue),
-            totalTransactions: Number(stats.totalTransactions),
-            totalProfit: Number(stats.totalProfit),
-            totalSoldUnits: Number(stats.totalSoldUnits),
-            newCustomers: Number(stats.newCustomers),
-            totalExpenses: Number(stats.totalExpenses),
-        };
-
-        res.json(transformedStats);
+        res.json({
+            current: currentPeriodStats,
+            previous: previousPeriodStats,
+        });
 
     } catch (error) {
         console.error("Error fetching stats:", error);
@@ -77,7 +93,7 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT GRAFIK PENJUALAN HARIAN
+// ENDPOINT DAILY SALES CHART
 router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -114,7 +130,7 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT PRODUK TERLARIS
+// ENDPOINT TOP SELLING PRODUCTS
 router.get('/top-products', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -141,7 +157,7 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT PERFORMA PENJUALAN SEMUA PRODUK
+// ENDPOINT ALL PRODUCT SALES PERFORMANCE
 router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -168,7 +184,7 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT Performa Kasir
+// ENDPOINT Cashier Performance
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -193,13 +209,13 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT: NOTIFIKASI STOK
+// ENDPOINT: STOCK NOTIFICATIONS
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         let notifications = [];
 
-        // 1. Notifikasi Stok Habis (stock = 0)
+        // 1. Out of Stock Notifications (stock = 0)
         const [outOfStockProducts] = await db.query(
             `SELECT id, name FROM products WHERE business_id = ? AND stock = 0 AND is_archived = 0`,
             [businessId]
@@ -213,7 +229,7 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
             });
         });
 
-        // 2. Notifikasi Stok Menipis (stock <= low_stock_threshold)
+        // 2. Low Stock Notifications (stock <= low_stock_threshold)
         const [lowStockProducts] = await db.query(
             `SELECT id, name, stock, low_stock_threshold FROM products WHERE business_id = ? AND stock > 0 AND stock <= low_stock_threshold AND is_archived = 0`,
             [businessId]
@@ -387,7 +403,7 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
     }
 });
 
-// ENDPOINT BARU: LAPORAN PROFITABILITAS PRODUK
+// ENDPOINT NEW: PRODUCT PROFITABILITY REPORT
 router.get('/product-profitability', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -418,7 +434,7 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
 
         const [results] = await db.query(profitabilityQuery, [businessId, startDate, endDate]);
         
-        // Konversi tipe data agar konsisten
+        // Convert data types to be consistent
         const formattedResults = results.map(item => ({
             ...item,
             total_quantity_sold: Number(item.total_quantity_sold),
@@ -433,6 +449,47 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error fetching product profitability:", error);
         res.status(500).json({ message: "Gagal mengambil data profitabilitas produk." });
+    }
+});
+
+// --- NEW ENDPOINT: DAILY REVENUE VS PROFIT DATA ---
+router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
+        const businessId = req.user.business_id;
+
+        const query = `
+            WITH RECURSIVE dates AS (
+                SELECT ? as date
+                UNION ALL
+                SELECT DATE_ADD(date, INTERVAL 1 DAY)
+                FROM dates
+                WHERE date < ?
+            )
+            SELECT 
+                d.date,
+                CAST(COALESCE(SUM(o.total_amount), 0) AS DECIMAL(15,2)) as revenue,
+                CAST(COALESCE(SUM(oi.price * oi.quantity) - SUM(oi.cost_price * oi.quantity), 0) AS DECIMAL(15,2)) as profit
+            FROM dates d
+            LEFT JOIN orders o ON DATE(o.created_at) = d.date AND o.business_id = ?
+            LEFT JOIN order_items oi ON oi.order_id = o.id
+            GROUP BY d.date
+            ORDER BY d.date ASC;
+        `;
+
+        const [results] = await db.query(query, [startDate, endDate, businessId]);
+
+        const formattedResults = results.map(item => ({
+            date: new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+            revenue: Number(item.revenue),
+            profit: Number(item.profit)
+        }));
+
+        res.json(formattedResults);
+
+    } catch (error) {
+        console.error("Error fetching daily revenue vs profit data:", error);
+        res.status(500).json({ message: "Gagal mengambil data grafik." });
     }
 });
 

@@ -1,5 +1,3 @@
-// frontend/src/pages/Dashboard/components/QuickActionGrids.jsx
-
 import React from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -79,13 +77,14 @@ function QuickActionGrids() {
             <ActionButton onClick={() => navigate('/products/new')}><FiIcons.FiPlusSquare size={30}/><span>Tambah Produk</span></ActionButton>
             <ActionButton onClick={() => navigate('/products')}><FiIcons.FiArchive size={30}/><span>Daftar Produk</span></ActionButton>
             <ActionButton onClick={() => navigate('/receive-stock')}><FiIcons.FiUpload size={30}/><span>Terima Stok</span></ActionButton>
-            {/* --- PERBAIKAN DI SINI --- */}
             <ActionButton onClick={() => navigate('/stock-adjustment')}><FiIcons.FiEdit size={30}/><span>Penyesuaian Stok</span></ActionButton>
+            <ActionButton onClick={() => navigate('/purchase-orders')}><FiIcons.FiClipboard size={30}/><span>Purchase Order</span></ActionButton>
+            <ActionButton onClick={() => navigate('/raw-materials')}><FiIcons.FiBox size={30}/><span>Bahan Baku</span></ActionButton> {/* <-- TOMBOL BARU */}
+
 
             {/* --- SEKSI 3: PENGELOLAAN TOKO --- */}
             <GridTitle><FiIcons.FiHome size={22}/> Pengelolaan Toko</GridTitle>
             <ActionButton onClick={() => navigate('/categories')}><FiIcons.FiList size={30}/><span>Kelola Kategori</span></ActionButton>
-            {/* --- PERBAIKAN DI SINI --- */}
             <ActionButton onClick={() => navigate('/promotions')}><FiIcons.FiTag size={30}/><span>Kelola Promosi</span></ActionButton>
             <ActionButton onClick={() => navigate('/suppliers')}><FiIcons.FiTruck size={30}/><span>Kelola Pemasok</span></ActionButton>
             <ActionButton onClick={() => navigate('/customers')}><FiIcons.FiUsers size={30}/><span>Kelola Pelanggan</span></ActionButton>

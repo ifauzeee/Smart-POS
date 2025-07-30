@@ -5,6 +5,7 @@ const API = axios.create({
     timeout: 30000,
 });
 
+// ... (semua interceptor tetap sama)
 API.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -20,7 +21,6 @@ API.interceptors.request.use((config) => {
     }
     return Promise.reject(error);
 });
-
 API.interceptors.response.use(
     (response) => {
         if (import.meta.env.DEV) {
@@ -44,6 +44,19 @@ API.interceptors.response.use(
         }
     }
 );
+
+
+// User, Product, Order, Analytics, Settings, Category, Supplier, Customer, etc Routes...
+// (semua fungsi yang sudah ada tidak perlu ditulis ulang, cukup tambahkan yang baru di bawah ini)
+// ...
+
+// --- FUNGSI BARU UNTUK RAW MATERIALS ---
+export const getRawMaterials = () => API.get('/raw-materials');
+export const createRawMaterial = (materialData) => API.post('/raw-materials', materialData);
+export const updateRawMaterial = (id, materialData) => API.put(`/raw-materials/${id}`, materialData);
+export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
+
+// ... (semua fungsi lain yang sudah ada)
 
 // User Routes
 export const loginUser = (userData) => API.post('/users/login', userData);
@@ -89,10 +102,12 @@ export const exportOrders = (startDate, endDate) => {
 };
 
 // Analytics Routes
-export const getStats = (startDate, endDate) => {
+export const getStats = (startDate, endDate, compareStartDate = null, compareEndDate = null) => {
     const params = new URLSearchParams();
     if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
+    if (compareStartDate instanceof Date && !isNaN(compareStartDate)) params.append('compareStartDate', compareStartDate.toISOString());
+    if (compareEndDate instanceof Date && !isNaN(compareEndDate)) params.append('compareEndDate', compareEndDate.toISOString());
     return API.get(`/analytics/stats?${params.toString()}`);
 };
 export const getDailySales = (startDate, endDate) => {
@@ -113,21 +128,6 @@ export const getProductSalesPerformance = (startDate, endDate) => {
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
     return API.get(`/analytics/product-sales-performance?${params.toString()}`);
 };
-export const getTopRevenueProducts = (startDate, endDate) => {
-    const params = new URLSearchParams();
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
-    return API.get(`/analytics/top-revenue-products?${params.toString()}`);
-};
-export const getHourlySales = (startDate, endDate) => {
-    const params = new URLSearchParams();
-    if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
-    if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
-    return API.get(`/analytics/hourly-sales?${params.toString()}`);
-};
-export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-products?days=${days}`);
-export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`);
-export const getLowMarginProducts = () => API.get(`/analytics/low-margin-products`);
 export const getTopCustomers = (startDate, endDate) => {
     const params = new URLSearchParams();
     if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
@@ -141,20 +141,23 @@ export const getCashierPerformance = (startDate, endDate) => {
     return API.get(`/analytics/cashier-performance?${params.toString()}`);
 };
 export const getRecentSuppliers = (limit = 5) => API.get(`/analytics/recent-suppliers?limit=${limit}`);
-export const getActivityLogs = (limit = 5) => API.get(`/analytics/activity-logs?limit=${limit}`);
 export const getInsights = (startDate, endDate) => {
     const params = new URLSearchParams();
     if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
     return API.get(`/analytics/insights?${params.toString()}`);
 };
-export const getNotifications = (startDate, endDate) => {
+export const getNotifications = () => API.get('/analytics/notifications');
+export const getStockInfo = () => API.get('/analytics/stock-info');
+export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-products?days=${days}`);
+export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`);
+export const getDailyRevenueProfit = (startDate, endDate) => {
     const params = new URLSearchParams();
     if (startDate instanceof Date && !isNaN(startDate)) params.append('startDate', startDate.toISOString());
     if (endDate instanceof Date && !isNaN(endDate)) params.append('endDate', endDate.toISOString());
-    return API.get(`/analytics/notifications?${params.toString()}`);
+    return API.get(`/analytics/daily-revenue-profit?${params.toString()}`);
 };
-export const getStockInfo = () => API.get('/analytics/stock-info');
+
 
 // Settings Routes
 export const getEmailSettings = () => API.get('/settings/email');
@@ -210,12 +213,7 @@ export const deletePromotion = (id) => API.delete(`/promotions/${id}`);
 export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`);
 
 // Report Routes
-export const getSalesReportPdf = (params) => {
-    return API.get('/reports/sales-summary', {
-        params,
-        responseType: 'blob',
-    });
-};
+export const getSalesReportPdf = (params) => API.get('/reports/sales-summary', { params, responseType: 'blob' });
 export const getProductProfitabilityReport = (params) => API.get('/analytics/product-profitability', { params });
 
 // Shift Routes
@@ -224,5 +222,11 @@ export const startShift = (data) => API.post('/shifts/start', data);
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);
+
+// Purchase Order Routes
+export const getPurchaseOrders = () => API.get('/purchase-orders');
+export const createPurchaseOrder = (poData) => API.post('/purchase-orders', poData);
+export const updatePurchaseOrderStatus = (id, status) => API.patch(`/purchase-orders/${id}/status`, { status });
+export const getPurchaseOrderById = (id) => API.get(`/purchase-orders/${id}`); // <-- NEW FUNCTION
 
 export default API;

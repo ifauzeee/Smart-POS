@@ -1,8 +1,8 @@
-// backend/routes/categoryRoutes.js
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
+const { body, validationResult } = require('express-validator'); // Import validator
 const router = express.Router();
 
 const isAdmin = (req, res, next) => {
@@ -12,14 +12,24 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
+// Define validation rules for Category
+const categoryValidationRules = [
+    body('name')
+        .trim()
+        .notEmpty().withMessage('Nama kategori tidak boleh kosong.')
+        .isLength({ min: 3 }).withMessage('Nama kategori minimal 3 karakter.')
+];
+
 // CREATE Category
-router.post('/', protect, isAdmin, async (req, res) => {
+router.post('/', protect, isAdmin, categoryValidationRules, async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { name } = req.body;
     const businessId = req.user.business_id;
-
-    if (!name) {
-        return res.status(400).json({ message: 'Nama kategori harus diisi.' });
-    }
 
     try {
         const [result] = await db.query('INSERT INTO categories (business_id, name) VALUES (?, ?)', [businessId, name]);
@@ -101,15 +111,25 @@ router.get('/:categoryId/subcategories', protect, async (req, res) => {
     }
 });
 
+// Define validation rules for Sub-category
+const subCategoryValidationRules = [
+    body('name')
+        .trim()
+        .notEmpty().withMessage('Nama sub-kategori tidak boleh kosong.')
+        .isLength({ min: 3 }).withMessage('Nama sub-kategori minimal 3 karakter.')
+];
+
 // CREATE Sub-category
-router.post('/:categoryId/subcategories', protect, isAdmin, async (req, res) => {
+router.post('/:categoryId/subcategories', protect, isAdmin, subCategoryValidationRules, async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const categoryId = req.params.categoryId;
     const { name } = req.body;
     const businessId = req.user.business_id;
-
-    if (!name) {
-        return res.status(400).json({ message: 'Nama sub-kategori harus diisi.' });
-    }
 
     try {
         const [[category]] = await db.query('SELECT id FROM categories WHERE id = ? AND business_id = ?', [categoryId, businessId]);
@@ -166,6 +186,5 @@ router.delete('/subcategories/:id', protect, isAdmin, async (req, res) => {
         connection.release();
     }
 });
-
 
 module.exports = router;

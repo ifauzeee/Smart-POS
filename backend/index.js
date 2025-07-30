@@ -21,6 +21,8 @@ const reportRoutes = require('./routes/reportRoutes');
 const shiftRoutes = require('./routes/shiftRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
+const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
+const rawMaterialRoutes = require('./routes/rawMaterialRoutes'); // <-- IMPORT BARU
 
 const app = express();
 
@@ -60,6 +62,8 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/stock', stockRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
+app.use('/api/raw-materials', rawMaterialRoutes); // <-- DAFTARKAN RUTE BARU
 
 // NEW: Add a basic root route for the backend server
 // This helps in testing if the backend server is actually running

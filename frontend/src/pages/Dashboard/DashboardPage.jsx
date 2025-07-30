@@ -1,5 +1,3 @@
-// frontend/src/pages/Dashboard/DashboardPage.jsx
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { useReactToPrint } from 'react-to-print';
@@ -18,11 +16,12 @@ import {
     getRecentSuppliers,
     getNotifications, 
     getInsights, 
-    getRevenueTarget,
+    getRevenueTarget, 
     getStockInfo, 
     getStaleProducts, 
     getExpiredProducts,
-    getTopCustomers // Ensure this is imported now
+    getTopCustomers,
+    getDailyRevenueProfit // <-- Import new function
 } from '../../services/api';
 
 import DashboardHeader from './components/DashboardHeader';
@@ -33,13 +32,13 @@ import DailyReport from '../../components/DailyReport';
 import NotificationsPanel from './components/NotificationsPanel';
 import TopProductsChart from './components/TopProductsChart';
 import TargetChart from '../../components/TargetChart';
+import ProfitRevenueChart from './components/ProfitRevenueChart'; // <-- Import new component
 
 import { FiCalendar, FiFastForward } from 'react-icons/fi';
 
-// Import ShiftContext and Shift Modals
-import { useShift } from '../../context/ShiftContext'; // Assuming this path
-import StartShiftModal from '../../components/StartShiftModal'; // Assuming this path
-import CloseShiftModal from '../../components/CloseShiftModal'; // Assuming this path
+import { useShift } from '../../context/ShiftContext';
+import StartShiftModal from '../../components/StartShiftModal';
+import CloseShiftModal from '../../components/CloseShiftModal';
 
 const DashboardGrid = styled.div`
     display: grid;
@@ -59,13 +58,36 @@ const FilterContainer = styled.div`
     border-radius: 16px;
     border: 1px solid var(--border-color);
     display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: wrap;
+    flex-direction: column; 
+    gap: 15px; /* Increased gap between filter rows */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 `;
 
+const FilterRow = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Adjusted gap for better spacing within a row */
+    flex-wrap: wrap; 
+
+    /* Style for the text labels like "Tampilkan Data Dari:" and "sampai" */
+    span {
+        color: var(--text-secondary);
+        font-weight: 500;
+        white-space: nowrap; /* Prevent text from wrapping */
+    }
+
+    /* Ensure icon is aligned */
+    .fi-calendar {
+        color: var(--text-secondary);
+        margin-right: 3px; /* Small margin to separate from text */
+    }
+`;
+
 const DatePickerWrapper = styled.div`
+    .react-datepicker-wrapper {
+        display: flex; /* Make the wrapper a flex container to center input */
+        align-items: center;
+    }
     .react-datepicker-wrapper input {
         padding: 10px 15px;
         border-radius: 8px;
@@ -76,6 +98,29 @@ const DatePickerWrapper = styled.div`
         width: 130px;
         cursor: pointer;
         text-align: center;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        &:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
+        }
+    }
+`;
+
+const CheckboxContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary-color); 
+        cursor: pointer;
+    }
+    label {
+        cursor: pointer; /* Make label clickable for checkbox */
     }
 `;
 
@@ -121,7 +166,7 @@ function DashboardPage() {
         notifications: [],
         insights: [],
         productSalesPerformance: [],
-        stats: {},
+        stats: { current: {}, previous: null },
         stockInfo: [], 
         staleProducts: [],
         expiredProducts: [],
@@ -129,30 +174,37 @@ function DashboardPage() {
         cashierPerformance: [],
         recentSuppliers: [],
         dailySales: [],
-        revenueTarget: 0 
+        dailyRevenueProfit: [], // <-- New state for daily revenue vs profit
     });
     const [dailyReportData, setDailyReportData] = useState(null);
+    
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
-        d.setDate(d.getDate() - 30);
+        d.setDate(d.getDate() - 29); 
         return d;
     });
     const [endDate, setEndDate] = useState(new Date());
+
+    const [isComparing, setIsComparing] = useState(false);
+    const [compareStartDate, setCompareStartDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 59); 
+        return d;
+    });
+    const [compareEndDate, setCompareEndDate] = useState(() => {
+        const d = new Date();
+        d.setDate(d.getDate() - 30); 
+        return d;
+    });
+
     const reportRef = useRef(null);
 
-    // --- Shift Management State and Handlers ---
     const { activeShift, refreshShiftStatus } = useShift();
     const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
     const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
 
-    const handleStartShift = () => {
-        setStartShiftModalOpen(true);
-    };
-
-    const handleCloseShift = () => {
-        setCloseShiftModalOpen(true);
-    };
-    // --- End Shift Management ---
+    const handleStartShift = () => setStartShiftModalOpen(true);
+    const handleCloseShift = () => setCloseShiftModalOpen(true);
 
     const handlePrint = useReactToPrint({
         content: () => reportRef.current,
@@ -163,16 +215,16 @@ function DashboardPage() {
     const handlePrepareDailyReport = async () => {
         try {
             const [statsRes, topProductsRes] = await Promise.all([
-                getStats(startDate, endDate),
+                getStats(startDate, endDate), 
                 getTopProducts(startDate, endDate)
             ]);
             const transformedData = {
                 reportDate: endDate.toISOString(),
-                totalRevenue: statsRes.data.totalRevenue || 0,
-                totalProfit: statsRes.data.totalProfit || 0,
-                totalTransactions: statsRes.data.totalTransactions || 0,
-                totalSoldUnits: statsRes.data.totalSoldUnits || 0,
-                newCustomers: statsRes.data.newCustomers || 0,
+                totalRevenue: statsRes.data.current.totalRevenue || 0, 
+                totalProfit: statsRes.data.current.totalProfit || 0,   
+                totalTransactions: statsRes.data.current.totalTransactions || 0, 
+                totalSoldUnits: statsRes.data.current.totalSoldUnits || 0,     
+                newCustomers: statsRes.data.current.newCustomers || 0,         
                 topProducts: topProductsRes.data || [],
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString()
@@ -213,27 +265,43 @@ function DashboardPage() {
                 setUserName(decoded.name || 'Kasir');
             }
 
+            let statsCall;
+            if (isComparing) {
+                statsCall = getStats(startDate, endDate, compareStartDate, compareEndDate);
+            } else {
+                statsCall = getStats(startDate, endDate);
+            }
+
             const [
-                statsRes, dailySalesRes, stockInfoRes, staleProductsRes, 
+                statsRes, revenueTargetRes, dailySalesRes, stockInfoRes, staleProductsRes, 
                 expiredProductsRes, topCustomersRes, cashierPerformanceRes, recentSuppliersRes, 
-                notificationsRes, insightsRes, productSalesPerformanceRes, revenueTargetRes
+                notificationsRes, insightsRes, productSalesPerformanceRes, dailyRevenueProfitRes // <-- Fetch new data
             ] = await Promise.all([
-                getStats(startDate, endDate), 
+                statsCall, 
+                getRevenueTarget(), 
                 getDailySales(startDate, endDate),
                 getStockInfo(), 
                 getStaleProducts(30), 
                 getExpiredProducts(30),
-                getTopCustomers(startDate, endDate), // This line
-                getCashierPerformance(startDate, endDate), // This line
-                getRecentSuppliers(5), // This line
-                getNotifications(startDate, endDate), // This line
-                getInsights(startDate, endDate), // This line
-                getProductSalesPerformance(startDate, endDate), // This line
-                getRevenueTarget() // This line
+                getTopCustomers(startDate, endDate),
+                getCashierPerformance(startDate, endDate), 
+                getRecentSuppliers(5),
+                getNotifications(), 
+                getInsights(startDate, endDate),
+                getProductSalesPerformance(startDate, endDate),
+                getDailyRevenueProfit(startDate, endDate) // <-- Call the new API function
             ]);
+            
+            const finalStats = {
+                current: {
+                    ...statsRes.data.current,
+                    monthly_revenue_target: revenueTargetRes.data.monthly_revenue_target
+                },
+                previous: statsRes.data.previous
+            };
 
             setDashboardData({
-                stats: { ...statsRes.data, monthly_revenue_target: revenueTargetRes.data.monthly_revenue_target },
+                stats: finalStats, 
                 dailySales: dailySalesRes.data, 
                 stockInfo: stockInfoRes.data, 
                 staleProducts: staleProductsRes.data, 
@@ -243,7 +311,8 @@ function DashboardPage() {
                 recentSuppliers: recentSuppliersRes.data,
                 notifications: notificationsRes.data, 
                 insights: insightsRes.data,
-                productSalesPerformance: productSalesPerformanceRes.data
+                productSalesPerformance: productSalesPerformanceRes.data,
+                dailyRevenueProfit: dailyRevenueProfitRes.data, // <-- Save the new data
             });
         } catch (err) {
             toast.error("Gagal memuat sebagian data dashboard.");
@@ -251,11 +320,22 @@ function DashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate, isComparing, compareStartDate, compareEndDate]); 
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        if (isComparing) {
+            const diffTime = endDate.getTime() - startDate.getTime();
+            const newCompareEndDate = new Date(startDate.getTime() - (24 * 60 * 60 * 1000)); 
+            const newCompareStartDate = new Date(newCompareEndDate.getTime() - diffTime);
+            setCompareStartDate(newCompareStartDate);
+            setCompareEndDate(newCompareEndDate);
+        }
+    }, [startDate, endDate, isComparing]);
+
 
     const handleRefresh = () => fetchData();
 
@@ -266,27 +346,56 @@ function DashboardPage() {
                 onRefresh={handleRefresh}
                 onPrint={handlePrepareDailyReport}
                 onManualPrint={handleManualPrint}
-                // Pass shift-related props to DashboardHeader
                 activeShift={activeShift}
                 onStartShift={handleStartShift}
                 onCloseShift={handleCloseShift}
             />
             <FilterContainer>
-                <FiCalendar size={20} style={{color: 'var(--text-secondary)'}}/>
-                <span>Tampilkan Data Dari:</span>
-                <DatePickerWrapper>
-                    <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
-                </DatePickerWrapper>
-                <span>sampai</span>
-                <DatePickerWrapper>
-                    <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
-                </DatePickerWrapper>
+                <FilterRow>
+                    <FiCalendar size={20} className="fi-calendar" />
+                    <span>Tampilkan Data Dari:</span>
+                    <DatePickerWrapper>
+                        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
+                    </DatePickerWrapper>
+                    <span>sampai</span>
+                    <DatePickerWrapper>
+                        <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
+                    </DatePickerWrapper>
+                </FilterRow>
+                <FilterRow>
+                    <CheckboxContainer>
+                        <input type="checkbox" id="compare-checkbox" checked={isComparing} onChange={(e) => setIsComparing(e.target.checked)} />
+                        <label htmlFor="compare-checkbox">Bandingkan dengan Periode Lain</label>
+                    </CheckboxContainer>
+                    {isComparing && (
+                        <>
+                            <DatePickerWrapper>
+                                <DatePicker selected={compareStartDate} onChange={(date) => setCompareStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={compareEndDate} />
+                            </DatePickerWrapper>
+                            <span>sampai</span>
+                            <DatePickerWrapper>
+                                <DatePicker selected={compareEndDate} onChange={(date) => setCompareEndDate(date)} dateFormat="dd/MM/yyyy" minDate={compareStartDate} />
+                            </DatePickerWrapper>
+                        </>
+                    )}
+                </FilterRow>
             </FilterContainer>
 
-            <StatCardGrid loading={loading} stats={dashboardData.stats} userName={userName} />
+            <StatCardGrid 
+                loading={loading} 
+                stats={dashboardData.stats.current} 
+                previousStats={dashboardData.stats.previous} 
+                userName={userName} 
+            />
             <NotificationsPanel loading={loading} notifications={dashboardData.notifications || []} insights={dashboardData.insights || []} />
-            <TargetChart loading={loading} stats={dashboardData.stats} />
+            
+            <TargetChart loading={loading} stats={dashboardData.stats.current} /> 
+            
             <SalesChart loading={loading} data={dashboardData.dailySales} />
+            
+            {/* NEW CHART DISPLAYED HERE */}
+            <ProfitRevenueChart loading={loading} data={dashboardData.dailyRevenueProfit} />
+
             <TopProductsChart loading={loading} data={dashboardData.productSalesPerformance} />
             <InfoTabs loading={loading} data={dashboardData} />
             
@@ -300,20 +409,21 @@ function DashboardPage() {
             <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
                 <DailyReport ref={reportRef} data={dailyReportData} />
             </div>
-
-            {/* Shift Modals */}
+            
             {startShiftModalOpen && (
-                <StartShiftModal
-                    isOpen={startShiftModalOpen}
-                    onClose={() => setStartShiftModalOpen(false)}
-                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift start
-                />
+                <StartShiftModal onShiftStarted={() => {
+                    setStartShiftModalOpen(false);
+                    refreshShiftStatus();
+                }} />
             )}
-            {closeShiftModalOpen && (
+            {closeShiftModalOpen && activeShift && (
                 <CloseShiftModal
-                    isOpen={closeShiftModalOpen}
+                    shiftId={activeShift.id}
                     onClose={() => setCloseShiftModalOpen(false)}
-                    onSuccess={refreshShiftStatus} // Call refreshShiftStatus after successful shift close
+                    onShiftClosed={() => {
+                        setCloseShiftModalOpen(false);
+                        refreshShiftStatus();
+                    }}
                 />
             )}
         </DashboardGrid>

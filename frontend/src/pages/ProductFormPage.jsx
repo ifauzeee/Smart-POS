@@ -1,13 +1,10 @@
-// frontend/src/pages/ProductFormPage.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { getCategories, getSubCategories, getSuppliers, getProductById, createProduct, updateProduct, uploadImage } from '../services/api';
+import { getCategories, getSubCategories, getSuppliers, getProductById, createProduct, updateProduct, uploadImage, getRawMaterials } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-// PERBAIKAN: Impor diubah untuk menggunakan alias
 import { formatRupiah as formatCurrency, parseRupiah as parseCurrency } from '../utils/formatters';
 
 // --- Styled Components ---
@@ -31,6 +28,11 @@ const ActionButton = styled.button` background: none; border: none; cursor: poin
 const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
 const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
 
+// --- NEW STYLED COMPONENTS FOR RECIPE ---
+const RecipeSection = styled(VariantSection)``;
+const RecipeRow = styled.div` display: grid; grid-template-columns: 3fr 1fr 1fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
+const AddRecipeItemButton = styled(AddVariantButton)``;
+
 function ProductFormPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -47,12 +49,14 @@ function ProductFormPage() {
         low_stock_threshold: 5,
         image_url: '',
         expiration_date: '',
-        variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
+        variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }],
+        recipeItems: [], // New state for recipe items
     });
 
     const [categories, setCategories] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
+    const [rawMaterials, setRawMaterials] = useState([]); // New state for raw materials
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -66,6 +70,17 @@ function ProductFormPage() {
                     const subCatRes = await getSubCategories(product.category_id);
                     setSubCategories(subCatRes.data);
                 }
+
+                // Map recipe items to include name and unit for display
+                const populatedRecipeItems = product.recipeItems ? product.recipeItems.map(item => {
+                    const material = rawMaterials.find(mat => mat.id === item.raw_material_id);
+                    return {
+                        ...item,
+                        raw_material_name: material ? material.name : 'Unknown',
+                        raw_material_unit: material ? material.unit : '',
+                    };
+                }) : [];
+
                 setFormData({
                     name: product.name || '',
                     description: product.description || '',
@@ -83,8 +98,9 @@ function ProductFormPage() {
                             price: v.price !== undefined ? v.price : '',
                             cost_price: v.cost_price !== undefined ? v.cost_price : '',
                             barcode: v.barcode || '',
-                          }))
-                        : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
+                        }))
+                        : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }],
+                    recipeItems: populatedRecipeItems, // Set recipe items
                 });
             } catch (error) {
                 console.error("Error fetching product data:", error);
@@ -96,21 +112,31 @@ function ProductFormPage() {
         } else {
             setLoading(false);
         }
-    }, [id, isEditing, navigate]);
+    }, [id, isEditing, navigate, rawMaterials]); // Add rawMaterials to dependencies
 
     useEffect(() => {
-        const fetchDropdownData = async () => {
+        const fetchInitialData = async () => {
             try {
-                const [catRes, supRes] = await Promise.all([getCategories(), getSuppliers()]);
+                const [catRes, supRes, matRes] = await Promise.all([getCategories(), getSuppliers(), getRawMaterials()]);
                 setCategories(catRes.data);
                 setSuppliers(supRes.data);
+                setRawMaterials(matRes.data); // Store raw materials data
             } catch (error) {
-                toast.error("Gagal memuat data kategori atau pemasok.");
+                toast.error("Gagal memuat data awal.");
             }
         };
-        fetchDropdownData();
-        fetchProductData();
-    }, [fetchProductData]);
+        fetchInitialData();
+    }, []); // Run once on component mount to fetch static data
+
+    useEffect(() => {
+        // Fetch product data only after rawMaterials are loaded (if editing)
+        if (isEditing && rawMaterials.length > 0) {
+            fetchProductData();
+        } else if (!isEditing) {
+            setLoading(false); // If not editing, no need to wait for product data
+        }
+    }, [fetchProductData, isEditing, rawMaterials.length]);
+
 
     useEffect(() => {
         if (formData.category_id) {
@@ -172,9 +198,42 @@ function ProductFormPage() {
         fileInputRef.current.click();
     };
 
+    // --- NEW FUNCTIONS FOR RECIPE ---
+    const handleRecipeItemChange = (index, field, value) => {
+        const newItems = [...formData.recipeItems];
+        newItems[index][field] = value;
+
+        // If raw material is changed, update its name & unit for display
+        if (field === 'raw_material_id') {
+            const selectedMaterial = rawMaterials.find(m => m.id === parseInt(value));
+            if (selectedMaterial) {
+                newItems[index].raw_material_name = selectedMaterial.name;
+                newItems[index].raw_material_unit = selectedMaterial.unit;
+            } else {
+                newItems[index].raw_material_name = 'Unknown';
+                newItems[index].raw_material_unit = '';
+            }
+        }
+        setFormData({ ...formData, recipeItems: newItems });
+    };
+
+    const addRecipeItem = () => {
+        setFormData({
+            ...formData,
+            recipeItems: [...formData.recipeItems, { raw_material_id: '', quantity_used: '', raw_material_name: '', raw_material_unit: '' }]
+        });
+    };
+
+    const removeRecipeItem = (index) => {
+        const newItems = formData.recipeItems.filter((_, i) => i !== index);
+        setFormData({ ...formData, recipeItems: newItems });
+    };
+    // --- END NEW FUNCTIONS ---
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+
         const validVariants = formData.variants.filter(v =>
             v.name &&
             v.price !== '' &&
@@ -186,11 +245,31 @@ function ProductFormPage() {
             price: parseFloat(v.price),
             cost_price: parseFloat(v.cost_price),
         }));
+
         if (validVariants.length === 0) {
             toast.error('Setidaknya satu varian produk harus diisi lengkap (nama, harga beli, dan harga jual).');
             setIsSubmitting(false);
             return;
         }
+
+        // Validate recipe items
+        const validRecipeItems = formData.recipeItems.filter(item =>
+            item.raw_material_id &&
+            item.quantity_used !== '' &&
+            !isNaN(parseFloat(item.quantity_used)) &&
+            parseFloat(item.quantity_used) > 0
+        ).map(item => ({
+            raw_material_id: parseInt(item.raw_material_id),
+            quantity_used: parseFloat(item.quantity_used),
+        }));
+
+        if (formData.recipeItems.length > 0 && validRecipeItems.length === 0) {
+            toast.error('Semua item resep harus memiliki bahan baku dan jumlah yang valid.');
+            setIsSubmitting(false);
+            return;
+        }
+
+
         let imageUrlToSend = formData.image_url;
         if (selectedFile) {
             const formDataForUpload = new FormData();
@@ -206,15 +285,19 @@ function ProductFormPage() {
                 return;
             }
         }
+
         const productData = {
             ...formData,
             image_url: imageUrlToSend,
             variants: validVariants,
+            recipeItems: validRecipeItems, // Include validated recipe items
             expiration_date: formData.expiration_date || null
         };
+
         const promise = isEditing
             ? updateProduct(id, productData)
             : createProduct(productData);
+
         try {
             await toast.promise(promise, {
                 pending: 'Menyimpan produk...',
@@ -274,7 +357,7 @@ function ProductFormPage() {
                         <Label>Total Stok</Label>
                         <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
                     </InputGroup>
-                    
+
                     <InputGroup>
                         <Label>Ambang Batas Stok Rendah</Label>
                         <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
@@ -305,6 +388,27 @@ function ProductFormPage() {
                         ))}
                         <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
                     </VariantSection>
+
+                    {/* --- NEW SECTION FOR RECIPE --- */}
+                    <RecipeSection>
+                        <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Resep (jika ada)</Label>
+                        {formData.recipeItems.map((item, index) => (
+                            <RecipeRow key={index}>
+                                <Select name="raw_material_id" value={item.raw_material_id} onChange={e => handleRecipeItemChange(index, 'raw_material_id', e.target.value)} required>
+                                    <option value="">-- Pilih Bahan Baku --</option>
+                                    {rawMaterials.map(mat => <option key={mat.id} value={mat.id}>{mat.name}</option>)}
+                                </Select>
+                                <Input type="number" step="0.01" placeholder="Jumlah" value={item.quantity_used} onChange={e => handleRecipeItemChange(index, 'quantity_used', e.target.value)} required />
+                                <span>{item.raw_material_unit || 'Satuan'}</span>
+                                <ActionButton type="button" onClick={() => removeRecipeItem(index)}><FiTrash2 size={18} /></ActionButton>
+                            </RecipeRow>
+                        ))}
+                        <AddRecipeItemButton type="button" onClick={addRecipeItem}>
+                            <FiPlus /> Tambah Bahan Resep
+                        </AddRecipeItemButton>
+                    </RecipeSection>
+                    {/* --- END RECIPE SECTION --- */}
+
                     <InputGroup $fullWidth>
                         <Label>URL Gambar (atau Unggah)</Label>
                         <FileInputContainer>

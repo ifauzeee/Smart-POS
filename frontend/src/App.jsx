@@ -1,5 +1,3 @@
-// frontend/src/App.jsx
-
 import React, { useContext } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
@@ -38,7 +36,11 @@ import CustomerDetailPage from './pages/CustomerDetailPage';
 import ShiftHistoryPage from './pages/ShiftHistoryPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import ProductProfitabilityReport from './pages/ProductProfitabilityReport'; // <-- IMPORT BARU
+import ProductProfitabilityReport from './pages/ProductProfitabilityReport';
+import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
+import PurchaseOrderForm from './pages/PurchaseOrderForm';
+import RawMaterialsPage from './pages/RawMaterialsPage';
+import PurchaseOrderDetailPage from './pages/PurchaseOrderDetailPage'; // <-- NEW IMPORT
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -95,12 +97,7 @@ function AppContent() {
         >
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
-            <BrowserRouter
-                future={{
-                    v7_startTransition: true,
-                    v7_relativeSplatPath: true
-                }}
-            >
+            <BrowserRouter>
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
@@ -121,7 +118,7 @@ function AppContent() {
                                 <Route path="/products/edit/:id" element={<ProductFormPage />} />
                                 <Route path="/history" element={<HistoryPage />} />
                                 <Route path="/reports" element={<ReportsPage />} />
-                                <Route path="/reports/product-profitability" element={<ProductProfitabilityReport />} /> {/* <-- ROUTE BARU */}
+                                <Route path="/reports/product-profitability" element={<ProductProfitabilityReport />} />
                                 <Route path="/shift-history" element={<ShiftHistoryPage />} />
                                 <Route path="/users" element={<UsersPage />} />
                                 <Route path="/customers" element={<CustomerPage />} />
@@ -137,6 +134,10 @@ function AppContent() {
                                 <Route path="/promotions/new" element={<PromotionFormPage />} />
                                 <Route path="/promotions/edit/:id" element={<PromotionFormPage />} />
                                 <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
+                                <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+                                <Route path="/purchase-orders/new" element={<PurchaseOrderForm />} />
+                                <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} /> {/* <-- NEW ROUTE */}
+                                <Route path="/raw-materials" element={<RawMaterialsPage />} />
                             </Route>
                         </Route>
                     </Route>

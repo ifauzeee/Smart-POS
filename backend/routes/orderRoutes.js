@@ -1,9 +1,8 @@
-// backend/routes/orderRoutes.js
 const express = require('express');
 const db = require('../config/db');
 const { protect } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
-const { sendReceiptEmail } = require('../utils/emailService'); // Updated import
+const { sendReceiptEmail } = require('../utils/emailService');
 const { logActivity } = require('../utils/logUtils');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
@@ -27,7 +26,7 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// POST /api/orders - Membuat pesanan baru
+// POST /api/orders - Membuat pesanan baru dengan logika resep
 router.post('/', protect, async (req, res) => {
     const { items, customer_id, payment_method, amount_paid, subtotal_amount, tax_amount, total_amount, promotion_id, discount_amount } = req.body;
     const userId = req.user.id;
@@ -41,39 +40,73 @@ router.post('/', protect, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const productQuantities = {};
+        // --- TAHAP 1: VALIDASI STOK (Produk Jadi atau Bahan Baku) ---
         for (const item of items) {
-            const [variants] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId]);
-            if (variants.length === 0) throw new Error(`Varian produk dengan ID ${item.variantId} tidak ditemukan.`);
-            const variant = variants[0];
-            productQuantities[variant.product_id] = (productQuantities[variant.product_id] || 0) + item.quantity;
-        }
+            const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId]);
+            if (!variant) throw new Error(`Varian produk dengan ID ${item.variantId} tidak ditemukan.`);
+            
+            const productId = variant.product_id;
+            const [[product]] = await connection.query('SELECT name FROM products WHERE id = ?', [productId]);
 
-        for (const productId in productQuantities) {
-            const [[product]] = await connection.query('SELECT stock, name FROM products WHERE id = ? AND business_id = ? FOR UPDATE', [productId, businessId]);
-            if (!product) throw new Error(`Produk dengan ID ${productId} tidak ditemukan.`);
-            if (product.stock < productQuantities[productId]) {
-                throw new Error(`Stok untuk produk ${product.name} tidak mencukupi.`);
+            // Cek apakah produk punya resep
+            const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
+
+            if (recipeItems.length > 0) {
+                // Jika punya resep, cek stok bahan baku
+                for (const recipeItem of recipeItems) {
+                    const [[material]] = await connection.query(
+                        'SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE',
+                        [recipeItem.raw_material_id]
+                    );
+                    const requiredQuantity = recipeItem.quantity_used * item.quantity;
+                    if (material.stock_quantity < requiredQuantity) {
+                        throw new Error(`Stok bahan baku "${material.name}" tidak mencukupi untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
+                    }
+                }
+            } else {
+                // Jika tidak punya resep, cek stok produk jadi
+                const [[productStock]] = await connection.query('SELECT stock FROM products WHERE id = ? FOR UPDATE', [productId]);
+                if (productStock.stock < item.quantity) {
+                    throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
+                }
             }
         }
-        
-        const pointsEarned = Math.floor(total_amount / 10000);
 
+        // --- TAHAP 2: BUAT PESANAN & ITEM PESANAN ---
+        const pointsEarned = Math.floor(total_amount / 10000);
         const orderSql = 'INSERT INTO orders (business_id, user_id, customer_id, subtotal_amount, tax_amount, total_amount, payment_method, amount_paid, promotion_id, discount_amount, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const [orderResult] = await connection.execute(orderSql, [businessId, userId, customer_id || null, subtotal_amount, tax_amount || 0, total_amount, payment_method || 'Tunai', amount_paid, promotion_id || null, discount_amount || 0, pointsEarned]);
         const orderId = orderResult.insertId;
 
         for (const item of items) {
-            const [variants] = await connection.query('SELECT product_id, price, cost_price FROM product_variants WHERE id = ?', [item.variantId]);
-            const variant = variants[0];
+            const [[variant]] = await connection.query('SELECT product_id, price, cost_price FROM product_variants WHERE id = ?', [item.variantId]);
             const orderItemSql = 'INSERT INTO order_items (order_id, product_id, variant_id, quantity, price, cost_price) VALUES (?, ?, ?, ?, ?, ?)';
             await connection.execute(orderItemSql, [orderId, variant.product_id, item.variantId, item.quantity, variant.price, variant.cost_price]);
         }
-        
-        for (const productId in productQuantities) {
-            await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [productQuantities[productId], productId]);
+
+        // --- TAHAP 3: PENGURANGAN STOK (Bahan Baku atau Produk Jadi) ---
+        for (const item of items) {
+            const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId]);
+            const productId = variant.product_id;
+            
+            const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
+
+            if (recipeItems.length > 0) {
+                // Jika punya resep, kurangi stok bahan baku
+                for (const recipeItem of recipeItems) {
+                    const quantityToDeduct = recipeItem.quantity_used * item.quantity;
+                    await connection.execute(
+                        'UPDATE raw_materials SET stock_quantity = stock_quantity - ? WHERE id = ?',
+                        [quantityToDeduct, recipeItem.raw_material_id]
+                    );
+                }
+            } else {
+                // Jika tidak, kurangi stok produk jadi
+                await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity, productId]);
+            }
         }
 
+        // --- TAHAP 4: UPDATE POIN PELANGGAN ---
         if (customer_id && pointsEarned > 0) {
             await connection.execute('UPDATE customers SET points = points + ? WHERE id = ? AND business_id = ?', [pointsEarned, customer_id, businessId]);
             await connection.execute(
@@ -83,19 +116,20 @@ router.post('/', protect, async (req, res) => {
         }
 
         await connection.commit();
-        await logActivity(businessId, userId, 'CREATE_ORDER', `Created order ID ${orderId} for total ${formatRupiah(total_amount)}.`);
+        await logActivity(businessId, userId, 'CREATE_ORDER', `Membuat order ID ${orderId} dengan total ${formatRupiah(total_amount)}.`);
         res.status(201).json({ message: 'Transaksi berhasil dibuat!', orderId: orderId });
 
     } catch (error) {
         await connection.rollback();
         console.error("Create Order Error:", error);
-        await logActivity(businessId, userId, 'CREATE_ORDER_FAILED', `Failed to create order. Error: ${error.message}`);
+        await logActivity(businessId, userId, 'CREATE_ORDER_FAILED', `Gagal membuat order. Error: ${error.message}`);
         res.status(500).json({ message: error.message || 'Transaksi gagal.' });
     } finally {
         connection.release();
     }
 });
 
+// GET /api/orders - Mendapatkan semua pesanan (tidak ada perubahan)
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -129,6 +163,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
+// GET /api/orders/export - Mengekspor data transaksi ke CSV (tidak ada perubahan)
 router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -199,6 +234,7 @@ router.get('/export', protect, isAdmin, async (req, res) => {
 });
 
 
+// GET /api/orders/:id - Mendapatkan detail pesanan berdasarkan ID (tidak ada perubahan)
 router.get('/:id', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -241,6 +277,7 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
+// POST /api/orders/:id/send-receipt - Mengirim struk via email (tidak ada perubahan)
 router.post('/:id/send-receipt', protect, async (req, res) => {
     const orderId = req.params.id;
     const { email: recipientEmail } = req.body;
@@ -289,7 +326,7 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
     }
 });
 
-
+// DELETE /api/orders/clear-history - Menghapus seluruh riwayat transaksi dan mereset poin loyalitas (tidak ada perubahan)
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
@@ -322,13 +359,9 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
             } catch (resetError) {
                 console.error("Failed to reset auto-increment ID:", resetError);
                 await logActivity(businessId, userId, 'RESET_ORDER_ID_COUNTER_FAILED', `Failed to reset order ID counter. Error: ${resetError.message}`);
-                // You can choose to send this error to the frontend
-                // or just log it. For now, we'll continue.
             }
 
-            // --- ADDED CODE START ---
             // Reset loyalty points for all customers for this business
-            // Assuming the customers table has a loyalty_points column and business_id
             try {
                 const [resetPointsResult] = await connection.query(
                     'UPDATE customers SET points = 0 WHERE business_id = ?',
@@ -339,10 +372,7 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
             } catch (resetPointsError) {
                 console.error("Failed to reset loyalty points:", resetPointsError);
                 await logActivity(businessId, userId, 'RESET_LOYALTY_POINTS_FAILED', `Failed to reset loyalty points after clearing history. Error: ${resetPointsError.message}`);
-                // Can choose to send this error to the frontend or just log
-                // For now, we log and continue with the successful deletion response
             }
-            // --- ADDED CODE END ---
 
             res.status(200).json({ message: 'Semua riwayat transaksi dan poin loyalitas pelanggan untuk bisnis Anda telah direset.' });
 
@@ -361,6 +391,7 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     }
 });
 
+// DELETE /api/orders/:id - Menghapus pesanan tunggal dan mengembalikan stok (tidak ada perubahan)
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     try {
