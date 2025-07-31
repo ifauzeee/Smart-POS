@@ -27,8 +27,6 @@ const AddVariantButton = styled.button` display: flex; align-items: center; gap:
 const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
 const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
 const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
-
-// --- NEW STYLED COMPONENTS FOR RECIPE ---
 const RecipeSection = styled(VariantSection)``;
 const RecipeRow = styled.div` display: grid; grid-template-columns: 3fr 1fr 1fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
 const AddRecipeItemButton = styled(AddVariantButton)``;
@@ -50,13 +48,13 @@ function ProductFormPage() {
         image_url: '',
         expiration_date: '',
         variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }],
-        recipeItems: [], // New state for recipe items
+        recipeItems: [],
     });
 
     const [categories, setCategories] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
-    const [rawMaterials, setRawMaterials] = useState([]); // New state for raw materials
+    const [rawMaterials, setRawMaterials] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -70,17 +68,6 @@ function ProductFormPage() {
                     const subCatRes = await getSubCategories(product.category_id);
                     setSubCategories(subCatRes.data);
                 }
-
-                // Map recipe items to include name and unit for display
-                const populatedRecipeItems = product.recipeItems ? product.recipeItems.map(item => {
-                    const material = rawMaterials.find(mat => mat.id === item.raw_material_id);
-                    return {
-                        ...item,
-                        raw_material_name: material ? material.name : 'Unknown',
-                        raw_material_unit: material ? material.unit : '',
-                    };
-                }) : [];
-
                 setFormData({
                     name: product.name || '',
                     description: product.description || '',
@@ -91,63 +78,44 @@ function ProductFormPage() {
                     low_stock_threshold: product.low_stock_threshold || 5,
                     image_url: product.image_url || '',
                     expiration_date: product.expiration_date ? new Date(product.expiration_date).toISOString().split('T')[0] : '',
-                    variants: product.variants && product.variants.length > 0
-                        ? product.variants.map(v => ({
-                            id: v.id,
-                            name: v.name || '',
-                            price: v.price !== undefined ? v.price : '',
-                            cost_price: v.cost_price !== undefined ? v.cost_price : '',
-                            barcode: v.barcode || '',
-                        }))
-                        : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }],
-                    recipeItems: populatedRecipeItems, // Set recipe items
+                    variants: product.variants && product.variants.length > 0 ? product.variants : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }],
+                    recipeItems: product.recipeItems || [],
                 });
             } catch (error) {
-                console.error("Error fetching product data:", error);
                 toast.error("Gagal memuat data produk. Mungkin produk tidak ditemukan.");
                 navigate('/products');
-            } finally {
-                setLoading(false);
             }
-        } else {
-            setLoading(false);
         }
-    }, [id, isEditing, navigate, rawMaterials]); // Add rawMaterials to dependencies
+    }, [id, isEditing, navigate]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
+            setLoading(true);
             try {
                 const [catRes, supRes, matRes] = await Promise.all([getCategories(), getSuppliers(), getRawMaterials()]);
                 setCategories(catRes.data);
                 setSuppliers(supRes.data);
-                setRawMaterials(matRes.data); // Store raw materials data
+                setRawMaterials(matRes.data);
+                await fetchProductData();
             } catch (error) {
-                toast.error("Gagal memuat data awal.");
+                toast.error("Gagal memuat data awal untuk form.");
+            } finally {
+                setLoading(false);
             }
         };
         fetchInitialData();
-    }, []); // Run once on component mount to fetch static data
-
-    useEffect(() => {
-        // Fetch product data only after rawMaterials are loaded (if editing)
-        if (isEditing && rawMaterials.length > 0) {
-            fetchProductData();
-        } else if (!isEditing) {
-            setLoading(false); // If not editing, no need to wait for product data
-        }
-    }, [fetchProductData, isEditing, rawMaterials.length]);
-
-
+    }, [fetchProductData]);
+    
     useEffect(() => {
         if (formData.category_id) {
             getSubCategories(formData.category_id)
                 .then(res => setSubCategories(res.data))
-                .catch(err => toast.error("Gagal memuat sub-kategori."));
+                .catch(err => console.error("Gagal memuat sub-kategori:", err));
         } else {
             setSubCategories([]);
         }
     }, [formData.category_id]);
-
+    
     const handleChange = (e) => {
         const { name, value } = e.target;
         if (name === "category_id") {
@@ -159,29 +127,32 @@ function ProductFormPage() {
 
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
-        if (field === 'price' || field === 'cost_price') {
-            newVariants[index][field] = value === '' ? '' : parseCurrency(value);
-        } else {
-            newVariants[index][field] = value;
-        }
+        newVariants[index][field] = value;
         setFormData({ ...formData, variants: newVariants });
     };
 
-    const addVariant = () => {
-        setFormData({
-            ...formData,
-            variants: [...formData.variants, { name: '', price: '', cost_price: '', barcode: '' }]
-        });
-    };
+    const addVariant = () => setFormData({ ...formData, variants: [...formData.variants, { name: '', price: '', cost_price: '', barcode: '' }] });
 
     const removeVariant = (index) => {
-        if (formData.variants.length <= 1) {
-            toast.warn("Produk harus memiliki setidaknya satu varian.");
-            return;
-        }
-        const newVariants = formData.variants.filter((_, i) => i !== index);
-        setFormData({ ...formData, variants: newVariants });
+        if (formData.variants.length <= 1) return toast.warn("Produk harus memiliki setidaknya satu varian.");
+        setFormData({ ...formData, variants: formData.variants.filter((_, i) => i !== index) });
     };
+    
+    const handleRecipeItemChange = (index, field, value) => {
+        const newItems = [...formData.recipeItems];
+        newItems[index][field] = value;
+        if (field === 'raw_material_id') {
+            const selectedMaterial = rawMaterials.find(m => m.id === parseInt(value));
+            if (selectedMaterial) {
+                newItems[index].raw_material_name = selectedMaterial.name;
+                newItems[index].raw_material_unit = selectedMaterial.unit;
+            }
+        }
+        setFormData({ ...formData, recipeItems: newItems });
+    };
+
+    const addRecipeItem = () => setFormData({ ...formData, recipeItems: [...formData.recipeItems, { raw_material_id: '', quantity_used: '' }] });
+    const removeRecipeItem = (index) => setFormData({ ...formData, recipeItems: formData.recipeItems.filter((_, i) => i !== index) });
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -189,87 +160,15 @@ function ProductFormPage() {
             setSelectedFile(file);
             setFormData(prev => ({ ...prev, image_url: '' }));
             toast.info(`File dipilih: ${file.name}`);
-        } else {
-            setSelectedFile(null);
         }
     };
 
-    const triggerFileInput = () => {
-        fileInputRef.current.click();
-    };
-
-    // --- NEW FUNCTIONS FOR RECIPE ---
-    const handleRecipeItemChange = (index, field, value) => {
-        const newItems = [...formData.recipeItems];
-        newItems[index][field] = value;
-
-        // If raw material is changed, update its name & unit for display
-        if (field === 'raw_material_id') {
-            const selectedMaterial = rawMaterials.find(m => m.id === parseInt(value));
-            if (selectedMaterial) {
-                newItems[index].raw_material_name = selectedMaterial.name;
-                newItems[index].raw_material_unit = selectedMaterial.unit;
-            } else {
-                newItems[index].raw_material_name = 'Unknown';
-                newItems[index].raw_material_unit = '';
-            }
-        }
-        setFormData({ ...formData, recipeItems: newItems });
-    };
-
-    const addRecipeItem = () => {
-        setFormData({
-            ...formData,
-            recipeItems: [...formData.recipeItems, { raw_material_id: '', quantity_used: '', raw_material_name: '', raw_material_unit: '' }]
-        });
-    };
-
-    const removeRecipeItem = (index) => {
-        const newItems = formData.recipeItems.filter((_, i) => i !== index);
-        setFormData({ ...formData, recipeItems: newItems });
-    };
-    // --- END NEW FUNCTIONS ---
+    const triggerFileInput = () => fileInputRef.current.click();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-
-        const validVariants = formData.variants.filter(v =>
-            v.name &&
-            v.price !== '' &&
-            !isNaN(parseFloat(v.price)) &&
-            v.cost_price !== '' &&
-            !isNaN(parseFloat(v.cost_price))
-        ).map(v => ({
-            ...v,
-            price: parseFloat(v.price),
-            cost_price: parseFloat(v.cost_price),
-        }));
-
-        if (validVariants.length === 0) {
-            toast.error('Setidaknya satu varian produk harus diisi lengkap (nama, harga beli, dan harga jual).');
-            setIsSubmitting(false);
-            return;
-        }
-
-        // Validate recipe items
-        const validRecipeItems = formData.recipeItems.filter(item =>
-            item.raw_material_id &&
-            item.quantity_used !== '' &&
-            !isNaN(parseFloat(item.quantity_used)) &&
-            parseFloat(item.quantity_used) > 0
-        ).map(item => ({
-            raw_material_id: parseInt(item.raw_material_id),
-            quantity_used: parseFloat(item.quantity_used),
-        }));
-
-        if (formData.recipeItems.length > 0 && validRecipeItems.length === 0) {
-            toast.error('Semua item resep harus memiliki bahan baku dan jumlah yang valid.');
-            setIsSubmitting(false);
-            return;
-        }
-
-
+        
         let imageUrlToSend = formData.image_url;
         if (selectedFile) {
             const formDataForUpload = new FormData();
@@ -277,9 +176,7 @@ function ProductFormPage() {
             try {
                 const uploadRes = await uploadImage(formDataForUpload);
                 imageUrlToSend = uploadRes.data.url;
-                toast.success("Gambar berhasil diunggah!");
             } catch (error) {
-                console.error("Error uploading image:", error);
                 toast.error("Gagal mengunggah gambar.");
                 setIsSubmitting(false);
                 return;
@@ -289,20 +186,15 @@ function ProductFormPage() {
         const productData = {
             ...formData,
             image_url: imageUrlToSend,
-            variants: validVariants,
-            recipeItems: validRecipeItems, // Include validated recipe items
             expiration_date: formData.expiration_date || null
         };
-
-        const promise = isEditing
-            ? updateProduct(id, productData)
-            : createProduct(productData);
-
+        
+        const promise = isEditing ? updateProduct(id, productData) : createProduct(productData);
         try {
             await toast.promise(promise, {
                 pending: 'Menyimpan produk...',
                 success: 'Produk berhasil disimpan!',
-                error: 'Gagal menyimpan produk.'
+                error: (err) => err.response?.data?.message || 'Gagal menyimpan produk.'
             });
             navigate('/products');
         } catch (err) {
@@ -312,9 +204,7 @@ function ProductFormPage() {
         }
     };
 
-    if (loading) {
-        return <PageContainer><Skeleton height={400} /></PageContainer>;
-    }
+    if (loading) return <PageContainer><Skeleton height={500} /></PageContainer>;
 
     return (
         <PageContainer>
@@ -324,106 +214,62 @@ function ProductFormPage() {
             </PageHeader>
             <Form onSubmit={handleSubmit}>
                 <FormGrid>
-                    <InputGroup $fullWidth>
-                        <Label>Nama Produk</Label>
-                        <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Kategori</Label>
-                        <Select name="category_id" value={formData.category_id} onChange={handleChange}>
-                            <option value="">-- Pilih Kategori --</option>
-                            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Sub-Kategori</Label>
-                        <Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}>
-                            <option value="">-- Pilih Sub-Kategori --</option>
-                            {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Pemasok</Label>
-                        <Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}>
-                            <option value="">-- Pilih Pemasok --</option>
-                            {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Tanggal Kadaluarsa (Opsional)</Label>
-                        <Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Total Stok</Label>
-                        <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
-                    </InputGroup>
-
-                    <InputGroup>
-                        <Label>Ambang Batas Stok Rendah</Label>
-                        <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
-                    </InputGroup>
-
-                    <VariantSection>
-                        <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
-                        {formData.variants.map((variant, index) => (
-                            <VariantRow key={index}>
-                                <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
-                                <Input
-                                    type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)}
-                                    onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
-                                    required
-                                />
-                                <Input
-                                    type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)}
-                                    onChange={e => handleVariantChange(index, 'price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseCurrency(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseCurrency(e.target.value); e.target.value = formatCurrency(rawValue); }}
-                                    required
-                                />
-                                <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
-                                <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
-                            </VariantRow>
-                        ))}
-                        <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
-                    </VariantSection>
-
-                    {/* --- NEW SECTION FOR RECIPE --- */}
-                    <RecipeSection>
-                        <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Resep (jika ada)</Label>
-                        {formData.recipeItems.map((item, index) => (
-                            <RecipeRow key={index}>
-                                <Select name="raw_material_id" value={item.raw_material_id} onChange={e => handleRecipeItemChange(index, 'raw_material_id', e.target.value)} required>
-                                    <option value="">-- Pilih Bahan Baku --</option>
-                                    {rawMaterials.map(mat => <option key={mat.id} value={mat.id}>{mat.name}</option>)}
-                                </Select>
-                                <Input type="number" step="0.01" placeholder="Jumlah" value={item.quantity_used} onChange={e => handleRecipeItemChange(index, 'quantity_used', e.target.value)} required />
-                                <span>{item.raw_material_unit || 'Satuan'}</span>
-                                <ActionButton type="button" onClick={() => removeRecipeItem(index)}><FiTrash2 size={18} /></ActionButton>
-                            </RecipeRow>
-                        ))}
-                        <AddRecipeItemButton type="button" onClick={addRecipeItem}>
-                            <FiPlus /> Tambah Bahan Resep
-                        </AddRecipeItemButton>
-                    </RecipeSection>
-                    {/* --- END RECIPE SECTION --- */}
-
-                    <InputGroup $fullWidth>
-                        <Label>URL Gambar (atau Unggah)</Label>
-                        <FileInputContainer>
-                            <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
-                            <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
-                            <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-                        </FileInputContainer>
-                        {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
-                        {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
-                    </InputGroup>
-                    <InputGroup $fullWidth>
-                        <Label>Deskripsi</Label>
-                        <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
-                    </InputGroup>
+                    <InputGroup $fullWidth><Label>Nama Produk</Label><Input name="name" value={formData.name} onChange={handleChange} required autoFocus /></InputGroup>
+                    <InputGroup><Label>Kategori</Label><Select name="category_id" value={formData.category_id} onChange={handleChange}><option value="">-- Pilih Kategori --</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</Select></InputGroup>
+                    <InputGroup><Label>Sub-Kategori</Label><Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}><option value="">-- Pilih Sub-Kategori --</option>{subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</Select></InputGroup>
+                    <InputGroup><Label>Pemasok</Label><Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}><option value="">-- Pilih Pemasok --</option>{suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}</Select></InputGroup>
+                    <InputGroup><Label>Tanggal Kadaluarsa (Opsional)</Label><Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} /></InputGroup>
+                    <InputGroup><Label>Total Stok</Label><Input name="stock" type="number" value={formData.stock} onChange={handleChange} required /></InputGroup>
+                    <InputGroup><Label>Ambang Batas Stok Rendah</Label><Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required /></InputGroup>
                 </FormGrid>
+
+                <VariantSection>
+                    <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Varian Produk</Label>
+                    {formData.variants.map((variant, index) => (
+                        <VariantRow key={index}>
+                            <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
+                            <Input type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)} onChange={e => handleVariantChange(index, 'cost_price', e.target.value)} required />
+                            <Input type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)} onChange={e => handleVariantChange(index, 'price', e.target.value)} required />
+                            <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
+                            <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
+                        </VariantRow>
+                    ))}
+                    <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
+                </VariantSection>
+
+                <RecipeSection>
+                    <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Resep (jika ada)</Label>
+                    {formData.recipeItems.map((item, index) => (
+                        <RecipeRow key={index}>
+                            <Select name="raw_material_id" value={item.raw_material_id} onChange={e => handleRecipeItemChange(index, 'raw_material_id', e.target.value)} required>
+                                <option value="">-- Pilih Bahan Baku --</option>
+                                {rawMaterials.map(mat => <option key={mat.id} value={mat.id}>{mat.name}</option>)}
+                            </Select>
+                            <Input type="number" step="0.01" placeholder="Jumlah" value={item.quantity_used} onChange={e => handleRecipeItemChange(index, 'quantity_used', e.target.value)} required />
+                            <span>{item.raw_material_unit || 'Satuan'}</span>
+                            <ActionButton type="button" onClick={() => removeRecipeItem(index)}><FiTrash2 size={18} /></ActionButton>
+                        </RecipeRow>
+                    ))}
+                    <AddRecipeItemButton type="button" onClick={addRecipeItem}>
+                        <FiPlus /> Tambah Bahan Resep
+                    </AddRecipeItemButton>
+                </RecipeSection>
+
+                <InputGroup $fullWidth>
+                    <Label>URL Gambar (atau Unggah)</Label>
+                    <FileInputContainer>
+                        <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
+                        <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
+                        <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                    </FileInputContainer>
+                    {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
+                    {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
+                </InputGroup>
+                <InputGroup $fullWidth>
+                    <Label>Deskripsi</Label>
+                    <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
+                </InputGroup>
+
                 <FormFooter>
                     <SaveButton type="submit" disabled={isSubmitting}>
                         <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}

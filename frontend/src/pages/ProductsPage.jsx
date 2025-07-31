@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiPackage } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import { motion } from 'framer-motion'; // <-- IMPORT BARU
+import AnimatedPage from '../components/AnimatedPage'; // <-- IMPORT BARU
 
 // --- Styled Components (tidak ada perubahan) ---
 const PageContainer = styled.div`
@@ -124,6 +126,22 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
+// --- VARIAN ANIMASI BARU ---
+const tableContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.05, // Setiap item anak akan muncul dengan jeda 0.05 detik
+        },
+    },
+};
+
+const tableRowVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+};
+// --- AKHIR VARIAN ---
 
 function ProductsPage() {
     const [products, setProducts] = useState([]);
@@ -164,98 +182,101 @@ function ProductsPage() {
     };
 
     return (
-        <PageContainer>
-            <PageHeader>
-                <Title>Manajemen Produk</Title>
-                <AddButton onClick={() => navigate('/products/new')}>
-                    <FiPlus /> Tambah Produk
-                </AddButton>
-            </PageHeader>
+        <AnimatedPage>
+            <PageContainer>
+                <PageHeader>
+                    <Title>Manajemen Produk</Title>
+                    <AddButton onClick={() => navigate('/products/new')}>
+                        <FiPlus /> Tambah Produk
+                    </AddButton>
+                </PageHeader>
 
-            {loading ? (
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th>Gambar</Th>
-                                    <Th>Nama Produk</Th>
-                                    <Th>Harga</Th>
-                                    <Th>Total Stok</Th>
-                                    <Th>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {Array.from({ length: 5 }).map((_, index) => (
-                                    <Tr key={index}>
-                                        {[...Array(5)].map((_, i) => (
-                                            <Td key={i}><Skeleton /></Td>
-                                        ))}
-                                    </Tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
-            ) : products.length > 0 ? (
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th>Gambar</Th>
-                                    <Th>Nama Produk</Th>
-                                    <Th>Harga</Th>
-                                    <Th>Total Stok</Th>
-                                    <Th>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {products.map(product => {
-                                    const prices = product.variants.map(v => v.price);
-                                    // --- PERBAIKAN DI SINI ---
-                                    // Ambil stok langsung dari produk, bukan dari varian lagi
-                                    const totalStock = product.stock;
-
-                                    return (
-                                        <Tr key={product.id}>
-                                            <Td>
-                                                <ProductImage src={product.image_url || `https://placehold.co/100`} />
-                                            </Td>
-                                            <Td>{product.name}</Td>
-                                            <Td>
-                                                {prices.length > 0 ? (
-                                                    <PriceRange>
-                                                        Rp {new Intl.NumberFormat('id-ID').format(Math.min(...prices))} - Rp {new Intl.NumberFormat('id-ID').format(Math.max(...prices))}
-                                                    </PriceRange>
-                                                ) : 'N/A'}
-                                            </Td>
-                                            <Td>
-                                                <StockTotal>{totalStock}</StockTotal>
-                                            </Td>
-                                            <Td>
-                                                <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}>
-                                                    <FiEdit size={18} />
-                                                </ActionButton>
-                                                <ActionButton $danger onClick={() => handleDeleteProduct(product.id)}>
-                                                    <FiTrash2 size={18} />
-                                                </ActionButton>
-                                            </Td>
+                {loading ? (
+                    <TableContainer>
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Gambar</Th>
+                                        <Th>Nama Produk</Th>
+                                        <Th>Harga</Th>
+                                        <Th>Total Stok</Th>
+                                        <Th>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Array.from({ length: 5 }).map((_, index) => (
+                                        <Tr key={index}>
+                                            {[...Array(5)].map((_, i) => (
+                                                <Td key={i}><Skeleton /></Td>
+                                            ))}
                                         </Tr>
-                                    );
-                                })}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
-            ) : (
-                <EmptyStateContainer>
-                    <FiPackage size={48} />
-                    <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
-                    <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
-                </EmptyStateContainer>
-            )}
-        </PageContainer>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    </TableContainer>
+                ) : products.length > 0 ? (
+                    <TableContainer>
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Gambar</Th>
+                                        <Th>Nama Produk</Th>
+                                        <Th>Harga</Th>
+                                        <Th>Total Stok</Th>
+                                        <Th>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                {/* --- PERUBAHAN DI SINI: Terapkan animasi --- */}
+                                <motion.tbody
+                                    variants={tableContainerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                >
+                                    {products.map(product => {
+                                        const prices = product.variants.map(v => v.price);
+                                        // Ambil stok langsung dari produk, bukan dari varian lagi
+                                        const totalStock = product.stock;
+
+                                        return (
+                                            <motion.tr variants={tableRowVariants} key={product.id}>
+                                                <Td>
+                                                    <ProductImage src={product.image_url || `https://placehold.co/100`} />
+                                                </Td>
+                                                <Td>{product.name}</Td>
+                                                <Td>
+                                                    {prices.length > 0 ? (
+                                                        <PriceRange>
+                                                            Rp {new Intl.NumberFormat('id-ID').format(Math.min(...prices))} - Rp {new Intl.NumberFormat('id-ID').format(Math.max(...prices))}
+                                                        </PriceRange>
+                                                    ) : 'N/A'}
+                                                </Td>
+                                                <Td>
+                                                    <StockTotal>{totalStock}</StockTotal>
+                                                </Td>
+                                                <Td>
+                                                    <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}><FiEdit size={18} /></ActionButton>
+                                                    <ActionButton $danger onClick={() => handleDeleteProduct(product.id)}><FiTrash2 size={18} /></ActionButton>
+                                                </Td>
+                                            </motion.tr>
+                                        );
+                                    })}
+                                </motion.tbody>
+                                {/* --- AKHIR PERUBAHAN --- */}
+                            </Table>
+                        </TableWrapper>
+                    </TableContainer>
+                ) : (
+                    <EmptyStateContainer>
+                        <FiPackage size={48} />
+                        <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
+                        <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
+                    </EmptyStateContainer>
+                )}
+            </PageContainer>
+        </AnimatedPage>
     );
 }
 

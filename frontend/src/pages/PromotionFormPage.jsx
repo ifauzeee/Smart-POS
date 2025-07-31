@@ -1,4 +1,3 @@
-// frontend/src/pages/PromotionFormPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
@@ -6,23 +5,8 @@ import { getPromotionById, createPromotion, updatePromotion } from '../services/
 import { toast } from 'react-toastify';
 import { FiSave, FiArrowLeft } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css'; // Import skeleton styles
+import 'react-loading-skeleton/dist/skeleton.css';
 
-// Helper Functions for Currency Formatting (consistent with other forms)
-const formatCurrency = (value) => {
-    if (value === null || value === undefined || value === '') return '';
-    const number = parseFloat(value);
-    if (isNaN(number)) return String(value);
-    return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(number);
-};
-const parseCurrency = (value) => {
-    if (typeof value !== 'string') return value;
-    const cleanValue = value.replace(/Rp\s?|\./g, '').replace(/,/g, '.');
-    const parsed = parseFloat(cleanValue);
-    return isNaN(parsed) ? value : parsed;
-};
-
-// --- Styled Components (diadaptasi dari ProductFormPage, dengan penyesuaian layout) ---
 const PageContainer = styled.div`
     padding: 30px;
     max-width: 900px;
@@ -60,16 +44,15 @@ const Form = styled.form`
 
 const FormGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Dua kolom */
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 
-    @media (max-width: 768px) { /* Untuk layar lebih kecil, jadi satu kolom */
+    @media (max-width: 768px) {
         grid-template-columns: 1fr;
     }
 `;
 
 const InputGroup = styled.div`
-    /* Properti untuk membuat input group mengisi full width atau hanya 1 kolom */
     grid-column: ${props => props.$fullWidth ? '1 / -1' : 'auto'};
 `;
 
@@ -89,66 +72,30 @@ const Input = styled.input`
     background-color: var(--bg-main);
     color: var(--text-primary);
     font-size: 1rem;
-    /* Styling untuk datetime-local */
-    &[type="datetime-local"] {
-        /* Optional: adjust height if needed */
-    }
 `;
 
 const Select = styled.select`
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    font-size: 1rem;
-    appearance: none; /* Remove default arrow */
+    width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;
+    background-color: var(--bg-main); color: var(--text-primary); appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center; background-size: 20px;
-    &:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
-    }
+    background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;
+    &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); }
 `;
 
 const CheckboxContainer = styled.div`
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 10px; /* Adjust margin to align with other inputs */
+    margin-top: 10px;
 
     input[type="checkbox"] {
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background-color: var(--bg-main);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        &:checked::before {
-            content: '✔'; /* Checkmark character */
-            font-size: 14px;
-            color: white;
-            display: block;
-        }
+        appearance: none; width: 20px; height: 20px; border: 1px solid var(--border-color);
+        border-radius: 4px; background-color: var(--bg-main); cursor: pointer; display: flex;
+        align-items: center; justify-content: center;
+        &:checked { background-color: var(--primary-color); border-color: var(--primary-color); }
+        &:checked::before { content: '✔'; font-size: 14px; color: white; display: block; }
     }
-    label {
-        margin-bottom: 0;
-        cursor: pointer;
-        color: var(--text-primary);
-        font-weight: 500;
-    }
+    label { margin-bottom: 0; cursor: pointer; color: var(--text-primary); font-weight: 500; }
 `;
 
 const FormFooter = styled.div`
@@ -171,10 +118,7 @@ const SaveButton = styled.button`
     gap: 8px;
     cursor: pointer;
     &:hover { opacity: 0.9; }
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 function PromotionFormPage() {
@@ -206,7 +150,6 @@ function PromotionFormPage() {
                 type: promo.type,
                 value: promo.value,
                 code: promo.code || '',
-                // Format tanggal ke YYYY-MM-DDTHH:mm untuk input datetime-local
                 start_date: promo.start_date ? new Date(promo.start_date).toISOString().slice(0, 16) : '',
                 end_date: promo.end_date ? new Date(promo.end_date).toISOString().slice(0, 16) : '',
                 is_active: promo.is_active,
@@ -225,34 +168,24 @@ function PromotionFormPage() {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        // Handle numeric value parsing for 'value' input
-        if (name === 'value') {
-            setFormData(prev => ({ ...prev, [name]: parseCurrency(value) }));
-        } else {
-            setFormData(prev => ({
-                ...prev,
-                [name]: type === 'checkbox' ? checked : value,
-            }));
-        }
+        setFormData(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value,
+        }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-
-        // Convert value back to float for API
         const dataToSave = {
             ...formData,
             value: parseFloat(formData.value),
-            // Ensure dates are sent as proper SQL DATETIME strings or null
             start_date: formData.start_date || null,
             end_date: formData.end_date || null,
         };
-
         const promise = isEditing
             ? updatePromotion(id, dataToSave)
             : createPromotion(dataToSave);
-
         try {
             await toast.promise(promise, {
                 pending: 'Menyimpan promosi...',
@@ -279,53 +212,50 @@ function PromotionFormPage() {
             </PageHeader>
             <Form onSubmit={handleSubmit}>
                 <FormGrid>
-                    <InputGroup $fullWidth> {/* Full width */}
+                    <InputGroup $fullWidth>
                         <Label>Nama Promosi</Label>
                         <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
                     </InputGroup>
-                    <InputGroup $fullWidth> {/* Full width */}
+                    <InputGroup $fullWidth>
                         <Label>Deskripsi (Opsional)</Label>
                         <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
                     </InputGroup>
-
-                    <InputGroup> {/* Side-by-side */}
+                    <InputGroup>
                         <Label>Tipe Diskon</Label>
                         <Select name="type" value={formData.type} onChange={handleChange} required>
                             <option value="percentage">Persentase (%)</option>
                             <option value="fixed_amount">Potongan Tetap (Rp)</option>
                         </Select>
                     </InputGroup>
-                    <InputGroup> {/* Side-by-side */}
+                    <InputGroup>
                         <Label>Nilai</Label>
                         <Input
                             name="value"
-                            type="number" // Change to number type for validation, but handle formatting in display
+                            type="number"
                             value={formData.value}
                             onChange={handleChange}
                             required
                             placeholder={formData.type === 'percentage' ? 'Contoh: 10 (untuk 10%)' : 'Contoh: 5000'}
-                            min={formData.type === 'percentage' ? "0" : "0"}
+                            min="0"
                             max={formData.type === 'percentage' ? "100" : undefined}
                         />
                     </InputGroup>
-
-                    <InputGroup> {/* Side-by-side */}
+                    <InputGroup>
                         <Label>Kode Kupon (Opsional)</Label>
                         <Input name="code" value={formData.code} onChange={handleChange} placeholder="Contoh: RAMADANHEMAT" />
                     </InputGroup>
-                    <InputGroup style={{ alignSelf: 'flex-end', paddingBottom: '8px' }}> {/* Align checkbox to bottom */}
+                    <InputGroup style={{ alignSelf: 'flex-end', paddingBottom: '8px' }}>
                         <Label>Status</Label>
                         <CheckboxContainer>
                             <input type="checkbox" id="is_active" name="is_active" checked={formData.is_active} onChange={handleChange} />
                             <label htmlFor="is_active">Aktifkan Promosi</label>
                         </CheckboxContainer>
                     </InputGroup>
-                    
-                    <InputGroup> {/* Side-by-side */}
+                    <InputGroup>
                         <Label>Tanggal Mulai (Opsional)</Label>
                         <Input name="start_date" type="datetime-local" value={formData.start_date} onChange={handleChange} />
                     </InputGroup>
-                    <InputGroup> {/* Side-by-side */}
+                    <InputGroup>
                         <Label>Tanggal Berakhir (Opsional)</Label>
                         <Input name="end_date" type="datetime-local" value={formData.end_date} onChange={handleChange} />
                     </InputGroup>
@@ -339,4 +269,5 @@ function PromotionFormPage() {
         </PageContainer>
     );
 }
+
 export default PromotionFormPage;

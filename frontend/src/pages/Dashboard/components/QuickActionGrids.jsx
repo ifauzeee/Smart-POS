@@ -71,6 +71,7 @@ function QuickActionGrids() {
             <ActionButton onClick={() => navigate('/pos')}><FiIcons.FiShoppingCart size={30}/><span>Transaksi Baru</span></ActionButton>
             <ActionButton onClick={() => navigate('/expenses')}><FiIcons.FiDollarSign size={30}/><span>Catat Pengeluaran</span></ActionButton>
             <ActionButton onClick={() => navigate('/targets')}><FiIcons.FiTarget size={30}/><span>Atur Target</span></ActionButton>
+            <ActionButton onClick={() => navigate('/shift-history')}><FiIcons.FiClock size={30}/><span>Riwayat Shift</span></ActionButton>
 
             {/* --- SEKSI 2: MANAJEMEN INVENTARIS --- */}
             <GridTitle><FiIcons.FiPackage size={22}/> Manajemen Inventaris</GridTitle>
@@ -79,16 +80,17 @@ function QuickActionGrids() {
             <ActionButton onClick={() => navigate('/receive-stock')}><FiIcons.FiUpload size={30}/><span>Terima Stok</span></ActionButton>
             <ActionButton onClick={() => navigate('/stock-adjustment')}><FiIcons.FiEdit size={30}/><span>Penyesuaian Stok</span></ActionButton>
             <ActionButton onClick={() => navigate('/purchase-orders')}><FiIcons.FiClipboard size={30}/><span>Purchase Order</span></ActionButton>
-            <ActionButton onClick={() => navigate('/raw-materials')}><FiIcons.FiBox size={30}/><span>Bahan Baku</span></ActionButton> {/* <-- TOMBOL BARU */}
+            <ActionButton onClick={() => navigate('/raw-materials')}><FiIcons.FiBox size={30}/><span>Bahan Baku</span></ActionButton>
 
 
             {/* --- SEKSI 3: PENGELOLAAN TOKO --- */}
             <GridTitle><FiIcons.FiHome size={22}/> Pengelolaan Toko</GridTitle>
+            <ActionButton onClick={() => navigate('/users')}><FiIcons.FiUserCheck size={30}/><span>Kelola Pengguna</span></ActionButton>
+            <ActionButton onClick={() => navigate('/roles')}><FiIcons.FiShield size={30}/><span>Manajemen Peran</span></ActionButton>
+            <ActionButton onClick={() => navigate('/customers')}><FiIcons.FiUsers size={30}/><span>Kelola Pelanggan</span></ActionButton>
+            <ActionButton onClick={() => navigate('/suppliers')}><FiIcons.FiTruck size={30}/><span>Kelola Pemasok</span></ActionButton>
             <ActionButton onClick={() => navigate('/categories')}><FiIcons.FiList size={30}/><span>Kelola Kategori</span></ActionButton>
             <ActionButton onClick={() => navigate('/promotions')}><FiIcons.FiTag size={30}/><span>Kelola Promosi</span></ActionButton>
-            <ActionButton onClick={() => navigate('/suppliers')}><FiIcons.FiTruck size={30}/><span>Kelola Pemasok</span></ActionButton>
-            <ActionButton onClick={() => navigate('/customers')}><FiIcons.FiUsers size={30}/><span>Kelola Pelanggan</span></ActionButton>
-            <ActionButton onClick={() => navigate('/users')}><FiIcons.FiUserCheck size={30}/><span>Kelola Pengguna</span></ActionButton>
             <ActionButton onClick={() => navigate('/settings')}><FiIcons.FiSettings size={30}/><span>Semua Pengaturan</span></ActionButton>
         </Grid>
     );

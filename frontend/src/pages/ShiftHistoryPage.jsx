@@ -1,10 +1,8 @@
-// frontend/src/pages/ShiftHistoryPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getShiftHistory, deleteShift } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiClock, FiFileText, FiTrash2 } from 'react-icons/fi';
+import { FiClock, FiTrash2 } from 'react-icons/fi'; // FiFileText removed
 import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 
@@ -34,7 +32,7 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 const TableWrapper = styled.div`
-    overflow-x: hidden;
+    overflow-x: auto; /* Changed to auto to allow horizontal scroll if content overflows */
     flex-grow: 1;
 `;
 const Table = styled.table`
@@ -43,7 +41,6 @@ const Table = styled.table`
     min-width: 580px; 
 `;
 const Th = styled.th`
-    /* NEW: Rata tengah semua header tabel */
     text-align: center; 
     padding: 15px 20px;
     background-color: var(--bg-main);
@@ -55,7 +52,6 @@ const Th = styled.th`
     text-transform: uppercase;
 `;
 const Td = styled.td`
-    /* NEW: Rata tengah semua sel data tabel secara default */
     text-align: center; 
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
@@ -69,7 +65,6 @@ const Td = styled.td`
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    /* NEW: Tambahkan kelas rata kiri spesifik jika dibutuhkan untuk kolom tertentu */
     &.text-left {
         text-align: left;
     }
@@ -77,10 +72,7 @@ const Td = styled.td`
 const Tr = styled.tr`
     &:last-child > td { border-bottom: none; }
 `;
-const DifferenceText = styled.span`
-    font-weight: 700;
-    color: ${props => props.$isPositive ? 'var(--green-color)' : props => props.$isNegative ? 'var(--red-color)' : 'var(--text-primary)'};
-`;
+// DifferenceText styled component removed as it's no longer used
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -100,7 +92,6 @@ const TimePeriodCell = styled.div`
         color: var(--text-secondary);
     }
 `;
-
 
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 const formatDateTimeCombined = (start, end) => {
@@ -152,6 +143,8 @@ function ShiftHistoryPage() {
     }, []);
 
     const handleDeleteShift = async (shiftId) => {
+        // IMPORTANT: In a real application, replace window.confirm with a custom modal UI.
+        // window.confirm is blocking and not user-friendly in an iframe environment.
         if (window.confirm(`Yakin ingin menghapus shift #${shiftId} ini? Aksi ini tidak dapat dibatalkan.`)) {
             try {
                 await toast.promise(deleteShift(shiftId), {
@@ -181,31 +174,24 @@ function ShiftHistoryPage() {
                         <Table>
                             <thead>
                                 <tr>
-                                    <Th style={{width: '15%'}}>Kasir</Th> 
-                                    <Th style={{width: '25%'}}>Waktu Shift</Th>
-                                    <Th style={{width: '15%'}}>Kas Awal</Th> 
-                                    <Th style={{width: '15%'}}>Penjualan</Th> 
-                                    <Th style={{width: '15%'}}>Fisik Akhir</Th> 
-                                    <Th style={{width: '10%'}}>Selisih</Th> 
-                                    {userRole === 'admin' && <Th style={{width: '5%'}}>Aksi</Th>}
+                                    <Th>Kasir</Th> 
+                                    <Th>Waktu Shift</Th>
+                                    <Th>Kas Awal</Th> 
+                                    <Th>Penjualan Tunai</Th> {/* Changed from Penjualan */}
+                                    <Th>Kas Akhir Sistem</Th> {/* Changed from Fisik Akhir */}
+                                    {/* Selisih column removed */}
+                                    {userRole === 'admin' && <Th>Aksi</Th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {history.map(shift => (
                                     <Tr key={shift.id}>
-                                        <Td className="text-left">{shift.user_name}</Td> {/* NEW: Kasir rata kiri */}
+                                        <Td className="text-left">{shift.user_name}</Td> 
                                         <Td><TimePeriodCell>{formatDateTimeCombined(shift.start_time, shift.end_time)}</TimePeriodCell></Td>
                                         <Td className="nowrap">{formatCurrency(shift.starting_cash)}</Td>
-                                        <Td className="nowrap">{formatCurrency(shift.total_sales)}</Td>
+                                        <Td className="nowrap">{formatCurrency(shift.cash_sales)}</Td> {/* Changed from total_sales to cash_sales */}
                                         <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
-                                        <Td className="nowrap">
-                                            <DifferenceText 
-                                                $isPositive={shift.difference > 0} 
-                                                $isNegative={shift.difference < 0}
-                                            >
-                                                {formatCurrency(shift.difference)}
-                                            </DifferenceText>
-                                        </Td>
+                                        {/* Difference Td removed */}
                                         {userRole === 'admin' && (
                                             <Td>
                                                 <ActionButton onClick={() => handleDeleteShift(shift.id)}>
@@ -220,7 +206,7 @@ function ShiftHistoryPage() {
                     </TableWrapper>
                 ) : (
                     <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
-                        <FiFileText size={48} />
+                        <FiClock size={48} /> {/* Changed icon to FiClock for consistency */}
                         <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
                     </div>
                 )}

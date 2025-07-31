@@ -39,8 +39,9 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProductProfitabilityReport from './pages/ProductProfitabilityReport';
 import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
 import PurchaseOrderForm from './pages/PurchaseOrderForm';
+import PurchaseOrderDetailPage from './pages/PurchaseOrderDetailPage';
 import RawMaterialsPage from './pages/RawMaterialsPage';
-import PurchaseOrderDetailPage from './pages/PurchaseOrderDetailPage'; // <-- NEW IMPORT
+import RolesPage from './pages/RolesPage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -57,7 +58,6 @@ const GlobalStyle = createGlobalStyle`
         --text-secondary: #65676B;
         --text-placeholder: #8A8D91;
     }
-
     body[data-theme='dark'] {
         --bg-main: #000000;
         --bg-surface: #121212;
@@ -67,18 +67,15 @@ const GlobalStyle = createGlobalStyle`
         --text-secondary: #A0AEC0;
         --text-placeholder: #718096;
     }
-
     :root {
         --primary-color: #9D4EDD;
         --primary-hover: #B583E6;
         --red-color: #E53E3E;
         --green-color: #198754;
     }
-    
     * { 
         box-sizing: border-box; margin: 0; padding: 0; 
     }
-
     body {
         font-family: 'Poppins', sans-serif;
         background-color: var(--bg-main);
@@ -91,10 +88,7 @@ const GlobalStyle = createGlobalStyle`
 function AppContent() {
     const { theme } = useContext(ThemeContext);
     return (
-        <SkeletonTheme
-            baseColor={theme === 'dark' ? '#121212' : '#EAEBF0'}
-            highlightColor={theme === 'dark' ? '#2D2D2D' : '#ffffff'}
-        >
+        <SkeletonTheme baseColor={theme === 'dark' ? '#121212' : '#EAEBF0'} highlightColor={theme === 'dark' ? '#2D2D2D' : '#ffffff'}>
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
             <BrowserRouter>
@@ -104,13 +98,12 @@ function AppContent() {
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/tutorial/app-password" element={<AppPasswordTutorialPage />} />
-                    <Route
-                        path="/"
-                        element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />}
-                    />
+                    <Route path="/" element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />} />
+                    
                     <Route element={<ProtectedRoute />}>
                         <Route element={<Layout />}>
                             <Route path="/pos" element={<PosPage />} />
+                            
                             <Route element={<AdminRoute />}>
                                 <Route path="/dashboard" element={<DashboardPage />} />
                                 <Route path="/products" element={<ProductsPage />} />
@@ -136,11 +129,13 @@ function AppContent() {
                                 <Route path="/stock-adjustment" element={<StockAdjustmentPage />} />
                                 <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
                                 <Route path="/purchase-orders/new" element={<PurchaseOrderForm />} />
-                                <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} /> {/* <-- NEW ROUTE */}
+                                <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
                                 <Route path="/raw-materials" element={<RawMaterialsPage />} />
+                                <Route path="/roles" element={<RolesPage />} />
                             </Route>
                         </Route>
                     </Route>
+                    
                     <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
             </BrowserRouter>

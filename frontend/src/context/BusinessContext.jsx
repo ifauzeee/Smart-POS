@@ -1,9 +1,7 @@
-// frontend/src/context/BusinessContext.jsx
-import React, { useState, useEffect, createContext, useCallback, useContext } from 'react';
+import React, { useState, useEffect, createContext, useCallback } from 'react';
 import { getBusinessSettings } from '../services/api';
 import { toast } from 'react-toastify';
-// Assuming you have an AuthContext that provides user information
-// import { AuthContext } from './AuthContext'; // Uncomment and import your AuthContext if you have one
+import { jwtDecode } from 'jwt-decode';
 
 export const BusinessContext = createContext();
 
@@ -12,54 +10,60 @@ export const BusinessProvider = ({ children }) => {
         payment_methods: ['Tunai', 'Kartu', 'QRIS'],
         tax_rate: 0,
         receipt_logo_url: '',
-        receipt_footer_message: 'Terima Kasih!',
+        receipt_footer_text: 'Terima Kasih!',
     });
     const [loading, setLoading] = useState(true);
 
-    // Assuming AuthContext provides a user object with a 'role' property
-    // const { user } = useContext(AuthContext); // Uncomment this line if you have AuthContext
-
     const fetchBusinessSettings = useCallback(async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            setLoading(false);
-            return;
-        }
-
-        // --- Start of added role check ---
-        // Placeholder for user role check.
-        // Replace 'user?.role === 'admin'' with your actual user role check logic.
-        // For example, if you have an AuthContext, you would use:
-        // if (!user || user.role !== 'admin') {
-        //     console.log("User is not an admin, skipping business settings fetch.");
-        //     setLoading(false);
-        //     return;
-        // }
-        // For demonstration, let's assume a hardcoded admin check or that `user` is available.
-        // If `user` is not available here, you'll need to pass it as a prop or fetch it.
-        // For now, we'll proceed without a strict `user` object check, assuming the backend will handle unauthorized access.
-        // However, if you want to prevent the frontend call entirely based on role,
-        // you would need to uncomment and properly integrate the AuthContext.
-        // --- End of added role check ---
-
-        setLoading(true);
         try {
-            const res = await getBusinessSettings();
-            if (res.data) {
-                setSettings({
-                    ...res.data,
-                    payment_methods: JSON.parse(res.data.payment_methods || '[]'),
-                    tax_rate: parseFloat(res.data.tax_rate) || 0,
-                    receipt_footer_message: res.data.receipt_footer_text || 'Terima Kasih!',
-                });
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setLoading(false);
+                return;
+            }
+            
+            const decoded = jwtDecode(token);
+            const userRole = decoded.role;
+
+            if (userRole?.toLowerCase() === 'admin') {
+                setLoading(true);
+                const res = await getBusinessSettings();
+                
+                if (res.data) {
+                    // --- FIXED CODE ---
+                    // Check if payment_methods is a string before parsing
+                    let paymentMethods = res.data.payment_methods;
+                    if (typeof paymentMethods === 'string') {
+                        try {
+                            paymentMethods = JSON.parse(paymentMethods);
+                        } catch (e) {
+                            console.error("Failed to parse payment_methods:", e);
+                            paymentMethods = ['Tunai', 'Kartu', 'QRIS']; // Default fallback
+                        }
+                    }
+                    
+                    const parsedSettings = {
+                        ...res.data,
+                        payment_methods: Array.isArray(paymentMethods) ? paymentMethods : ['Tunai', 'Kartu', 'QRIS'],
+                        tax_rate: parseFloat(res.data.tax_rate) || 0,
+                        receipt_footer_text: res.data.receipt_footer_text || 'Terima Kasih!',
+                    };
+                    setSettings(parsedSettings);
+                    // --- END OF FIX ---
+                }
             }
         } catch (error) {
-            console.error("Gagal memuat setelan bisnis:", error);
+            console.error("[DEBUG] Error details:", {
+                message: error.message,
+                status: error.status,
+                response: error.response?.data,
+                stack: error.stack
+            });
             toast.error("Gagal memuat setelan bisnis.");
         } finally {
             setLoading(false);
         }
-    }, []); // Add 'user' to dependency array if you uncomment the user check: [fetchBusinessSettings, user]
+    }, []);
 
     useEffect(() => {
         fetchBusinessSettings();

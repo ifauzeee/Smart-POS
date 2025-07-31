@@ -5,7 +5,7 @@ const API = axios.create({
     timeout: 30000,
 });
 
-// ... (semua interceptor tetap sama)
+// Request interceptor
 API.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -21,6 +21,8 @@ API.interceptors.request.use((config) => {
     }
     return Promise.reject(error);
 });
+
+// Response interceptor
 API.interceptors.response.use(
     (response) => {
         if (import.meta.env.DEV) {
@@ -33,30 +35,17 @@ API.interceptors.response.use(
             console.error('Response error:', error.response?.config?.method, error.response?.config?.url, error.response?.status, error.message);
         }
         if (error.code === 'ECONNABORTED') {
-            return Promise.reject(new Error('Koneksi timeout. Pastikan backend berjalan dan terhubung dengan benar.'));
+            return Promise.reject(new Error('Connection timeout. Ensure the backend is running and properly connected.'));
         }
         if (error.response) {
             return Promise.reject(error.response);
         } else if (error.request) {
-            return Promise.reject(new Error('Tidak ada respons dari server. Server mungkin tidak berjalan.'));
+            return Promise.reject(new Error('No response from server. The server may not be running.'));
         } else {
-            return Promise.reject(new Error('Terjadi kesalahan saat menyiapkan permintaan.'));
+            return Promise.reject(new Error('An error occurred while setting up the request.'));
         }
     }
 );
-
-
-// User, Product, Order, Analytics, Settings, Category, Supplier, Customer, etc Routes...
-// (semua fungsi yang sudah ada tidak perlu ditulis ulang, cukup tambahkan yang baru di bawah ini)
-// ...
-
-// --- FUNGSI BARU UNTUK RAW MATERIALS ---
-export const getRawMaterials = () => API.get('/raw-materials');
-export const createRawMaterial = (materialData) => API.post('/raw-materials', materialData);
-export const updateRawMaterial = (id, materialData) => API.put(`/raw-materials/${id}`, materialData);
-export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
-
-// ... (semua fungsi lain yang sudah ada)
 
 // User Routes
 export const loginUser = (userData) => API.post('/users/login', userData);
@@ -67,6 +56,14 @@ export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
 export const deleteUser = (id) => API.delete(`/users/${id}`);
 export const forgotPassword = (data) => API.post('/users/forgot-password', data);
 export const resetPassword = (token, data) => API.post(`/users/reset-password/${token}`, data);
+
+// Role Routes
+export const getRoles = () => API.get('/roles');
+export const getRoleById = (id) => API.get(`/roles/${id}`);
+export const createRole = (roleData) => API.post('/roles', roleData);
+export const updateRole = (id, roleData) => API.put(`/roles/${id}`, roleData);
+export const deleteRole = (id) => API.delete(`/roles/${id}`);
+export const getPermissions = () => API.get('/roles/permissions');
 
 // Product Routes
 export const getProducts = (barcode = '') => {
@@ -80,7 +77,9 @@ export const getProductById = (id) => API.get(`/products/${id}`);
 export const createProduct = (productData) => API.post('/products', productData);
 export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData);
 export const deleteProduct = (id) => API.delete(`/products/${id}`);
-export const receiveStock = (stockData) => API.post('/products/receive-stock', stockData);
+export const receiveStock = (items, purchaseOrderId = null) => {
+    return API.post('/products/receive-stock', { items, purchase_order_id: purchaseOrderId });
+};
 
 // Order Routes
 export const createOrder = (orderData) => API.post('/orders', orderData);
@@ -158,7 +157,6 @@ export const getDailyRevenueProfit = (startDate, endDate) => {
     return API.get(`/analytics/daily-revenue-profit?${params.toString()}`);
 };
 
-
 // Settings Routes
 export const getEmailSettings = () => API.get('/settings/email');
 export const saveEmailSettings = (settingsData) => API.post('/settings/email', settingsData);
@@ -227,6 +225,12 @@ export const deleteShift = (id) => API.delete(`/shifts/${id}`);
 export const getPurchaseOrders = () => API.get('/purchase-orders');
 export const createPurchaseOrder = (poData) => API.post('/purchase-orders', poData);
 export const updatePurchaseOrderStatus = (id, status) => API.patch(`/purchase-orders/${id}/status`, { status });
-export const getPurchaseOrderById = (id) => API.get(`/purchase-orders/${id}`); // <-- NEW FUNCTION
+export const getPurchaseOrderById = (id) => API.get(`/purchase-orders/${id}`);
+
+// Raw Material Routes
+export const getRawMaterials = () => API.get('/raw-materials');
+export const createRawMaterial = (materialData) => API.post('/raw-materials', materialData);
+export const updateRawMaterial = (id, materialData) => API.put(`/raw-materials/${id}`, materialData);
+export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
 
 export default API;

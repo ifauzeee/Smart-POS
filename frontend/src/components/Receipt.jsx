@@ -1,24 +1,35 @@
-// frontend/src/components/Receipt.jsx
-
-import React from 'react';
+import React, { useContext } from 'react';
 import PropTypes from 'prop-types';
+import { BusinessContext } from '../context/BusinessContext';
 
 const Receipt = React.forwardRef(({ order }, ref) => {
+    // Gunakan BusinessContext untuk mendapatkan data pengaturan
+    const { settings } = useContext(BusinessContext);
+
     if (!order) {
         return <div ref={ref} style={{ display: 'none' }}></div>;
     }
 
-    const formatCurrency = (num) => new Intl.NumberFormat('id-ID').format(num);
+    const formatCurrency = (num) => new Intl.NumberFormat('id-ID').format(num || 0);
 
     return (
         <div ref={ref} style={{ fontFamily: "'Courier New', Courier, monospace", fontSize: '12px', color: '#000', width: '300px', padding: '20px' }}>
-           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, fontSize: '16px' }}>Toko 27</h2>
-                <p style={{ margin: '2px 0' }}>Jl. Raya Cileungsi No. 123</p>
-                <p style={{ margin: '2px 0' }}>Telp: 0812-3456-7890</p>
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                {/* Tampilkan logo jika URL-nya ada di pengaturan */}
+                {settings.receipt_logo_url && (
+                    <img 
+                        src={settings.receipt_logo_url} 
+                        alt="Logo Toko" 
+                        style={{ maxWidth: '100px', maxHeight: '50px', marginBottom: '10px' }} 
+                    />
+                )}
+                {/* Gunakan data dinamis dari 'settings' */}
+                <h2 style={{ margin: 0, fontSize: '16px' }}>{settings.business_name || 'Toko Anda'}</h2>
+                <p style={{ margin: '2px 0' }}>{settings.address || 'Alamat Toko Anda'}</p>
+                <p style={{ margin: '2px 0' }}>Telp: {settings.phone_number || 'Nomor Telepon Anda'}</p>
             </div>
             
-           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                 <span>No: #{order.id}</span>
                 <span>{new Date(order.created_at).toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'})}</span>
             </div>
@@ -53,6 +64,16 @@ const Receipt = React.forwardRef(({ order }, ref) => {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                     <tr>
+                        <td>Subtotal</td>
+                        <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.subtotal_amount)}</td>
+                    </tr>
+                    {order.tax_amount > 0 && (
+                         <tr>
+                            <td>Pajak</td>
+                            <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.tax_amount)}</td>
+                        </tr>
+                    )}
+                    <tr>
                         <td><strong>Total</strong></td>
                         <td style={{ textAlign: 'right' }} colSpan="2"><strong>Rp {formatCurrency(order.total_amount)}</strong></td>
                     </tr>
@@ -60,7 +81,7 @@ const Receipt = React.forwardRef(({ order }, ref) => {
                         <td>Dibayar</td>
                         <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.amount_paid)}</td>
                     </tr>
-                    {order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) > 0 && (
+                    {order.payment_method === 'Tunai' && (order.amount_paid - order.total_amount) >= 0 && (
                         <tr>
                             <td>Kembalian</td>
                             <td style={{ textAlign: 'right' }} colSpan="2">Rp {formatCurrency(order.amount_paid - order.total_amount)}</td>
@@ -70,7 +91,8 @@ const Receipt = React.forwardRef(({ order }, ref) => {
             </table>
             
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                <p>Terima Kasih!</p>
+                {/* Gunakan teks footer dinamis dari 'settings' */}
+                <p>{settings.receipt_footer_text || 'Terima Kasih!'}</p>
             </div>
         </div>
     );
@@ -78,8 +100,8 @@ const Receipt = React.forwardRef(({ order }, ref) => {
 
 Receipt.displayName = 'Receipt';
 
-export default Receipt;
-
 Receipt.propTypes = {
   order: PropTypes.object,
 };
+
+export default Receipt;

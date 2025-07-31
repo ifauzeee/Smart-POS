@@ -1,5 +1,3 @@
-// frontend/src/pages/Dashboard/components/TopProductsChart.jsx
-
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -11,7 +9,7 @@ const ChartContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
-    border: 1px solid var(--border-color);
+    border: 1 personally solid var(--border-color);
     grid-column: 1 / -1;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 `;
@@ -83,7 +81,6 @@ function TopProductsChart({ loading, data }) {
         ...item,
         shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
     }));
-    
     const top10Data = formattedData ? formattedData.slice(0, 10) : [];
 
     return (

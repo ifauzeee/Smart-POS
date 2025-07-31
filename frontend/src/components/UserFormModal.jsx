@@ -38,13 +38,14 @@ const Button = styled.button`
   }
 `;
 
-function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
+function UserFormModal({ isOpen, onClose, onSave, user, roles, isSubmitting }) {
   const [formData, setFormData] = useState({});
   const isEditing = Boolean(user);
 
   useEffect(() => {
-    setFormData(user || { name: '', email: '', password: '', role: 'kasir' });
-  }, [user, isOpen]);
+    const defaultRoleId = roles.length > 0 ? roles[0].id : '';
+    setFormData(user || { name: '', email: '', password: '', role_id: defaultRoleId });
+  }, [user, isOpen, roles]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,47 +57,35 @@ function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
     onSave(formData);
   };
 
-  const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
-  const modalVariants = { hidden: { y: "-50px", opacity: 0 }, visible: { y: "0", opacity: 1 } };
-
   return (
     <AnimatePresence>
       {isOpen && (
-        <ModalBackdrop initial="hidden" animate="visible" exit="hidden" variants={backdropVariants}>
-          <ModalContainer variants={modalVariants}>
+        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} exit={{ y: 50 }}>
             <form onSubmit={handleSubmit}>
               <ModalHeader>
                 <ModalTitle>{isEditing ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}</ModalTitle>
                 <CloseButton type="button" onClick={onClose}><FiX size={24} /></CloseButton>
               </ModalHeader>
               <ModalBody>
-                <InputGroup $fullWidth>
-                  <Label>Nama</Label>
-                  <Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus />
-                </InputGroup>
-                <InputGroup $fullWidth>
-                  <Label>Email</Label>
-                  <Input type="email" name="email" value={formData.email || ''} onChange={handleChange} required />
-                </InputGroup>
+                <InputGroup><Label>Nama</Label><Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus /></InputGroup>
+                <InputGroup><Label>Email</Label><Input type="email" name="email" value={formData.email || ''} onChange={handleChange} required /></InputGroup>
                 {!isEditing && (
-                  <InputGroup $fullWidth>
-                    <Label>Password</Label>
-                    <Input type="password" name="password" value={formData.password || ''} onChange={handleChange} required />
-                  </InputGroup>
+                  <InputGroup><Label>Password</Label><Input type="password" name="password" value={formData.password || ''} onChange={handleChange} required /></InputGroup>
                 )}
-                <InputGroup $fullWidth>
+                <InputGroup>
                   <Label>Peran (Role)</Label>
-                  <Select name="role" value={formData.role || 'kasir'} onChange={handleChange}>
-                    <option value="kasir">Kasir</option>
-                    <option value="admin">Admin</option>
+                  <Select name="role_id" value={formData.role_id || ''} onChange={handleChange}>
+                    <option value="" disabled>-- Pilih Peran --</option>
+                    {roles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
                   </Select>
                 </InputGroup>
               </ModalBody>
               <ModalFooter>
                 <Button type="button" onClick={onClose}>Batal</Button>
-                <Button type="submit" $primary disabled={isSubmitting}>
-                    {isSubmitting ? 'Menyimpan...' : 'Simpan'}
-                </Button>
+                <Button type="submit" $primary disabled={isSubmitting}>{isSubmitting ? 'Menyimpan...' : 'Simpan'}</Button>
               </ModalFooter>
             </form>
           </ModalContainer>
@@ -106,12 +95,13 @@ function UserFormModal({ isOpen, onClose, onSave, user, isSubmitting }) {
   );
 }
 
-export default UserFormModal;
-
 UserFormModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   user: PropTypes.object,
+  roles: PropTypes.array.isRequired,
   isSubmitting: PropTypes.bool.isRequired,
 };
+
+export default UserFormModal;

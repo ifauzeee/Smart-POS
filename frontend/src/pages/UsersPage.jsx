@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { getUsers, createUserByAdmin, updateUser, deleteUser } from '../services/api'; // <-- Ubah import
+import { getUsers, createUserByAdmin, updateUser, deleteUser, getRoles } from '../services/api';
 import UserFormModal from '../components/UserFormModal';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiUsers } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css'; // Make sure this is imported for Skeleton styles
 
-// --- Styled Components ---
+// Styled Components
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -52,8 +51,8 @@ const TableContainer = styled.div`
 `;
 
 const TableWrapper = styled.div`
-    overflow-x: auto; /* <-- UPDATED: Added horizontal scroll */
-    flex-grow: 1; /* <-- UPDATED: Ensure it grows to fill space */
+    overflow-x: auto;
+    flex-grow: 1;
 `;
 
 const Table = styled.table`
@@ -107,37 +106,28 @@ const EmptyStateContainer = styled.div`
     border: 1px dashed var(--border-color);
 `;
 
-const EmptyStateTitle = styled.h3`
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-top: 20px;
-    margin-bottom: 10px;
-`;
-
-
 function UsersPage() {
     const [users, setUsers] = useState([]);
+    const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false); // Tambahkan state baru
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const fetchUsers = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await getUsers();
-            setUsers(res.data);
+            const [usersRes, rolesRes] = await Promise.all([getUsers(), getRoles()]);
+            setUsers(usersRes.data);
+            setRoles(rolesRes.data);
         } catch (error) {
-            toast.error("Gagal memuat data pengguna.");
+            toast.error("Gagal memuat data.");
         } finally {
             setLoading(false);
         }
-    };
-
-    useEffect(() => {
-        fetchUsers();
     }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     const handleOpenModal = (user = null) => {
         setEditingUser(user);
@@ -150,97 +140,88 @@ function UsersPage() {
     };
 
     const handleSaveUser = async (userData) => {
-        setIsSubmitting(true); // Set true di awal
-        // Logika IF/ELSE untuk membedakan mode
-        const promise = editingUser
-            ? updateUser(editingUser.id, userData)
-            : createUserByAdmin(userData); // <-- Panggil fungsi baru untuk membuat user
-
+        setIsSubmitting(true);
+        const promise = editingUser ? updateUser(editingUser.id, userData) : createUserByAdmin(userData);
         try {
             await toast.promise(promise, {
-                pending: 'Menyimpan data pengguna...',
+                pending: 'Menyimpan data...',
                 success: 'Data berhasil disimpan!',
-                error: 'Gagal menyimpan data.'
+                error: (err) => err.response?.data?.message || 'Gagal menyimpan data.'
             });
-            fetchUsers();
+            fetchData();
         } catch (error) {
             console.error(error);
         } finally {
-            setIsSubmitting(false); // Set false di akhir
+            setIsSubmitting(false);
             handleCloseModal();
         }
     };
 
     const handleDeleteUser = async (id) => {
-        if (window.confirm('Apakah Anda yakin ingin menghapus pengguna ini?')) {
+        if (window.confirm('Yakin ingin menghapus pengguna ini?')) {
             await toast.promise(deleteUser(id), {
-                pending: 'Menghapus pengguna...',
+                pending: 'Menghapus...',
                 success: 'Pengguna berhasil dihapus!',
-                error: 'Gagal menghapus pengguna.'
+                error: (err) => err.response?.data?.message || 'Gagal menghapus pengguna.'
             });
-            fetchUsers();
+            fetchData();
         }
     };
 
     return (
-        <PageContainer>
-            <PageHeader>
-                <Title>Manajemen Pengguna</Title>
-                <AddButton onClick={() => handleOpenModal()}>
-                    <FiPlus /> Tambah Pengguna
-                </AddButton>
-            </PageHeader>
-            
-            {loading ? (
+        <>
+            <PageContainer>
+                <PageHeader>
+                    <Title>Manajemen Pengguna</Title>
+                    <AddButton onClick={() => handleOpenModal()}><FiPlus /> Tambah Pengguna</AddButton>
+                </PageHeader>
                 <TableContainer>
-                    <Skeleton count={5} height={70} style={{ borderRadius: '16px', margin: '15px 20px' }} />
+                    {loading ? (
+                        <div style={{ padding: '20px' }}><Skeleton count={5} height={50} /></div>
+                    ) : users.length > 0 ? (
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Nama</Th>
+                                        <Th>Email</Th>
+                                        <Th>Peran</Th>
+                                        <Th>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {users.map(user => (
+                                        <Tr key={user.id}>
+                                            <Td>{user.name}</Td>
+                                            <Td>{user.email}</Td>
+                                            <Td>{user.role_name}</Td>
+                                            <Td>
+                                                <ActionButton onClick={() => handleOpenModal(user)}><FiEdit size={18} /></ActionButton>
+                                                <ActionButton $danger onClick={() => handleDeleteUser(user.id)}><FiTrash2 size={18} /></ActionButton>
+                                            </Td>
+                                        </Tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    ) : (
+                        <EmptyStateContainer>
+                            <FiUsers size={48} />
+                            <h3 style={{ marginTop: '20px' }}>Belum Ada Pengguna</h3>
+                            <p>Klik tombol di atas untuk menambahkan pengguna pertama.</p>
+                        </EmptyStateContainer>
+                    )}
                 </TableContainer>
-            ) : users.length > 0 ? (
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th>ID</Th>
-                                    <Th>Nama</Th>
-                                    <Th>Email</Th>
-                                    <Th>Peran</Th>
-                                    <Th>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map(user => (
-                                    <Tr key={user.id}>
-                                        <Td>{user.id}</Td>
-                                        <Td>{user.name}</Td>
-                                        <Td>{user.email}</Td>
-                                        <Td>{user.role}</Td>
-                                        <Td>
-                                            <ActionButton onClick={() => handleOpenModal(user)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDeleteUser(user.id)}><FiTrash2 size={18} /></ActionButton>
-                                        </Td>
-                                    </Tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
-            ) : (
-                <EmptyStateContainer>
-                    <FiUsers size={48} />
-                    <EmptyStateTitle>Belum Ada Pengguna</EmptyStateTitle>
-                    <p>Klik tombol di pojok kanan atas untuk menambahkan pengguna pertama Anda.</p>
-                </EmptyStateContainer>
-            )}
-
-            <UserFormModal 
+            </PageContainer>
+            <UserFormModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 onSave={handleSaveUser}
                 user={editingUser}
-                isSubmitting={isSubmitting} // Kirim prop baru
+                roles={roles}
+                isSubmitting={isSubmitting}
             />
-        </PageContainer>
+        </>
     );
 }
 
