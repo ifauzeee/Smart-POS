@@ -1,30 +1,36 @@
-// backend/routes/reportRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const PDFDocument = require('pdfkit');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
 const { getValidDateRange } = require('../utils/dateUtils');
 
 const router = express.Router();
 
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak." });
-    }
-    next();
-};
+// The local isAdmin function has been removed from here.
+// It should now be defined and exported from '../middleware/authMiddleware.js'.
 
-// Helper function untuk format Rupiah
+/**
+ * Helper function to format numbers as Indonesian Rupiah.
+ * @param {number} number - The number to format.
+ * @returns {string} The formatted currency string.
+ */
 const formatCurrency = (number) => {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
-        minimumFractionDigits: 0
+        minimumFractionDigits: 0 // Keep as 0 for whole Rupiah amounts
     }).format(number || 0);
 };
 
-// Endpoint utama untuk generate laporan penjualan PDF
+/**
+ * @route GET /api/reports/sales-summary
+ * @desc Generate a PDF sales summary report based on date range, cashier, and customer.
+ * @access Private (Admin only)
+ * @queryparam {string} [startDate] - Start date for the report (YYYY-MM-DD). Defaults to current month start.
+ * @queryparam {string} [endDate] - End date for the report (YYYY-MM-DD). Defaults to current month end.
+ * @queryparam {string} [userId] - Optional: Filter by specific cashier ID ('all' for all cashiers).
+ * @queryparam {string} [customerId] - Optional: Filter by specific customer ID ('all' for all customers).
+ */
 router.get('/sales-summary', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate, userId, customerId } = req.query;
@@ -34,6 +40,7 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
         let params = [businessId, validStartDate, validEndDate];
         let whereClauses = [];
 
+        // Add filters if provided
         if (userId && userId !== 'all') {
             whereClauses.push('o.user_id = ?');
             params.push(userId);
@@ -45,10 +52,11 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
 
         const whereString = whereClauses.length > 0 ? `AND ${whereClauses.join(' AND ')}` : '';
 
+        // Query to fetch sales transactions with profit, cashier name, and customer name
         const query = `
-            SELECT 
+            SELECT
                 o.id, o.created_at, o.total_amount, o.discount_amount,
-                (SELECT SUM(oi.price * oi.quantity) - SUM(oi.cost_price * oi.quantity) FROM order_items oi WHERE oi.order_id = o.id) as profit,
+                (SELECT COALESCE(SUM(oi.price * oi.quantity) - SUM(oi.cost_price * oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) as profit,
                 u.name as cashier_name,
                 c.name as customer_name
             FROM orders o
@@ -57,7 +65,7 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
             WHERE o.business_id = ? AND o.created_at BETWEEN ? AND ? ${whereString}
             ORDER BY o.created_at ASC
         `;
-        
+
         const [transactions] = await db.query(query, params);
 
         let totalRevenue = 0;
@@ -71,8 +79,8 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
 
         // --- PDF Generation ---
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
-        
-        const filename = `Laporan-Penjualan-${Date.now()}.pdf`;
+
+        const filename = `Laporan-Penjualan-${new Date().toISOString().slice(0, 10)}.pdf`; // More descriptive filename
         res.setHeader('Content-disposition', `attachment; filename="${filename}"`);
         res.setHeader('Content-type', 'application/pdf');
 
@@ -84,7 +92,7 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
         doc.fontSize(12).text(`Periode: ${new Date(validStartDate).toLocaleDateString('id-ID')} - ${new Date(validEndDate).toLocaleDateString('id-ID')}`);
         doc.moveDown();
 
-        // Summary
+        // Summary Section
         doc.fontSize(14).text('Ringkasan', { underline: true });
         doc.moveDown(0.5);
         doc.fontSize(10).text(`Total Pendapatan: ${formatCurrency(totalRevenue)}`);
@@ -92,45 +100,62 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
         doc.fontSize(10).text(`Total Transaksi: ${transactions.length}`);
         doc.fontSize(10).text(`Total Diskon Diberikan: ${formatCurrency(totalDiscount)}`);
         doc.moveDown();
-        
-        // Table Header
+
+        // Transaction Details Table Header
         doc.fontSize(14).text('Detail Transaksi', { underline: true });
         doc.moveDown(0.5);
-        
+
         const tableTop = doc.y;
-        const itemX = 50;
+        const idX = 50;
         const dateX = 100;
-        const cashierX = 220;
-        const customerX = 320;
-        const totalX = 450;
+        const cashierX = 200;
+        const customerX = 300;
+        const totalX = 450; // Aligned right
 
         doc.fontSize(10)
-            .text('ID', itemX, tableTop)
+            .text('ID', idX, tableTop)
             .text('Tanggal', dateX, tableTop)
-            .text('Kasir', cashierX, tableTop)
-            .text('Pelanggan', customerX, tableTop)
+            .text('Kasir', cashierX, tableTop, { width: 90 })
+            .text('Pelanggan', customerX, tableTop, { width: 90 })
             .text('Total', totalX, tableTop, { width: 90, align: 'right' });
-        
-        doc.moveTo(itemX - 5, doc.y + 5).lineTo(totalX + 95, doc.y + 5).stroke();
+
+        doc.moveTo(idX - 5, doc.y + 5).lineTo(totalX + 95, doc.y + 5).stroke(); // Line under header
         doc.moveDown();
 
-        // Table Rows
+        // Transaction Details Table Rows
+        let currentY = doc.y;
         transactions.forEach(t => {
-            const rowY = doc.y;
+            // Check if there's enough space for the next row, if not, add a new page
+            if (currentY + 20 > doc.page.height - doc.page.margins.bottom) {
+                doc.addPage();
+                currentY = doc.y; // Reset currentY for the new page
+                // Re-add table header on new page for continuity
+                doc.fontSize(10)
+                    .text('ID', idX, currentY)
+                    .text('Tanggal', dateX, currentY)
+                    .text('Kasir', cashierX, currentY, { width: 90 })
+                    .text('Pelanggan', customerX, currentY, { width: 90 })
+                    .text('Total', totalX, currentY, { width: 90, align: 'right' });
+                doc.moveTo(idX - 5, doc.y + 5).lineTo(totalX + 95, doc.y + 5).stroke();
+                doc.moveDown();
+                currentY = doc.y;
+            }
+
             doc.fontSize(9)
-               .text(t.id, itemX, rowY)
-               .text(new Date(t.created_at).toLocaleDateString('id-ID'), dateX, rowY)
-               .text(t.cashier_name, cashierX, rowY, {width: 90, ellipsis: true})
-               .text(t.customer_name || 'Umum', customerX, rowY, {width: 90, ellipsis: true})
-               .text(formatCurrency(t.total_amount), totalX, rowY, { width: 90, align: 'right' });
-            doc.moveDown(1.5);
+                .text(t.id, idX, currentY)
+                .text(new Date(t.created_at).toLocaleDateString('id-ID'), dateX, currentY)
+                .text(t.cashier_name, cashierX, currentY, { width: 90, ellipsis: true })
+                .text(t.customer_name || 'Umum', customerX, currentY, { width: 90, ellipsis: true })
+                .text(formatCurrency(t.total_amount), totalX, currentY, { width: 90, align: 'right' });
+            currentY += 15; // Move down for the next row
+            doc.y = currentY; // Update doc.y to reflect current position
         });
 
         doc.end();
 
     } catch (error) {
         console.error("Error generating PDF report:", error);
-        res.status(500).json({ message: "Gagal membuat laporan." });
+        res.status(500).json({ message: "Gagal membuat laporan.", error: error.message });
     }
 });
 

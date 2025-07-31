@@ -1,31 +1,18 @@
-// backend/routes/shiftRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
 const router = express.Router();
 
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak. Memerlukan peran admin." });
-    }
-    next();
-};
-
-// POST /api/shifts/start - Memulai shift baru
+// POST /api/shifts/start - Starts a new shift automatically using cash_in_drawer
 router.post('/start', protect, async (req, res) => {
-    const { starting_cash } = req.body;
     const { id: userId, business_id: businessId } = req.user;
-
-    if (starting_cash == null || isNaN(parseFloat(starting_cash))) {
-        return res.status(400).json({ message: 'Jumlah kas awal harus diisi.' });
-    }
-
     const connection = await db.getConnection();
+
     try {
         await connection.beginTransaction();
 
+        // Check if the user already has an open shift
         const [[existingShift]] = await connection.query(
             'SELECT id FROM cashier_shifts WHERE user_id = ? AND status = "open"',
             [userId]
@@ -36,13 +23,22 @@ router.post('/start', protect, async (req, res) => {
             return res.status(400).json({ message: 'Anda sudah memiliki shift yang aktif.' });
         }
 
+        // Get the current cash_in_drawer from the business table
+        const [[business]] = await connection.query(
+            'SELECT cash_in_drawer FROM businesses WHERE id = ? FOR UPDATE',
+            [businessId]
+        );
+
+        const starting_cash = business.cash_in_drawer;
+
+        // Insert the new shift record
         const [result] = await connection.query(
             'INSERT INTO cashier_shifts (business_id, user_id, start_time, starting_cash, status) VALUES (?, ?, NOW(), ?, "open")',
-            [businessId, userId, parseFloat(starting_cash)]
+            [businessId, userId, starting_cash]
         );
         
         await connection.commit();
-        await logActivity(businessId, userId, 'START_SHIFT', `Shift dimulai dengan kas awal Rp ${starting_cash}`);
+        await logActivity(businessId, userId, 'START_SHIFT_AUTO', `Shift dimulai dengan kas awal otomatis Rp ${starting_cash}`);
         res.status(201).json({ message: 'Shift berhasil dimulai!', shiftId: result.insertId });
 
     } catch (error) {
@@ -54,7 +50,7 @@ router.post('/start', protect, async (req, res) => {
     }
 });
 
-// GET /api/shifts/current - Cek shift aktif untuk pengguna saat ini
+// GET /api/shifts/current - Check for the current user's active shift
 router.get('/current', protect, async (req, res) => {
     const { id: userId } = req.user;
     try {
@@ -74,16 +70,11 @@ router.get('/current', protect, async (req, res) => {
     }
 });
 
-// POST /api/shifts/close/:id - Menutup shift
+// POST /api/shifts/close/:id - Closes a shift automatically
 router.post('/close/:id', protect, async (req, res) => {
     const { id: shiftId } = req.params;
-    const { ending_cash } = req.body;
     const { id: userId, business_id: businessId } = req.user;
     
-    if (ending_cash == null || isNaN(parseFloat(ending_cash))) {
-        return res.status(400).json({ message: 'Jumlah kas akhir harus diisi.' });
-    }
-
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
@@ -117,7 +108,8 @@ router.post('/close/:id', protect, async (req, res) => {
 
         const total_sales = cash_sales + card_sales + qris_sales + other_sales;
         const expected_cash = parseFloat(shift.starting_cash) + cash_sales;
-        const difference = parseFloat(ending_cash) - expected_cash;
+        const ending_cash = expected_cash;
+        const difference = 0;
 
         const updateQuery = `
             UPDATE cashier_shifts SET 
@@ -127,13 +119,18 @@ router.post('/close/:id', protect, async (req, res) => {
             WHERE id = ?
         `;
         await connection.query(updateQuery, [
-            endTime, parseFloat(ending_cash), cash_sales, card_sales, qris_sales, other_sales,
+            endTime, ending_cash, cash_sales, card_sales, qris_sales, other_sales,
             total_sales, expected_cash, difference, shiftId
         ]);
         
+        await connection.query(
+            'UPDATE businesses SET cash_in_drawer = ? WHERE id = ?',
+            [ending_cash, businessId]
+        );
+
         await connection.commit();
-        await logActivity(businessId, userId, 'CLOSE_SHIFT', `Shift ID ${shiftId} ditutup.`);
-        res.json({ message: 'Shift berhasil ditutup.', shiftSummary: { ...shift, status: 'closed', end_time: endTime, total_sales, expected_cash, difference } });
+        await logActivity(businessId, userId, 'CLOSE_SHIFT_AUTO', `Shift ID ${shiftId} ditutup secara otomatis.`);
+        res.json({ message: 'Shift berhasil ditutup.' });
 
     } catch (error) {
         await connection.rollback();
@@ -144,7 +141,7 @@ router.post('/close/:id', protect, async (req, res) => {
     }
 });
 
-// GET /api/shifts/history - (Admin) Melihat riwayat shift
+// GET /api/shifts/history - (Admin) View shift history
 router.get('/history', protect, isAdmin, async (req, res) => {
     const businessId = req.user.business_id;
     try {
@@ -163,7 +160,7 @@ router.get('/history', protect, isAdmin, async (req, res) => {
     }
 });
 
-// NEW ENDPOINT: DELETE /api/shifts/:id - Menghapus shift (Admin only)
+// DELETE /api/shifts/:id - Delete a shift (Admin only)
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const shiftId = req.params.id;
     const businessId = req.user.business_id;

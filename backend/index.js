@@ -1,5 +1,3 @@
-// backend/index.js
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -22,13 +20,18 @@ const shiftRoutes = require('./routes/shiftRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
-const rawMaterialRoutes = require('./routes/rawMaterialRoutes'); // <-- IMPORT BARU
+const rawMaterialRoutes = require('./routes/rawMaterialRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
-// Configure CORS to expose the Content-Disposition header
+// Configure CORS with all necessary options
 app.use(cors({
     origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Disposition'],
+    credentials: true,
     exposedHeaders: ['Content-Disposition'],
 }));
 
@@ -36,7 +39,7 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Optional: Basic error handling for body-parser (useful for debugging malformed JSON)
+// Optional: Basic error handling for body-parser
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
         console.error('Bad JSON:', err.message);
@@ -44,6 +47,7 @@ app.use((err, req, res, next) => {
     }
     next();
 });
+
 // Middleware to serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -63,10 +67,10 @@ app.use('/api/shifts', shiftRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
-app.use('/api/raw-materials', rawMaterialRoutes); // <-- DAFTARKAN RUTE BARU
+app.use('/api/raw-materials', rawMaterialRoutes);
+app.use('/api/roles', roleRoutes);
 
-// NEW: Add a basic root route for the backend server
-// This helps in testing if the backend server is actually running
+// Basic root route for the backend server
 app.get('/', (req, res) => {
     res.status(200).send('Smart POS Backend API is running!');
 });

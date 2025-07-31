@@ -1,20 +1,77 @@
-// backend/routes/settingsRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
-const { protect } = require('../middleware/authMiddleware');
-const { encrypt, decrypt } = require('../utils/encryption');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
+const { encrypt } = require('../utils/encryption');
 const { logActivity } = require('../utils/logUtils');
 const router = express.Router();
 
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak. Memerlukan peran admin." });
-    }
-    next();
-};
+// GET /api/settings/business
+router.get('/business', protect, isAdmin, async (req, res) => {
+    try {
+        const businessId = req.user.business_id;
+        const [[settings]] = await db.query(
+            'SELECT business_name, address, phone_number, website, logo_url, payment_methods, receipt_logo_url, receipt_footer_text, tax_rate FROM businesses WHERE id = ?',
+            [businessId]
+        );
 
-// --- RUTE UNTUK SETELAN EMAIL ---
+        if (!settings) {
+            return res.status(404).json({ message: 'Pengaturan bisnis tidak ditemukan.' });
+        }
+        
+        res.json(settings);
+
+    } catch (error) {
+        console.error("Error fetching business settings:", error);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+});
+
+// POST /api/settings/business
+router.post('/business', protect, isAdmin, async (req, res) => {
+    // --- FIX 1: Ubah 'phone_number' menjadi 'phone' untuk cocok dengan data dari frontend ---
+    const {
+        business_name,
+        address,
+        phone, // <-- DIUBAH DARI phone_number
+        website,
+        logo_url,
+        payment_methods,
+        receipt_logo_url,
+        receipt_footer_text,
+        tax_rate
+    } = req.body;
+    const businessId = req.user.business_id;
+    const userId = req.user.id;
+
+    try {
+        await db.query(
+            'UPDATE businesses SET business_name = ?, address = ?, phone_number = ?, website = ?, logo_url = ?, payment_methods = ?, receipt_logo_url = ?, receipt_footer_text = ?, tax_rate = ? WHERE id = ?',
+            [
+                business_name || null,
+                address || null,
+                phone || null, // <-- Gunakan variabel 'phone' di sini
+                website || null,
+                logo_url || null,
+                JSON.stringify(payment_methods),
+                receipt_logo_url || null,
+                receipt_footer_text || null,
+                // --- FIX 2: Hapus pembagian / 100 karena frontend sudah melakukannya ---
+                parseFloat(tax_rate), // <-- DIUBAH: Tidak ada lagi pembagian / 100
+                businessId
+            ]
+        );
+
+        await logActivity(businessId, userId, 'UPDATE_BUSINESS_SETTINGS', 'Setelan bisnis diperbarui.');
+        res.status(200).json({ message: 'Setelan bisnis berhasil diperbarui.' });
+    } catch (error) {
+        console.error("Error saving business settings:", error);
+        await logActivity(businessId, userId, 'UPDATE_BUSINESS_SETTINGS_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+});
+
+// --- Rute lain (email, target, dll) tetap sama ---
+
 router.get('/email', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -28,7 +85,7 @@ router.get('/email', protect, isAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching email settings:", error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });
 
@@ -36,10 +93,6 @@ router.post('/email', protect, isAdmin, async (req, res) => {
     const { email, appPassword, sender_name } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
-
-    if (!email || !appPassword) {
-        return res.status(400).json({ message: 'Email pengirim dan Sandi Aplikasi harus diisi.' });
-    }
 
     try {
         const encryptedPassword = encrypt(appPassword);
@@ -56,68 +109,15 @@ router.post('/email', protect, isAdmin, async (req, res) => {
                 [businessId, email, encryptedPassword, sender_name || null]
             );
         }
-        await logActivity(businessId, userId, 'UPDATE_EMAIL_SETTINGS', `Email settings updated.`);
+        await logActivity(businessId, userId, 'UPDATE_EMAIL_SETTINGS', `Setelan email diperbarui.`);
         res.status(200).json({ message: 'Setelan email berhasil disimpan.' });
     } catch (error) {
         console.error("Error saving email settings:", error);
         await logActivity(businessId, userId, 'SAVE_EMAIL_SETTINGS_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });
 
-// --- RUTE UNTUK SETELAN BISNIS ---
-router.get('/business', protect, isAdmin, async (req, res) => {
-    try {
-        const businessId = req.user.business_id;
-        // Removed low_stock_threshold from query
-        const [[settings]] = await db.query(
-            'SELECT payment_methods, receipt_logo_url, receipt_footer_text, tax_rate FROM businesses WHERE id = ?',
-            [businessId]
-        );
-
-        if (!settings) {
-            return res.status(404).json({ message: 'Pengaturan bisnis tidak ditemukan.' });
-        }
-        res.json(settings);
-    } catch (error) {
-        console.error("Error fetching business settings:", error);
-        res.status(500).json({ message: "Server Error" });
-    }
-});
-
-router.post('/business', protect, isAdmin, async (req, res) => {
-    // Removed low_stock_threshold from request body
-    const { payment_methods, receipt_logo_url, receipt_footer_message, tax_rate } = req.body;
-    const businessId = req.user.business_id;
-    const userId = req.user.id;
-
-    if (!Array.isArray(payment_methods) || payment_methods.length === 0) {
-        return res.status(400).json({ message: 'Metode pembayaran harus berupa array dan tidak boleh kosong.' });
-    }
-    // Frontend sekarang akan mengirimkan nilai desimal, validasi ini untuk desimal
-    if (tax_rate === undefined || isNaN(parseFloat(tax_rate)) || parseFloat(tax_rate) < 0) {
-        return res.status(400).json({ message: 'Tarif pajak tidak valid.' });
-    }
-    // Removed validation for low_stock_threshold
-
-
-    try {
-        // Removed low_stock_threshold from query UPDATE
-        await db.query(
-            'UPDATE businesses SET payment_methods = ?, receipt_logo_url = ?, receipt_footer_text = ?, tax_rate = ? WHERE id = ?',
-            [JSON.stringify(payment_methods), receipt_logo_url, receipt_footer_message, parseFloat(tax_rate), businessId]
-        );
-
-        await logActivity(businessId, userId, 'UPDATE_BUSINESS_SETTINGS', 'Business settings updated.');
-        res.status(200).json({ message: 'Setelan bisnis berhasil diperbarui.' });
-    } catch (error) {
-        console.error("Error saving business settings:", error);
-        await logActivity(businessId, userId, 'UPDATE_BUSINESS_SETTINGS_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
-    }
-});
-
-// --- RUTE UNTUK TARGET PENDAPATAN ---
 router.get('/revenue-target', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -128,7 +128,7 @@ router.get('/revenue-target', protect, isAdmin, async (req, res) => {
         res.json({ monthly_revenue_target: settings?.monthly_revenue_target || 0 });
     } catch (error) {
         console.error("Error fetching revenue target:", error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
 
@@ -137,24 +137,19 @@ router.post('/revenue-target', protect, isAdmin, async (req, res) => {
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
-    if (target === undefined || isNaN(parseFloat(target)) || parseFloat(target) < 0) {
-        return res.status(400).json({ message: 'Target pendapatan tidak valid.' });
-    }
-
     try {
         await db.query(
             'UPDATE businesses SET monthly_revenue_target = ? WHERE id = ?',
             [parseFloat(target), businessId]
         );
 
-        await logActivity(businessId, userId, 'UPDATE_REVENUE_TARGET', `Revenue target updated to ${target}.`);
+        await logActivity(businessId, userId, 'UPDATE_REVENUE_TARGET', `Target pendapatan diperbarui ke ${target}.`);
         res.status(200).json({ message: 'Target pendapatan berhasil diperbarui.' });
     } catch (error) {
         console.error("Error saving revenue target:", error);
         await logActivity(businessId, userId, 'UPDATE_REVENUE_TARGET_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
-
 
 module.exports = router;

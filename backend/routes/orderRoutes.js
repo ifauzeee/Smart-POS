@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/db');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
 const { sendReceiptEmail } = require('../utils/emailService');
 const { logActivity } = require('../utils/logUtils');
@@ -9,22 +9,6 @@ const path = require('path');
 const fs = require('fs');
 
 const router = express.Router();
-
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak." });
-    }
-    next();
-};
-
-const formatRupiah = (number) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(number);
-};
 
 // POST /api/orders - Membuat pesanan baru dengan logika resep
 router.post('/', protect, async (req, res) => {
@@ -40,11 +24,11 @@ router.post('/', protect, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // --- TAHAP 1: VALIDASI STOK (Produk Jadi atau Bahan Baku) ---
+        // TAHAP 1: VALIDASI STOK (Produk Jadi atau Bahan Baku)
         for (const item of items) {
             const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId]);
             if (!variant) throw new Error(`Varian produk dengan ID ${item.variantId} tidak ditemukan.`);
-            
+
             const productId = variant.product_id;
             const [[product]] = await connection.query('SELECT name FROM products WHERE id = ?', [productId]);
 
@@ -72,7 +56,7 @@ router.post('/', protect, async (req, res) => {
             }
         }
 
-        // --- TAHAP 2: BUAT PESANAN & ITEM PESANAN ---
+        // TAHAP 2: BUAT PESANAN & ITEM PESANAN
         const pointsEarned = Math.floor(total_amount / 10000);
         const orderSql = 'INSERT INTO orders (business_id, user_id, customer_id, subtotal_amount, tax_amount, total_amount, payment_method, amount_paid, promotion_id, discount_amount, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const [orderResult] = await connection.execute(orderSql, [businessId, userId, customer_id || null, subtotal_amount, tax_amount || 0, total_amount, payment_method || 'Tunai', amount_paid, promotion_id || null, discount_amount || 0, pointsEarned]);
@@ -84,11 +68,11 @@ router.post('/', protect, async (req, res) => {
             await connection.execute(orderItemSql, [orderId, variant.product_id, item.variantId, item.quantity, variant.price, variant.cost_price]);
         }
 
-        // --- TAHAP 3: PENGURANGAN STOK (Bahan Baku atau Produk Jadi) ---
+        // TAHAP 3: PENGURANGAN STOK (Bahan Baku atau Produk Jadi)
         for (const item of items) {
             const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId]);
             const productId = variant.product_id;
-            
+
             const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
 
             if (recipeItems.length > 0) {
@@ -106,7 +90,7 @@ router.post('/', protect, async (req, res) => {
             }
         }
 
-        // --- TAHAP 4: UPDATE POIN PELANGGAN ---
+        // TAHAP 4: UPDATE POIN PELANGGAN
         if (customer_id && pointsEarned > 0) {
             await connection.execute('UPDATE customers SET points = points + ? WHERE id = ? AND business_id = ?', [pointsEarned, customer_id, businessId]);
             await connection.execute(
@@ -116,7 +100,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         await connection.commit();
-        await logActivity(businessId, userId, 'CREATE_ORDER', `Membuat order ID ${orderId} dengan total ${formatRupiah(total_amount)}.`);
+        await logActivity(businessId, userId, 'CREATE_ORDER', `Membuat order ID ${orderId} dengan total ${total_amount}.`);
         res.status(201).json({ message: 'Transaksi berhasil dibuat!', orderId: orderId });
 
     } catch (error) {
@@ -129,12 +113,12 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// GET /api/orders - Mendapatkan semua pesanan (tidak ada perubahan)
+// GET /api/orders - Mendapatkan semua pesanan
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
-        
+
         const sql = `
             SELECT
                 o.id,
@@ -163,21 +147,21 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// GET /api/orders/export - Mengekspor data transaksi ke CSV (tidak ada perubahan)
+// GET /api/orders/export - Mengekspor data transaksi ke CSV
 router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-        
+
         const exportsDir = path.join(__dirname, '..', 'exports');
         if (!fs.existsSync(exportsDir)) {
             fs.mkdirSync(exportsDir, { recursive: true });
         }
 
         const query = `
-            SELECT 
-                o.id, 
-                o.created_at, 
+            SELECT
+                o.id,
+                o.created_at,
                 u.name as cashier_name,
                 c.name as customer_name,
                 o.payment_method,
@@ -233,8 +217,7 @@ router.get('/export', protect, isAdmin, async (req, res) => {
     }
 });
 
-
-// GET /api/orders/:id - Mendapatkan detail pesanan berdasarkan ID (tidak ada perubahan)
+// GET /api/orders/:id - Mendapatkan detail pesanan berdasarkan ID
 router.get('/:id', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -269,7 +252,7 @@ router.get('/:id', protect, async (req, res) => {
         `;
         const [items] = await db.query(itemsSql, [orderId]);
         order.items = items;
-        
+
         res.json({ ...order, items });
     } catch (error) {
         console.error("Error fetching single order:", error);
@@ -277,7 +260,7 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// POST /api/orders/:id/send-receipt - Mengirim struk via email (tidak ada perubahan)
+// POST /api/orders/:id/send-receipt - Mengirim struk via email
 router.post('/:id/send-receipt', protect, async (req, res) => {
     const orderId = req.params.id;
     const { email: recipientEmail } = req.body;
@@ -326,7 +309,7 @@ router.post('/:id/send-receipt', protect, async (req, res) => {
     }
 });
 
-// DELETE /api/orders/clear-history - Menghapus seluruh riwayat transaksi dan mereset poin loyalitas (tidak ada perubahan)
+// DELETE /api/orders/clear-history - Menghapus seluruh riwayat transaksi dan mereset poin loyalitas
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
@@ -337,7 +320,7 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
         console.log(`Mencoba menghapus seluruh riwayat untuk business_id: ${businessId}`);
 
         const [ordersInBusiness] = await connection.query('SELECT id FROM orders WHERE business_id = ?', [businessId]);
-        
+
         if (ordersInBusiness.length > 0) {
             const orderIdsToDelete = ordersInBusiness.map(order => order.id);
 
@@ -346,7 +329,6 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
 
             console.log(`Menghapus ${orderIdsToDelete.length} pesanan...`);
             const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE id IN (?)', [orderIdsToDelete]);
-            
             await connection.commit();
             console.log("Seluruh riwayat transaksi untuk bisnis ini berhasil dihapus.");
             await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders.`);
@@ -391,7 +373,7 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/orders/:id - Menghapus pesanan tunggal dan mengembalikan stok (tidak ada perubahan)
+// DELETE /api/orders/:id - Menghapus pesanan tunggal dan mengembalikan stok
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     try {
@@ -416,9 +398,9 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         for (const item of orderItemsToRevert) {
             await connection.query('UPDATE products SET stock = stock + ? WHERE id = ?', [item.quantity, item.product_id]);
         }
-        
+
         await connection.query('DELETE FROM order_items WHERE order_id = ?', [req.params.id]);
-        
+
         const [result] = await connection.query('DELETE FROM orders WHERE id = ? AND business_id = ?', [req.params.id, businessId]);
         if (result.affectedRows === 0) {
             throw new Error('Pesanan tidak ditemukan atau Anda tidak memiliki akses setelah mencoba menghapus item.');
