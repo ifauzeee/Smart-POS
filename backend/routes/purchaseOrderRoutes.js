@@ -1,15 +1,14 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\purchaseOrderRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
-const { protect } = require('../middleware/authMiddleware');
+// FIX: Import both protect and isAdmin from the middleware file
+const { protect, isAdmin } = require('../middleware/authMiddleware'); 
 const { logActivity } = require('../utils/logUtils');
 const router = express.Router();
 
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Akses ditolak." });
-    }
-    next();
-};
+// The original `isAdmin` middleware block is no longer needed here because it's now
+// imported directly from `authMiddleware.js`. This makes the code cleaner and more reusable.
 
 // POST /api/purchase-orders - Membuat Purchase Order baru
 router.post('/', protect, isAdmin, async (req, res) => {
@@ -81,13 +80,12 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// --- ENDPOINT BARU UNTUK DETAIL PO ---
+// GET /api/purchase-orders/:id - Detail PO
 router.get('/:id', protect, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const businessId = req.user.business_id;
 
-        // 1. Ambil data PO utama dan data pemasok
         const poQuery = `
             SELECT po.*, s.name as supplier_name, s.address as supplier_address, s.phone as supplier_phone
             FROM purchase_orders po
@@ -100,7 +98,6 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
             return res.status(404).json({ message: 'Purchase Order tidak ditemukan.' });
         }
 
-        // 2. Ambil semua item yang ada di dalam PO tersebut
         const itemsQuery = `
             SELECT poi.*, p.name as product_name
             FROM purchase_order_items poi
@@ -109,7 +106,6 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
         `;
         const [items] = await db.query(itemsQuery, [id]);
 
-        // 3. Gabungkan hasilnya dan kirim sebagai respons
         res.json({ ...poDetails, items });
 
     } catch (error) {
@@ -119,7 +115,7 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
 });
 
 
-// PATCH /:id/status - Memperbarui status, dengan logika penambahan stok
+// PATCH /api/purchase-orders/:id/status - Update status
 router.patch('/:id/status', protect, isAdmin, async (req, res) => {
     const { id: purchaseOrderId } = req.params;
     const { status: newStatus } = req.body;

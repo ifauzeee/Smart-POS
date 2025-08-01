@@ -1,13 +1,10 @@
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
-const { body, validationResult } = require('express-validator'); // Import validator
+const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
-
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
 
 // --- Validation Rules ---
 
@@ -17,7 +14,7 @@ const promotionValidationRules = [
         .notEmpty().withMessage('Nama promosi tidak boleh kosong.')
         .isLength({ max: 100 }).withMessage('Nama promosi maksimal 100 karakter.'),
     body('description')
-        .optional({ checkFalsy: true }) // Allow empty or null, but trim if present
+        .optional({ checkFalsy: true })
         .trim()
         .isLength({ max: 500 }).withMessage('Deskripsi promosi maksimal 500 karakter.'),
     body('type')
@@ -26,7 +23,7 @@ const promotionValidationRules = [
     body('value')
         .isFloat({ gt: 0 }).withMessage('Nilai promosi harus angka positif.'),
     body('code')
-        .optional({ checkFalsy: true }) // Code is optional, but if present, it must meet criteria
+        .optional({ checkFalsy: true })
         .trim()
         .isAlphanumeric().withMessage('Kode promo hanya boleh berisi huruf dan angka.')
         .isLength({ min: 3, max: 20 }).withMessage('Kode promo harus antara 3 dan 20 karakter.'),
@@ -56,6 +53,13 @@ const promotionValidationRules = [
  */
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
+        // Log untuk memeriksa req.user.business_id
+        if (!req.user || !req.user.business_id) {
+            console.error('Error: req.user or req.user.business_id is missing.');
+            return res.status(401).json({ message: "Tidak terautentikasi atau business_id tidak ditemukan." });
+        }
+        console.log('Fetching promotions for business_id:', req.user.business_id);
+
         const [promotions] = await db.query(
             'SELECT id, name, description, type, value, code, start_date, end_date, is_active, created_at, updated_at FROM promotions WHERE business_id = ? ORDER BY created_at DESC',
             [req.user.business_id]
@@ -63,6 +67,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
         res.json(promotions);
     } catch (error) {
         console.error('Error fetching promotions:', error);
+        // Sertakan detail error di respons untuk debugging lebih lanjut (hanya di lingkungan dev)
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 });
