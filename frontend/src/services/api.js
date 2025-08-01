@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
-
 import axios from 'axios';
 
 const API = axios.create({
@@ -170,6 +168,8 @@ export const startShift = (data) => API.post('/shifts/start', data);
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);
+export const clearShiftHistory = () => API.delete('/shifts/clear-history');
+export const exportShiftHistory = () => API.get('/shifts/export', { responseType: 'blob' });
 
 // Purchase Orders
 export const getPurchaseOrders = () => API.get('/purchase-orders');

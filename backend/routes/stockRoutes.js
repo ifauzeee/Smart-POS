@@ -1,14 +1,12 @@
-// backend/routes/stockRoutes.js
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\stockRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
-const { body, validationResult } = require('express-validator'); // Import validator
+const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
-
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
 
 // --- Validation Rules ---
 
@@ -22,7 +20,7 @@ const stockAdjustmentValidationRules = [
     body('type')
         .trim()
         .notEmpty().withMessage('Tipe penyesuaian tidak boleh kosong.')
-        .isIn(['increase', 'decrease', 'correction']).withMessage('Tipe penyesuaian tidak valid (harus "increase", "decrease", atau "correction").'),
+        .isIn(['adjustment', 'damage', 'return', 'other']).withMessage('Tipe penyesuaian tidak valid.'),
     body('reason')
         .optional({ checkFalsy: true })
         .trim()
@@ -50,7 +48,6 @@ router.post('/adjust', protect, isAdmin, stockAdjustmentValidationRules, async (
     try {
         await connection.beginTransaction();
 
-        // 1. Get current stock and lock the product row to prevent concurrent updates
         const [[product]] = await connection.query(
             'SELECT stock, name FROM products WHERE id = ? AND business_id = ? FOR UPDATE',
             [productId, businessId]
@@ -62,23 +59,28 @@ router.post('/adjust', protect, isAdmin, stockAdjustmentValidationRules, async (
         }
 
         const currentStock = product.stock;
-        const quantityChange = newStockQuantity - currentStock; // Calculate the change
+        const quantityChange = newStockQuantity - currentStock;
 
-        // 2. Record the change in the stock_adjustments table
         await connection.query(
             'INSERT INTO stock_adjustments (business_id, product_id, user_id, type, quantity_change, reason) VALUES (?, ?, ?, ?, ?, ?)',
             [businessId, productId, userId, type, quantityChange, reason || null]
         );
 
-        // 3. Update the stock quantity in the products table
+        // ✅ Perbaikan: Hapus bagian updated_at agar tidak bentrok dengan auto timestamp DB
         await connection.query(
-            'UPDATE products SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE products SET stock = ? WHERE id = ?',
             [newStockQuantity, productId]
         );
 
         await connection.commit();
 
-        await logActivity(businessId, userId, 'STOCK_ADJUSTMENT', `Stok produk "${product.name}" (ID: ${productId}) diubah dari ${currentStock} menjadi ${newStockQuantity}. Alasan: ${type}.`);
+        await logActivity(
+            businessId,
+            userId,
+            'STOCK_ADJUSTMENT',
+            `Stok produk "${product.name}" (ID: ${productId}) diubah dari ${currentStock} menjadi ${newStockQuantity}. Alasan: ${type}.`
+        );
+
         res.status(200).json({ message: 'Stok berhasil disesuaikan.' });
 
     } catch (error) {

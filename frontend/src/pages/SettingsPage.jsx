@@ -1,5 +1,3 @@
-// frontend/src/pages/SettingsPage.jsx
-
 import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { ThemeContext } from '../context/ThemeContext';
@@ -8,28 +6,25 @@ import { getEmailSettings, saveEmailSettings, saveBusinessSettings } from '../se
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { FiCheckCircle, FiX } from 'react-icons/fi';
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import formatters
 
 // --- Styled Components (tidak ada perubahan pada style yang sudah ada) ---
 const PageContainer = styled.div` padding: 30px; `;
 const Title = styled.h1` font-size: 1.8rem; margin-bottom: 30px; `;
-
 const SettingsGrid = styled.div`
     display: grid;
     grid-template-columns: 1fr 1.2fr;
     gap: 30px;
     align-items: flex-start;
-
     @media (max-width: 1024px) {
         grid-template-columns: 1fr;
     }
 `;
-
 const Column = styled.div`
     display: flex;
     flex-direction: column;
     gap: 30px;
 `;
-
 const SettingsCard = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
@@ -59,7 +54,7 @@ const Select = styled.select`
     background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;
     &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); }
 `;
-const CheckboxContainer = styled.div` /* NEW: Styled for checkboxes like is_active */
+const CheckboxContainer = styled.div` 
     display: flex;
     align-items: center;
     gap: 10px;
@@ -96,16 +91,18 @@ const CheckboxContainer = styled.div` /* NEW: Styled for checkboxes like is_acti
 function SettingsPage() {
     const { theme, toggleTheme } = useContext(ThemeContext);
     const { settings, fetchBusinessSettings } = useContext(BusinessContext);
-
     const [emailSettings, setEmailSettings] = useState({ email: '', appPassword: '', sender_name: '' });
     const [savedEmail, setSavedEmail] = useState('');
-    
-    // low_stock_threshold state removed
     const [formData, setFormData] = useState(() => ({
-        business_name: '', address: '', phone: '',
-        payment_methods: [], receipt_logo_url: '', receipt_footer_message: '',
-        receipt_template: 'STANDARD_RECEIPT_TEMPLATE', tax_rate: 0.00,
-        // low_stock_threshold: 10, // Default value removed
+        business_name: '',
+        address: '',
+        phone: '',
+        payment_methods: [],
+        receipt_logo_url: '',
+        receipt_footer_text: '',
+        receipt_template: 'STANDARD_RECEIPT_TEMPLATE',
+        tax_rate: 0.00,
+        default_starting_cash: 0 // <-- Tambahkan state baru
     }));
     const [newPaymentMethod, setNewPaymentMethod] = useState('');
     const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -133,18 +130,15 @@ function SettingsPage() {
             setFormData({
                 business_name: settings.business_name || '',
                 address: settings.address || '',
-                phone: settings.phone || '',
+                phone: settings.phone_number || '', // Pastikan ini phone_number
                 payment_methods: Array.isArray(settings.payment_methods)
                     ? settings.payment_methods
                     : (settings.payment_methods ? JSON.parse(settings.payment_methods) : []),
                 receipt_logo_url: settings.receipt_logo_url || '',
-                receipt_footer_message: settings.receipt_footer_text || '',
+                receipt_footer_text: settings.receipt_footer_text || '',
                 receipt_template: settings.receipt_template || 'STANDARD_RECEIPT_TEMPLATE',
-                tax_rate: (settings.tax_rate === null || settings.tax_rate === undefined || settings.tax_rate === '')
-                    ? 0.00
-                    : parseFloat(settings.tax_rate) * 100,
-                // low_stock_threshold: settings.low_stock_threshold !== undefined && settings.low_stock_threshold !== null
-                //                     ? parseInt(settings.low_stock_threshold) : 10, // Logic for this removed
+                tax_rate: (parseFloat(settings.tax_rate) || 0) * 100,
+                default_starting_cash: settings.default_starting_cash || 0 // <-- Ambil nilai dari context
             });
         }
     }, [settings]);
@@ -172,15 +166,12 @@ function SettingsPage() {
 
     const handleBusinessSave = async (e) => {
         e.preventDefault();
-        const dataToSave = { ...formData };
-        if (dataToSave.tax_rate !== '' && !isNaN(parseFloat(dataToSave.tax_rate))) {
-            dataToSave.tax_rate = parseFloat(dataToSave.tax_rate) / 100;
-        } else {
-            dataToSave.tax_rate = 0.00;
-        }
-        // low_stock_threshold data is no longer sent
-        // dataToSave.low_stock_threshold = parseInt(dataToSave.low_stock_threshold) || 0;
-
+        const dataToSave = { 
+            ...formData,
+            tax_rate: (parseFloat(formData.tax_rate) || 0) / 100,
+            default_starting_cash: parseFloat(parseRupiah(formData.default_starting_cash)) || 0 // <-- Pastikan mengirim angka
+        };
+        
         await toast.promise(saveBusinessSettings(dataToSave), {
             pending: 'Menyimpan...',
             success: 'Setelan bisnis berhasil diperbarui!',
@@ -192,7 +183,7 @@ function SettingsPage() {
     const addPaymentMethod = () => {
         const trimmedMethod = newPaymentMethod.trim();
         if (trimmedMethod && !formData.payment_methods.some(m => m.toLowerCase() === trimmedMethod.toLowerCase())) {
-            setFormData(prev => ({...prev, payment_methods: [...prev.payment_methods, trimmedMethod]}));
+            setFormData(prev => ({ ...prev, payment_methods: [...prev.payment_methods, trimmedMethod] }));
             setNewPaymentMethod('');
         } else if (trimmedMethod) {
             toast.warn('Metode pembayaran ini sudah ada.');
@@ -200,7 +191,7 @@ function SettingsPage() {
     };
 
     const removePaymentMethod = (methodToRemove) => {
-        setFormData(prev => ({...prev, payment_methods: prev.payment_methods.filter(m => m !== methodToRemove)}));
+        setFormData(prev => ({ ...prev, payment_methods: prev.payment_methods.filter(m => m !== methodToRemove) }));
     };
 
     return (
@@ -209,7 +200,7 @@ function SettingsPage() {
             <SettingsGrid>
                 <Column>
                     <SettingsCard>
-                        <CardTitle>Profil Bisnis</CardTitle>
+                        <CardTitle>Profil Bisnis & Kas</CardTitle>
                         <Form onSubmit={handleBusinessSave}>
                             <InputGroup>
                                 <Label>Nama Bisnis</Label>
@@ -223,9 +214,20 @@ function SettingsPage() {
                                 <Label>Alamat</Label>
                                 <Input as="textarea" rows="3" name="address" value={formData.address} onChange={handleBusinessChange} placeholder="Alamat lengkap toko" />
                             </InputGroup>
-                            {/* Removed InputGroup for low_stock_threshold */}
                             
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Profil</Button></div>
+                            <InputGroup>
+                                <Label>Kas Awal Default untuk Kasir (Rp)</Label>
+                                <Input 
+                                    name="default_starting_cash" 
+                                    type="text"
+                                    value={formatRupiah(formData.default_starting_cash)} 
+                                    onChange={(e) => setFormData(prev => ({...prev, default_starting_cash: parseRupiah(e.target.value)}))}
+                                />
+                            </InputGroup>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Button type="submit" $primary>Simpan Profil</Button>
+                            </div>
                         </Form>
                     </SettingsCard>
 
@@ -270,7 +272,7 @@ function SettingsPage() {
                             <InputGroup><Label>Metode Pembayaran</Label><TagsContainer>{formData.payment_methods.map(method => (<Tag key={method}>{method}<RemoveTagButton type="button" onClick={() => removePaymentMethod(method)}><FiX size={16} /></RemoveTagButton></Tag>))}</TagsContainer><div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}><Input value={newPaymentMethod} onChange={(e) => setNewPaymentMethod(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentMethod(); } }} placeholder="Tambah metode baru"/><Button type="button" onClick={addPaymentMethod}>Tambah</Button></div></InputGroup>
                             <InputGroup><Label>Format Struk</Label><Select name="receipt_template" value={formData.receipt_template} onChange={handleBusinessChange}><option value="STANDARD_RECEIPT_TEMPLATE">Struk Standar</option><option value="THERMAL_RECEIPT_TEMPLATE">Struk Thermal</option></Select></InputGroup>
                             <InputGroup><Label>URL Logo Struk</Label><Input name="receipt_logo_url" value={formData.receipt_logo_url} onChange={handleBusinessChange} /></InputGroup>
-                            <InputGroup><Label>Teks Footer Struk</Label><Input name="receipt_footer_message" value={formData.receipt_footer_message} onChange={handleBusinessChange} /></InputGroup>
+                            <InputGroup><Label>Teks Footer Struk</Label><Input name="receipt_footer_message" value={formData.receipt_footer_text} onChange={handleBusinessChange} /></InputGroup>
                             <InputGroup><Label>Tarif Pajak Global (%)</Label><Input type="number" name="tax_rate" value={formData.tax_rate} onChange={handleBusinessChange} step="0.01" min="0" max="100"/></InputGroup>
                             <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Setelan Bisnis</Button></div>
                         </Form>

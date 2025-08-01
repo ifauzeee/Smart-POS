@@ -1,10 +1,13 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ShiftHistoryPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getShiftHistory, deleteShift } from '../services/api';
+import { getShiftHistory, deleteShift, clearShiftHistory, exportShiftHistory } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiClock, FiTrash2 } from 'react-icons/fi'; // FiFileText removed
+import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const PageContainer = styled.div`
     padding: 30px;
@@ -13,8 +16,15 @@ const PageContainer = styled.div`
     flex-direction: column;
 `;
 const PageHeader = styled.header`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 30px;
     flex-shrink: 0;
+`;
+const HeaderActions = styled.div`
+    display: flex;
+    gap: 15px;
 `;
 const Title = styled.h1`
     font-size: 1.8rem;
@@ -32,13 +42,13 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 const TableWrapper = styled.div`
-    overflow-x: auto; /* Changed to auto to allow horizontal scroll if content overflows */
+    overflow-x: auto;
     flex-grow: 1;
 `;
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
-    min-width: 580px; 
+    min-width: 800px;
 `;
 const Th = styled.th`
     text-align: center; 
@@ -57,22 +67,13 @@ const Td = styled.td`
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
-    white-space: normal; 
-    word-break: break-word; 
     
-    &.nowrap {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    &.text-left {
-        text-align: left;
-    }
+    &.nowrap { white-space: nowrap; }
+    &.text-left { text-align: left; }
 `;
 const Tr = styled.tr`
     &:last-child > td { border-bottom: none; }
 `;
-// DifferenceText styled component removed as it's no longer used
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -83,135 +84,192 @@ const ActionButton = styled.button`
 `;
 const TimePeriodCell = styled.div`
     font-size: 0.85rem;
-    color: var(--text-primary);
     line-height: 1.3; 
-    .start-time {
-        font-weight: 600;
-    }
-    .end-time {
-        color: var(--text-secondary);
-    }
+    .start-time { font-weight: 600; }
+    .end-time { color: var(--text-secondary); }
+`;
+const SalesDetail = styled.div`
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+`;
+const ExportButton = styled.button`
+    background-color: var(--green-color);
+    color: white; border: none; border-radius: 8px; padding: 10px 20px;
+    font-weight: 600; display: flex; align-items: center; gap: 8px;
+    cursor: pointer; &:hover { opacity: 0.9; }
+`;
+const ClearHistoryButton = styled.button`
+    background-color: var(--red-color);
+    color: white; border: none; border-radius: 8px; padding: 10px 20px;
+    font-weight: 600; display: flex; align-items: center; gap: 8px;
+    cursor: pointer; &:hover { opacity: 0.9; }
 `;
 
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 const formatDateTimeCombined = (start, end) => {
+    if (!start || !end) return null;
     const startDate = new Date(start);
     const endDate = new Date(end);
-
     const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
     const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
     return (
-        <>
+        <TimePeriodCell>
             <div className="start-time">{dateStr}</div>
             <div className="end-time">{startTime} - {endTime}</div>
-        </>
+        </TimePeriodCell>
     );
 };
-
 
 function ShiftHistoryPage() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
+    const [modalContent, setModalContent] = useState({ title: '', message: '' });
+
+    const fetchHistory = async () => {
+        setLoading(true);
+        try {
+            const res = await getShiftHistory();
+            setHistory(res.data);
+        } catch (error) { toast.error("Gagal memuat riwayat shift."); }
+        finally { setLoading(false); }
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                setUserRole(decoded.role);
+                setUserRole(decoded.role ? decoded.role.toLowerCase() : null);
             } catch (error) {
                 console.error("Invalid token:", error);
                 setUserRole(null);
             }
         }
-
-        const fetchHistory = async () => {
-            setLoading(true);
-            try {
-                const res = await getShiftHistory();
-                setHistory(res.data);
-            } catch (error) {
-                toast.error("Gagal memuat riwayat shift.");
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchHistory();
     }, []);
 
-    const handleDeleteShift = async (shiftId) => {
-        // IMPORTANT: In a real application, replace window.confirm with a custom modal UI.
-        // window.confirm is blocking and not user-friendly in an iframe environment.
-        if (window.confirm(`Yakin ingin menghapus shift #${shiftId} ini? Aksi ini tidak dapat dibatalkan.`)) {
-            try {
-                await toast.promise(deleteShift(shiftId), {
-                    pending: 'Menghapus shift...',
-                    success: 'Shift berhasil dihapus!',
-                    error: (err) => err.response?.data?.message || 'Gagal menghapus shift.'
-                });
-                setHistory(prevHistory => prevHistory.filter(shift => shift.id !== shiftId));
-            } catch (error) {
-                console.error("Error deleting shift:", error);
-            }
+    const openConfirmation = (action, id = null) => {
+        setConfirmAction({ action, id });
+        if (action === 'delete') {
+            setModalContent({ title: 'Hapus Shift', message: `Yakin ingin menghapus riwayat shift #${id}?` });
+        } else if (action === 'clearAll') {
+            setModalContent({ title: 'Hapus Semua Riwayat', message: 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.' });
+        }
+        setIsConfirmOpen(true);
+    };
+    
+    const handleExport = async () => {
+        toast.info("Mempersiapkan data untuk diunduh...");
+        try {
+            const response = await exportShiftHistory();
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gagal mengekspor data.");
         }
     };
 
+    const handleConfirm = async () => {
+        const { action, id } = confirmAction;
+        setIsConfirmOpen(false);
+        let promise;
+        if (action === 'delete') promise = deleteShift(id);
+        else if (action === 'clearAll') promise = clearShiftHistory();
+        if (promise) {
+            await toast.promise(promise, {
+                pending: 'Memproses...',
+                success: 'Aksi berhasil dijalankan!',
+                error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.'
+            });
+            fetchHistory();
+        }
+    };
 
     return (
-        <PageContainer>
-            <PageHeader>
-                <Title><FiClock /> Riwayat Shift</Title>
-            </PageHeader>
-            
-            <TableContainer>
-                {loading ? (
-                    <div style={{ padding: '20px' }}><Skeleton count={10} height={50} /></div>
-                ) : history.length > 0 ? (
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th>Kasir</Th> 
-                                    <Th>Waktu Shift</Th>
-                                    <Th>Kas Awal</Th> 
-                                    <Th>Penjualan Tunai</Th> {/* Changed from Penjualan */}
-                                    <Th>Kas Akhir Sistem</Th> {/* Changed from Fisik Akhir */}
-                                    {/* Selisih column removed */}
-                                    {userRole === 'admin' && <Th>Aksi</Th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {history.map(shift => (
-                                    <Tr key={shift.id}>
-                                        <Td className="text-left">{shift.user_name}</Td> 
-                                        <Td><TimePeriodCell>{formatDateTimeCombined(shift.start_time, shift.end_time)}</TimePeriodCell></Td>
-                                        <Td className="nowrap">{formatCurrency(shift.starting_cash)}</Td>
-                                        <Td className="nowrap">{formatCurrency(shift.cash_sales)}</Td> {/* Changed from total_sales to cash_sales */}
-                                        <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
-                                        {/* Difference Td removed */}
-                                        {userRole === 'admin' && (
-                                            <Td>
-                                                <ActionButton onClick={() => handleDeleteShift(shift.id)}>
-                                                    <FiTrash2 size={18} />
-                                                </ActionButton>
-                                            </Td>
-                                        )}
-                                    </Tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                ) : (
-                    <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
-                        <FiClock size={48} /> {/* Changed icon to FiClock for consistency */}
-                        <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
-                    </div>
-                )}
-            </TableContainer>
-        </PageContainer>
+        <>
+            <PageContainer>
+                <PageHeader>
+                    <Title><FiClock /> Riwayat Shift</Title>
+                    {userRole === 'admin' && (
+                        <HeaderActions>
+                            <ExportButton onClick={handleExport}><FiDownload/> Ekspor CSV</ExportButton>
+                            <ClearHistoryButton onClick={() => openConfirmation('clearAll')}>
+                                <FiAlertTriangle /> Hapus Semua Riwayat
+                            </ClearHistoryButton>
+                        </HeaderActions>
+                    )}
+                </PageHeader>
+                
+                <TableContainer>
+                    {loading ? ( <div style={{ padding: '20px' }}><Skeleton count={10} height={50} /></div> ) 
+                    : history.length > 0 ? (
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Kasir</Th> 
+                                        <Th>Waktu Shift</Th>
+                                        <Th>Kas Awal</Th> 
+                                        <Th>Total Penjualan</Th>
+                                        <Th>Kas Akhir Sistem</Th>
+                                        {userRole === 'admin' && <Th>Aksi</Th>}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {history.map(shift => {
+                                        const nonCashSales = (shift.card_sales || 0) + (shift.qris_sales || 0) + (shift.other_sales || 0);
+                                        return (
+                                            <Tr key={shift.id}>
+                                                <Td className="text-left">{shift.user_name}</Td> 
+                                                <Td>{formatDateTimeCombined(shift.start_time, shift.end_time)}</Td>
+                                                <Td className="nowrap">{formatCurrency(shift.starting_cash)}</Td>
+                                                <Td className="nowrap">
+                                                    <strong>{formatCurrency(shift.total_sales)}</strong>
+                                                    <SalesDetail>
+                                                        Tunai: {formatCurrency(shift.cash_sales)} <br/>
+                                                        Non-Tunai: {formatCurrency(nonCashSales)}
+                                                    </SalesDetail>
+                                                </Td>
+                                                <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
+                                                {userRole === 'admin' && (
+                                                    <Td>
+                                                        <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
+                                                            <FiTrash2 size={18} />
+                                                        </ActionButton>
+                                                    </Td>
+                                                )}
+                                            </Tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
+                            <FiClock size={48} />
+                            <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
+                        </div>
+                    )}
+                </TableContainer>
+            </PageContainer>
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={handleConfirm}
+                title={modalContent.title}
+                message={modalContent.message}
+            />
+        </>
     );
 }
 

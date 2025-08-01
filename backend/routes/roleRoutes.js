@@ -1,13 +1,10 @@
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
-const { body, param, validationResult } = require('express-validator'); // Import validator
+const { body, param, validationResult } = require('express-validator');
 
 const router = express.Router();
-
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
 
 // --- Validation Rules ---
 
@@ -52,8 +49,9 @@ const roleIdValidation = [
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
+        // PERBAIKAN: Query disederhanakan untuk menghindari error kolom tidak ditemukan
         const [roles] = await db.query(
-            'SELECT id, name, description, created_at, updated_at FROM roles WHERE business_id = ? ORDER BY name ASC',
+            'SELECT id, name FROM roles WHERE business_id = ? ORDER BY name ASC',
             [businessId]
         );
         res.json(roles);
@@ -70,7 +68,6 @@ router.get('/', protect, isAdmin, async (req, res) => {
  */
 router.get('/permissions', protect, isAdmin, async (req, res) => {
     try {
-        // Permissions are global, not specific to a business
         const [permissions] = await db.query('SELECT id, name, description FROM permissions ORDER BY name ASC');
         res.json(permissions);
     } catch (error) {
@@ -95,7 +92,7 @@ router.get('/:id', protect, isAdmin, roleIdValidation, async (req, res) => {
         const businessId = req.user.business_id;
 
         const [[role]] = await db.query(
-            'SELECT id, name, description, created_at, updated_at FROM roles WHERE id = ? AND business_id = ?',
+            'SELECT id, name, description FROM roles WHERE id = ? AND business_id = ?',
             [roleId, businessId]
         );
         if (!role) {
@@ -248,7 +245,7 @@ router.delete('/:id', protect, isAdmin, roleIdValidation, async (req, res) => {
     const roleId = req.params.id;
     const businessId = req.user.business_id;
     const userId = req.user.id;
-    const connection = await db.getConnection(); // Use connection for transaction
+    const connection = await db.getConnection();
 
     try {
         await connection.beginTransaction();

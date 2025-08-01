@@ -18,10 +18,9 @@ import Receipt from '../components/Receipt';
 import StartShiftModal from '../components/StartShiftModal';
 import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
-import { addOfflineOrder } from '../utils/offlineDb'; // IMPORT BARU
+import { addOfflineOrder } from '../utils/offlineDb';
 
 // --- Styled Components ---
-// FIX: Added PageContainer definition
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -345,7 +344,6 @@ const PromoSection = styled.div`
     margin-bottom: 20px;
 `;
 
-
 function PosPage() {
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
@@ -360,7 +358,7 @@ function PosPage() {
     const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
     const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
     const { settings } = useContext(BusinessContext);
-    const { activeShift, isLoadingShift, refreshShiftStatus } = useContext(ShiftContext);
+    const { activeShift, isLoadingShift, refreshShiftStatus, userRole } = useContext(ShiftContext);
     const [heldCarts, setHeldCarts] = useState(() => {
         const saved = localStorage.getItem('heldCarts');
         return saved ? JSON.parse(saved) : [];
@@ -444,7 +442,7 @@ function PosPage() {
 
     const processBarcode = useCallback(async (scannedBarcode) => {
         try {
-            const res = await getProducts(scannedBarcode);
+            const res = await getProducts({ barcode: scannedBarcode });
             const foundProducts = res.data;
             if (foundProducts.length === 0) { toast.error(`Produk dengan barcode "${scannedBarcode}" tidak ditemukan.`); return; }
             const product = foundProducts[0];
@@ -536,12 +534,10 @@ function PosPage() {
             createdAt: new Date().toISOString() // Tambahkan timestamp untuk data offline
         };
 
-        // Cek status koneksi
         if (!navigator.onLine) {
             try {
                 await addOfflineOrder(orderData);
                 toast.success("Koneksi terputus. Transaksi disimpan secara lokal dan akan disinkronkan nanti.");
-                // Reset state setelah berhasil disimpan lokal
                 setIsCheckoutModalOpen(false);
                 setCart([]);
                 setSelectedCustomer(null);
@@ -553,7 +549,6 @@ function PosPage() {
             return;
         }
 
-        // Jika online, lanjutkan seperti biasa
         try {
             const res = await toast.promise(createOrder(orderData), {
                 pending: 'Memproses transaksi...',
@@ -583,9 +578,14 @@ function PosPage() {
         const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term));
         return nameMatch || barcodeMatch;
     });
-
-    if (isLoadingShift) { return <PageContainer><Skeleton height="80vh" /></PageContainer>; }
-    if (!activeShift) { return <StartShiftModal onShiftStarted={refreshShiftStatus} />; }
+    
+    // Perbaikan utama di sini: Cek loading dan role
+    if (isLoadingShift) { 
+        return <PageContainer><Skeleton height="80vh" /></PageContainer>; 
+    }
+    if (userRole === 'kasir' && !activeShift) {
+        return <StartShiftModal onShiftStarted={refreshShiftStatus} />;
+    }
 
     return (
         <>

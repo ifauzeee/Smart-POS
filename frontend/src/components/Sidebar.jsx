@@ -1,11 +1,10 @@
-// frontend/src/components/Sidebar.jsx
-import React, { useState, useEffect, useContext } from 'react'; // Tambahkan useContext
+import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiSettings, FiZap, FiPower, FiClock, FiFileText } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import { useShift } from '../context/ShiftContext';
-import { BusinessContext } from '../context/BusinessContext'; // Import BusinessContext
+import { BusinessContext } from '../context/BusinessContext';
 import CloseShiftModal from './CloseShiftModal';
 import { toast } from 'react-toastify';
 
@@ -123,18 +122,18 @@ const LogoutButton = styled.button`
 `;
 
 function Sidebar() {
-    const [userRole, setUserRole] = useState(null);
-    const { activeShift, refreshShiftStatus } = useShift();
-    const { settings } = useContext(BusinessContext); // Gunakan BusinessContext
+    const { activeShift, refreshShiftStatus, userRole } = useShift();
+    const { settings } = useContext(BusinessContext);
     const [isCloseShiftModalOpen, setCloseShiftModalOpen] = useState(false);
     const navigate = useNavigate();
+    const [localUserRole, setLocalUserRole] = useState(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                setUserRole(decoded.role);
+                setLocalUserRole(decoded.role);
             } catch (error) {
                 console.error("Invalid token:", error);
             }
@@ -161,16 +160,15 @@ function Sidebar() {
         }, 2000);
     };
 
-    // Gunakan business_name dari settings, fallback ke 'Smart POS' jika belum ada
     const businessName = settings?.business_name || 'Smart POS';
 
     return (
         <>
             <SidebarContainer>
-                <Logo>{businessName}</Logo> {/* Gunakan businessName di sini */}
+                <Logo>{businessName}</Logo>
                 <NavList>
                     <li><NavItem to="/pos"><FiShoppingCart size={20} /> Kasir</NavItem></li>
-                    {userRole && userRole.toLowerCase() === 'admin' && (
+                    {localUserRole && localUserRole.toLowerCase() === 'admin' && (
                         <>
                             <li><NavItem to="/dashboard"><FiGrid size={20} /> Dashboard</NavItem></li>
                             <li><NavItem to="/products"><FiPackage size={20} /> Produk</NavItem></li>
@@ -184,7 +182,7 @@ function Sidebar() {
                 </NavList>
 
                 <ActionButtonsContainer>
-                    {activeShift && (
+                    {localUserRole === 'kasir' && activeShift && (
                         <CloseShiftButton onClick={() => setCloseShiftModalOpen(true)}>
                             <FiPower size={20} /> Tutup Shift
                         </CloseShiftButton>

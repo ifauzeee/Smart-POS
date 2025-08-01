@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\backend\routes\settingsRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -12,7 +10,7 @@ router.get('/business', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const [[settings]] = await db.query(
-            'SELECT business_name, address, phone_number, website, logo_url, payment_methods, receipt_logo_url, receipt_footer_text, tax_rate FROM businesses WHERE id = ?',
+            'SELECT business_name, address, phone_number, website, logo_url, payment_methods, receipt_logo_url, receipt_footer_text, tax_rate, default_starting_cash FROM businesses WHERE id = ?',
             [businessId]
         );
 
@@ -30,35 +28,39 @@ router.get('/business', protect, isAdmin, async (req, res) => {
 
 // POST /api/settings/business
 router.post('/business', protect, isAdmin, async (req, res) => {
-    // --- FIX 1: Ubah 'phone_number' menjadi 'phone' untuk cocok dengan data dari frontend ---
     const {
         business_name,
         address,
-        phone, // <-- DIUBAH DARI phone_number
+        phone,
         website,
         logo_url,
         payment_methods,
         receipt_logo_url,
         receipt_footer_text,
-        tax_rate
+        tax_rate,
+        default_starting_cash // <-- Variabel baru
     } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
     try {
         await db.query(
-            'UPDATE businesses SET business_name = ?, address = ?, phone_number = ?, website = ?, logo_url = ?, payment_methods = ?, receipt_logo_url = ?, receipt_footer_text = ?, tax_rate = ? WHERE id = ?',
+            `UPDATE businesses SET 
+                business_name = ?, address = ?, phone_number = ?, website = ?, 
+                logo_url = ?, payment_methods = ?, receipt_logo_url = ?, 
+                receipt_footer_text = ?, tax_rate = ?, default_starting_cash = ? 
+            WHERE id = ?`,
             [
                 business_name || null,
                 address || null,
-                phone || null, // <-- Gunakan variabel 'phone' di sini
+                phone || null,
                 website || null,
                 logo_url || null,
                 JSON.stringify(payment_methods),
                 receipt_logo_url || null,
                 receipt_footer_text || null,
-                // --- FIX 2: Hapus pembagian / 100 karena frontend sudah melakukannya ---
-                parseFloat(tax_rate), // <-- DIUBAH: Tidak ada lagi pembagian / 100
+                parseFloat(tax_rate) || 0,
+                parseFloat(default_starting_cash) || 0, // <-- Simpan nilai baru
                 businessId
             ]
         );
@@ -72,8 +74,7 @@ router.post('/business', protect, isAdmin, async (req, res) => {
     }
 });
 
-// --- Rute lain (email, target, dll) tetap sama ---
-
+// GET /api/settings/email
 router.get('/email', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -91,6 +92,7 @@ router.get('/email', protect, isAdmin, async (req, res) => {
     }
 });
 
+// POST /api/settings/email
 router.post('/email', protect, isAdmin, async (req, res) => {
     const { email, appPassword, sender_name } = req.body;
     const businessId = req.user.business_id;
@@ -120,6 +122,7 @@ router.post('/email', protect, isAdmin, async (req, res) => {
     }
 });
 
+// GET /api/settings/revenue-target
 router.get('/revenue-target', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -134,6 +137,7 @@ router.get('/revenue-target', protect, isAdmin, async (req, res) => {
     }
 });
 
+// POST /api/settings/revenue-target
 router.post('/revenue-target', protect, isAdmin, async (req, res) => {
     const { target } = req.body;
     const businessId = req.user.business_id;
