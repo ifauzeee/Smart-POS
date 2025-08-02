@@ -1,6 +1,6 @@
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ShiftHistoryPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { getShiftHistory, deleteShift, clearShiftHistory, exportShiftHistory } from '../services/api';
 import { toast } from 'react-toastify';
@@ -8,13 +8,10 @@ import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 import ConfirmationModal from '../components/ConfirmationModal';
+import { motion } from 'framer-motion';
+import PageWrapper from '../components/PageWrapper';
 
-const PageContainer = styled.div`
-    padding: 30px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-`;
+// --- Styled Components dengan Animasi ---
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -41,10 +38,19 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+
+// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 `;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
@@ -71,7 +77,7 @@ const Td = styled.td`
     &.nowrap { white-space: nowrap; }
     &.text-left { text-align: left; }
 `;
-const Tr = styled.tr`
+const Tr = styled(motion.tr)`
     &:last-child > td { border-bottom: none; }
 `;
 const ActionButton = styled.button`
@@ -105,7 +111,27 @@ const ClearHistoryButton = styled.button`
     font-weight: 600; display: flex; align-items: center; gap: 8px;
     cursor: pointer; &:hover { opacity: 0.9; }
 `;
+const EmptyStateContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+`;
 
+// --- Varian Animasi ---
+const tableRowVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: (i) => ({
+        opacity: 1,
+        y: 0,
+        transition: { delay: i * 0.05 },
+    }),
+};
+
+// --- Helper Functions ---
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 const formatDateTimeCombined = (start, end) => {
     if (!start || !end) return null;
@@ -122,6 +148,7 @@ const formatDateTimeCombined = (start, end) => {
     );
 };
 
+// --- Komponen Utama ---
 function ShiftHistoryPage() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -130,14 +157,14 @@ function ShiftHistoryPage() {
     const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
     const [modalContent, setModalContent] = useState({ title: '', message: '' });
 
-    const fetchHistory = async () => {
+    const fetchHistory = useCallback(async () => {
         setLoading(true);
         try {
             const res = await getShiftHistory();
             setHistory(res.data);
         } catch (error) { toast.error("Gagal memuat riwayat shift."); }
         finally { setLoading(false); }
-    };
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -151,7 +178,7 @@ function ShiftHistoryPage() {
             }
         }
         fetchHistory();
-    }, []);
+    }, [fetchHistory]);
 
     const openConfirmation = (action, id = null) => {
         setConfirmAction({ action, id });
@@ -172,7 +199,6 @@ function ShiftHistoryPage() {
             link.href = url;
             link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
             document.body.appendChild(link);
-            link.click();
             link.remove();
         } catch (error) {
             toast.error(error.response?.data?.message || "Gagal mengekspor data.");
@@ -195,9 +221,64 @@ function ShiftHistoryPage() {
         }
     };
 
+    const renderTableContent = () => {
+        if (history.length > 0) {
+            return (
+                <TableWrapper>
+                    <Table>
+                        <thead>
+                            <tr>
+                                <Th>Kasir</Th> 
+                                <Th>Waktu Shift</Th>
+                                <Th>Kas Awal</Th> 
+                                <Th>Total Penjualan</Th>
+                                <Th>Kas Akhir Sistem</Th>
+                                {userRole === 'admin' && <Th>Aksi</Th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {history.map((shift, i) => {
+                                const nonCashSales = (shift.card_sales || 0) + (shift.qris_sales || 0) + (shift.other_sales || 0);
+                                return (
+                                    <Tr key={shift.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                        <Td className="text-left">{shift.user_name}</Td> 
+                                        <Td>{formatDateTimeCombined(shift.start_time, shift.end_time)}</Td>
+                                        <Td className="nowrap">{formatCurrency(shift.starting_cash)}</Td>
+                                        <Td className="nowrap">
+                                            <strong>{formatCurrency(shift.total_sales)}</strong>
+                                            <SalesDetail>
+                                                Tunai: {formatCurrency(shift.cash_sales)} <br/>
+                                                Non-Tunai: {formatCurrency(nonCashSales)}
+                                            </SalesDetail>
+                                        </Td>
+                                        <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
+                                        {userRole === 'admin' && (
+                                            <Td>
+                                                <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
+                                                    <FiTrash2 size={18} />
+                                                </ActionButton>
+                                            </Td>
+                                        )}
+                                    </Tr>
+                                );
+                            })}
+                        </tbody>
+                    </Table>
+                </TableWrapper>
+            );
+        }
+
+        return (
+            <EmptyStateContainer>
+                <FiClock size={48} />
+                <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
+            </EmptyStateContainer>
+        );
+    };
+
     return (
         <>
-            <PageContainer>
+            <PageWrapper loading={loading}>
                 <PageHeader>
                     <Title><FiClock /> Riwayat Shift</Title>
                     {userRole === 'admin' && (
@@ -211,57 +292,10 @@ function ShiftHistoryPage() {
                 </PageHeader>
                 
                 <TableContainer>
-                    {loading ? ( <div style={{ padding: '20px' }}><Skeleton count={10} height={50} /></div> ) 
-                    : history.length > 0 ? (
-                        <TableWrapper>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <Th>Kasir</Th> 
-                                        <Th>Waktu Shift</Th>
-                                        <Th>Kas Awal</Th> 
-                                        <Th>Total Penjualan</Th>
-                                        <Th>Kas Akhir Sistem</Th>
-                                        {userRole === 'admin' && <Th>Aksi</Th>}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {history.map(shift => {
-                                        const nonCashSales = (shift.card_sales || 0) + (shift.qris_sales || 0) + (shift.other_sales || 0);
-                                        return (
-                                            <Tr key={shift.id}>
-                                                <Td className="text-left">{shift.user_name}</Td> 
-                                                <Td>{formatDateTimeCombined(shift.start_time, shift.end_time)}</Td>
-                                                <Td className="nowrap">{formatCurrency(shift.starting_cash)}</Td>
-                                                <Td className="nowrap">
-                                                    <strong>{formatCurrency(shift.total_sales)}</strong>
-                                                    <SalesDetail>
-                                                        Tunai: {formatCurrency(shift.cash_sales)} <br/>
-                                                        Non-Tunai: {formatCurrency(nonCashSales)}
-                                                    </SalesDetail>
-                                                </Td>
-                                                <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
-                                                {userRole === 'admin' && (
-                                                    <Td>
-                                                        <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
-                                                            <FiTrash2 size={18} />
-                                                        </ActionButton>
-                                                    </Td>
-                                                )}
-                                            </Tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </Table>
-                        </TableWrapper>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-secondary)' }}>
-                            <FiClock size={48} />
-                            <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
-                        </div>
-                    )}
+                    {renderTableContent()}
                 </TableContainer>
-            </PageContainer>
+            </PageWrapper>
+
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}

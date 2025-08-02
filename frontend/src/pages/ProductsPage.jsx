@@ -1,37 +1,49 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductsPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, deleteProduct } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiEdit, FiTrash2, FiPlus, FiPackage } from 'react-icons/fi';
+import { FiPlus, FiEdit, FiTrash2, FiBox } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
-import { motion } from 'framer-motion'; // <-- IMPORT BARU
-import AnimatedPage from '../components/AnimatedPage'; // <-- IMPORT BARU
+import ConfirmationModal from '../components/ConfirmationModal';
+import { motion } from 'framer-motion';
+import PageWrapper from '../components/PageWrapper';
 
-// --- Styled Components (tidak ada perubahan) ---
-const PageContainer = styled.div`
-    padding: 30px;
-    height: 100%;
+// --- PERBAIKAN DI SINI ---
+// Buat sebuah container baru untuk konten internal halaman
+const PageContent = styled.div`
     display: flex;
     flex-direction: column;
+    height: 100%;
+    width: 100%;
 `;
+// --- AKHIR PERBAIKAN ---
+
+// --- Styled Components ---
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Mencegah header mengecil */
 `;
+
 const Title = styled.h1`
     font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 `;
+
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 12px 20px;
+    padding: 10px 20px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -41,23 +53,38 @@ const AddButton = styled.button`
         background-color: var(--primary-hover);
     }
 `;
+
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
     border: 1px solid var(--border-color);
     overflow: hidden;
-    flex-grow: 1;
+    flex-grow: 1; /* Mengisi sisa ruang vertikal */
     display: flex;
     flex-direction: column;
 `;
+
+// --- PERBAIKAN DI SINI: Menyembunyikan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
+    
+    /* Menghilangkan scrollbar di Chrome, Safari, dan Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    /* Menghilangkan scrollbar di Firefox */
+    scrollbar-width: none;
+    /* Menghilangkan scrollbar di IE dan Edge */
+    -ms-overflow-style: none;
 `;
+// --- AKHIR PERBAIKAN ---
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
+
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -68,29 +95,31 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
+
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
-const Tr = styled.tr`
-    &:last-child {
-        ${Td} {
-            border-bottom: none;
-        }
+
+const Tr = styled(motion.tr)`
+    &:last-child > td {
+        border-bottom: none;
     }
 `;
+
 const ActionButton = styled.button`
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-secondary);
-    margin-right: 15px;
+    margin: 0 5px;
     &:hover {
         color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'};
     }
 `;
+
 const ProductImage = styled.img`
     width: 50px;
     height: 50px;
@@ -98,14 +127,12 @@ const ProductImage = styled.img`
     object-fit: cover;
     border: 1px solid var(--border-color);
 `;
-const PriceRange = styled.span`
-    display: block;
-    font-size: 0.9rem;
-`;
-const StockTotal = styled.span`
+
+const StockStatus = styled.span`
     font-weight: 600;
-    font-size: 1rem;
+    color: ${props => props.$lowStock ? 'var(--orange-color)' : 'inherit'};
 `;
+
 const EmptyStateContainer = styled.div`
     flex-grow: 1;
     display: flex;
@@ -118,6 +145,7 @@ const EmptyStateContainer = styled.div`
     border-radius: 16px;
     border: 1px dashed var(--border-color);
 `;
+
 const EmptyStateTitle = styled.h3`
     font-size: 1.2rem;
     font-weight: 600;
@@ -126,35 +154,32 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
-// --- VARIAN ANIMASI BARU ---
-const tableContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.05, // Setiap item anak akan muncul dengan jeda 0.05 detik
-        },
-    },
-};
-
 const tableRowVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
+    hidden: { opacity: 0, y: 10 },
+    visible: (i) => ({
+        opacity: 1,
+        y: 0,
+        transition: {
+            delay: i * 0.05,
+        },
+    }),
 };
-// --- AKHIR VARIAN ---
+// --- Akhir Styled Components ---
 
 function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null);
 
     const fetchProducts = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
             const res = await getProducts();
             setProducts(res.data);
         } catch (error) {
-            toast.error("Gagal memuat produk.");
+            toast.error("Gagal memuat data produk.");
         } finally {
             setLoading(false);
         }
@@ -164,119 +189,107 @@ function ProductsPage() {
         fetchProducts();
     }, []);
 
-    const handleDeleteProduct = async (id) => {
-        if (window.confirm('Apakah Anda yakin ingin menghapus produk ini? Semua variannya juga akan terhapus.')) {
-            const promise = deleteProduct(id);
-            toast.promise(promise, {
-                pending: 'Menghapus produk...',
-                success: 'Produk berhasil dihapus!',
-                error: 'Gagal menghapus produk.'
-            });
-            try {
-                await promise;
-                fetchProducts();
-            } catch (err) {
-                console.error(err);
-            }
+    const openDeleteConfirmation = (product) => {
+        setProductToDelete(product);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!productToDelete) return;
+
+        try {
+            await toast.promise(
+                deleteProduct(productToDelete.id),
+                {
+                    pending: 'Menghapus produk...',
+                    success: 'Produk berhasil dihapus!',
+                    error: (err) => err.response?.data?.message || 'Gagal menghapus produk.'
+                }
+            );
+            fetchProducts();
+        } catch (error) {
+            console.error("Delete product error:", error);
+        } finally {
+            setIsConfirmOpen(false);
+            setProductToDelete(null);
         }
     };
 
     return (
-        <AnimatedPage>
-            <PageContainer>
-                <PageHeader>
-                    <Title>Manajemen Produk</Title>
-                    <AddButton onClick={() => navigate('/products/new')}>
-                        <FiPlus /> Tambah Produk
-                    </AddButton>
-                </PageHeader>
-
-                {loading ? (
-                    <TableContainer>
-                        <TableWrapper>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <Th>Gambar</Th>
-                                        <Th>Nama Produk</Th>
-                                        <Th>Harga</Th>
-                                        <Th>Total Stok</Th>
-                                        <Th>Aksi</Th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {Array.from({ length: 5 }).map((_, index) => (
-                                        <Tr key={index}>
-                                            {[...Array(5)].map((_, i) => (
-                                                <Td key={i}><Skeleton /></Td>
-                                            ))}
-                                        </Tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </TableWrapper>
-                    </TableContainer>
-                ) : products.length > 0 ? (
-                    <TableContainer>
-                        <TableWrapper>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <Th>Gambar</Th>
-                                        <Th>Nama Produk</Th>
-                                        <Th>Harga</Th>
-                                        <Th>Total Stok</Th>
-                                        <Th>Aksi</Th>
-                                    </tr>
-                                </thead>
-                                {/* --- PERUBAHAN DI SINI: Terapkan animasi --- */}
-                                <motion.tbody
-                                    variants={tableContainerVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                >
-                                    {products.map(product => {
-                                        const prices = product.variants.map(v => v.price);
-                                        // Ambil stok langsung dari produk, bukan dari varian lagi
-                                        const totalStock = product.stock;
-
-                                        return (
-                                            <motion.tr variants={tableRowVariants} key={product.id}>
+        <>
+            <PageWrapper loading={loading}>
+                <PageContent>
+                    <PageHeader>
+                        <Title><FiBox/> Daftar Produk</Title>
+                        <AddButton onClick={() => navigate('/products/new')}>
+                            <FiPlus size={18} /> Tambah Produk
+                        </AddButton>
+                    </PageHeader>
+                    
+                    {products.length > 0 ? (
+                        <TableContainer>
+                            <TableWrapper>
+                                <Table>
+                                    <thead>
+                                        <tr>
+                                            <Th>Gambar</Th>
+                                            <Th>Nama Produk</Th>
+                                            <Th>Kategori</Th>
+                                            <Th>Stok</Th>
+                                            <Th>Harga</Th>
+                                            <Th style={{ textAlign: 'center' }}>Aksi</Th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {products.map((product, i) => (
+                                            <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
                                                 <Td>
-                                                    <ProductImage src={product.image_url || `https://placehold.co/100`} />
+                                                    <ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
                                                 </Td>
                                                 <Td>{product.name}</Td>
+                                                <Td>{product.category_name || '-'}</Td>
                                                 <Td>
-                                                    {prices.length > 0 ? (
-                                                        <PriceRange>
-                                                            Rp {new Intl.NumberFormat('id-ID').format(Math.min(...prices))} - Rp {new Intl.NumberFormat('id-ID').format(Math.max(...prices))}
-                                                        </PriceRange>
-                                                    ) : 'N/A'}
+                                                    <StockStatus $lowStock={product.stock <= product.low_stock_threshold}>
+                                                        {product.stock}
+                                                    </StockStatus>
                                                 </Td>
                                                 <Td>
-                                                    <StockTotal>{totalStock}</StockTotal>
+                                                    {product.variants.length > 1
+                                                        ? `${new Intl.NumberFormat('id-ID').format(product.variants[0].price)} (Varian)`
+                                                        : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.variants[0]?.price || 0)}
                                                 </Td>
-                                                <Td>
-                                                    <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}><FiEdit size={18} /></ActionButton>
-                                                    <ActionButton $danger onClick={() => handleDeleteProduct(product.id)}><FiTrash2 size={18} /></ActionButton>
+                                                <Td style={{ textAlign: 'center' }}>
+                                                    <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}>
+                                                        <FiEdit size={18} />
+                                                    </ActionButton>
+                                                    <ActionButton $danger onClick={() => openDeleteConfirmation(product)}>
+                                                        <FiTrash2 size={18} />
+                                                    </ActionButton>
                                                 </Td>
-                                            </motion.tr>
-                                        );
-                                    })}
-                                </motion.tbody>
-                                {/* --- AKHIR PERUBAHAN --- */}
-                            </Table>
-                        </TableWrapper>
-                    </TableContainer>
-                ) : (
-                    <EmptyStateContainer>
-                        <FiPackage size={48} />
-                        <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
-                        <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
-                    </EmptyStateContainer>
-                )}
-            </PageContainer>
-        </AnimatedPage>
+                                            </Tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </TableWrapper>
+                        </TableContainer>
+                    ) : (
+                        <EmptyStateContainer>
+                            <FiBox size={48} />
+                            <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
+                            <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
+                        </EmptyStateContainer>
+                    )}
+                </PageContent>
+            </PageWrapper>
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Penghapusan"
+                message={`Apakah Anda yakin ingin menghapus produk "${productToDelete?.name}"? Aksi ini akan mengarsipkan produk.`}
+            />
+        </>
     );
 }
 

@@ -4,10 +4,9 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { getCustomers } from '../services/api';
+import { getCustomers, createCustomer } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
-import CustomerFormModal from './CustomerFormModal';
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -22,15 +21,7 @@ const ModalContainer = styled(motion.div)`
 const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
 const ModalTitle = styled.h2` font-size: 1.5rem; margin: 0; color: var(--text-primary);`;
 const CloseButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); `;
-const SearchInput = styled.input`
-    width: 100%; padding: 12px; border: 1px solid var(--border-color);
-    border-radius: 8px; margin-bottom: 20px; background-color: var(--bg-main);
-    color: var(--text-primary); font-size: 1rem;
-    &:focus {
-        outline: none; border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
-    }
-`;
+const SearchInput = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; `;
 const CustomerList = styled.ul` list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; `;
 const CustomerItem = styled.li`
   padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer;
@@ -49,10 +40,9 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isFormOpen, setIsFormOpen] = useState(false);
 
     useEffect(() => {
-        if (!isOpen || isFormOpen) return;
+        if (!isOpen) return;
         const fetchCustomers = async () => {
             setLoading(true);
             try {
@@ -66,55 +56,50 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
         };
         const timer = setTimeout(() => fetchCustomers(), 300);
         return () => clearTimeout(timer);
-    }, [searchTerm, isOpen, isFormOpen]);
+    }, [searchTerm, isOpen]);
     
-    const handleCustomerCreated = (newCustomer) => {
-        setIsFormOpen(false);
-        onSelectCustomer(newCustomer);
+    const handleAddNewCustomer = async () => {
+        const name = prompt("Masukkan nama pelanggan baru:");
+        if (name && name.trim()) {
+            try {
+                const res = await createCustomer({ name: name.trim() });
+                toast.success("Pelanggan baru berhasil ditambahkan!");
+                onSelectCustomer({ id: res.data.customerId, name: name.trim() });
+            } catch (error) {
+                toast.error(error.response?.data?.message || "Gagal menambahkan pelanggan.");
+            }
+        }
     };
 
     if (!isOpen) return null;
 
     return (
-        <>
-            <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }}>
-                    <ModalHeader>
-                        <ModalTitle>Pilih Pelanggan</ModalTitle>
-                        <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
-                    </ModalHeader>
-                    <SearchInput 
-                        type="text"
-                        placeholder="Ketik nama atau nomor telepon..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        autoFocus
-                    />
-                    <CustomerList>
-                        {loading ? <p>Mencari...</p> : customers.map(customer => (
-                            <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
-                                <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
-                                {/* --- PERBAIKAN DIMULAI --- */}
-                                {/* Menggunakan 'phone' sesuai dengan data dari backend */}
-                                <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                                    {customer.phone}
-                                </p>
-                                {/* --- PERBAIKAN SELESAI --- */}
-                            </CustomerItem>
-                        ))}
-                    </CustomerList>
-                    <AddCustomerButton onClick={() => setIsFormOpen(true)}>
-                        <FiUserPlus/> Tambah Pelanggan Baru
-                    </AddCustomerButton>
-                </ModalContainer>
-            </ModalBackdrop>
-
-            <CustomerFormModal
-                isOpen={isFormOpen}
-                onClose={() => setIsFormOpen(false)}
-                onCustomerCreated={handleCustomerCreated}
-            />
-        </>
+        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }}>
+                <ModalHeader>
+                    <ModalTitle>Pilih Pelanggan</ModalTitle>
+                    <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
+                </ModalHeader>
+                <SearchInput 
+                    type="text"
+                    placeholder="Ketik nama atau nomor telepon..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    autoFocus
+                />
+                <CustomerList>
+                    {loading ? <p>Mencari...</p> : customers.map(customer => (
+                        <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
+                            <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
+                            <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
+                                {customer.phone_number}
+                            </p>
+                        </CustomerItem>
+                    ))}
+                </CustomerList>
+                 <AddCustomerButton onClick={handleAddNewCustomer}><FiUserPlus/> Tambah Pelanggan Baru</AddCustomerButton>
+            </ModalContainer>
+        </ModalBackdrop>
     );
 }
 

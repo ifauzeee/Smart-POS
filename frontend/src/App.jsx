@@ -4,6 +4,8 @@ import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
+import 'react-loading-skeleton/dist/skeleton.css';
+
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -48,47 +50,85 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 
+// --- Global Styles for UI/UX Improvements ---
 const GlobalStyle = createGlobalStyle`
-    body {
-        --bg-main: #F7F8FC;
-        --bg-surface: #FFFFFF;
-        --bg-secondary: #FFFFFF;
-        --border-color: #EAEBF0;
-        --text-primary: #1D2129;
-        --text-secondary: #65676B;
-        --text-placeholder: #8A8D91;
-    }
-    body[data-theme='dark'] {
-        --bg-main: #000000;
-        --bg-surface: #121212;
-        --bg-secondary: #1E1E1E;
-        --border-color: #2D2D2D;
-        --text-primary: #F5F6F7;
-        --text-secondary: #A0AEC0;
-        --text-placeholder: #718096;
-    }
+    /* Modern Font & New Color Variables */
     :root {
-        --primary-color: #9D4EDD;
-        --primary-hover: #B583E6;
-        --red-color: #E53E3E;
-        --green-color: #198754;
+        --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        
+        /* Primary Colors */
+        --primary-color: #8E44AD; /* A slightly deeper purple */
+        --primary-hover: #9B59B6;
+        --primary-dark: #7D3C98;
+
+        /* Accent Colors */
+        --red-color: #E74C3C;
+        --green-color: #2ECC71;
+        --orange-color: #F39C12;
+        --blue-color: #3498DB;
+
+        /* Status Badge Colors (for better readability) */
+        --orange-text: #D35400; --orange-bg: #FDEBD0;
+        --green-text: #21618C; --green-bg: #D4E6F1;
+        --red-text: #922B21; --red-bg: #FDEDEC;
+        --grey-text: #566573; --grey-bg: #EAEDED;
     }
-    * { 
-        box-sizing: border-box; margin: 0; padding: 0; 
-    }
+
     body {
-        font-family: 'Poppins', sans-serif;
+        /* Light Theme */
+        --bg-main: #F4F7FC; /* A softer off-white */
+        --bg-surface: #FFFFFF; /* Clean white for cards */
+        --border-color: #EAECEF; /* A softer border */
+        --text-primary: #2C3E50; /* A dark blue for main text */
+        --text-secondary: #808B96; /* A grey for secondary text */
+        --text-placeholder: #ABB2B9;
+    }
+
+    body[data-theme='dark'] {
+        /* Dark Theme */
+        --bg-main: #171A21; /* A bluish-black */
+        --bg-surface: #232834; /* Dark grey for cards */
+        --border-color: #3A4151; /* A more contrasting border */
+        --text-primary: #FDFEFE; /* Clean white */
+        --text-secondary: #A6ACAF; /* Light grey */
+        --text-placeholder: #797D7F;
+    }
+
+    * {
+        box-sizing: border-box; 
+        margin: 0; 
+        padding: 0;
+    }
+
+    html, body, #root {
+        height: 100%;
+    }
+
+    body {
+        font-family: var(--font-sans);
         background-color: var(--bg-main);
         color: var(--text-primary);
-        transition: background-color 0.2s, color 0.2s;
-        overflow: hidden;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        /*
+        The overflow: hidden; rule might prevent scrolling on pages that need it.
+        Consider moving this to a specific component or a more targeted selector if needed.
+        overflow: hidden; 
+        */
+    }
+
+    /* Smooth Transitions for All Interactive Elements */
+    button, a, input, select, textarea {
+        transition: all 0.2s ease-in-out;
     }
 `;
+// --- End of Global Styles ---
 
 function AppContent() {
     const { theme } = useContext(ThemeContext);
+    
+    // The SkeletonTheme base and highlight colors are updated to match the new dark theme colors.
     return (
-        <SkeletonTheme baseColor={theme === 'dark' ? '#121212' : '#EAEBF0'} highlightColor={theme === 'dark' ? '#2D2D2D' : '#ffffff'}>
+        <SkeletonTheme baseColor={theme === 'dark' ? '#232834' : '#EAECEF'} highlightColor={theme === 'dark' ? '#3A4151' : '#ffffff'}>
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
             <BrowserRouter>
@@ -98,12 +138,15 @@ function AppContent() {
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/tutorial/app-password" element={<AppPasswordTutorialPage />} />
+                    
+                    {/* The root path redirects to /pos if a token exists, otherwise to /login */}
                     <Route path="/" element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />} />
                     
                     <Route element={<ProtectedRoute />}>
                         <Route element={<Layout />}>
                             <Route path="/pos" element={<PosPage />} />
                             
+                            {/* Admin-only routes */}
                             <Route element={<AdminRoute />}>
                                 <Route path="/dashboard" element={<DashboardPage />} />
                                 <Route path="/products" element={<ProductsPage />} />
@@ -136,6 +179,7 @@ function AppContent() {
                         </Route>
                     </Route>
                     
+                    {/* Catch-all route for any undefined paths */}
                     <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
             </BrowserRouter>

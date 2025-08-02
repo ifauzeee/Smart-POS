@@ -116,6 +116,9 @@ export const getStaleProducts = (days = 30) => API.get(`/analytics/stale-product
 export const getExpiredProducts = (days = 30) => API.get(`/analytics/expired-products?days=${days}`);
 export const getDailyRevenueProfit = (startDate, endDate) => API.get(`/analytics/daily-revenue-profit?${createQueryParams({ startDate, endDate })}`);
 export const getProductProfitabilityReport = (params) => API.get('/analytics/product-profitability', { params });
+export const exportSalesSummaryPDF = (startDate, endDate) => API.get(`/reports/sales-summary?${createQueryParams({ startDate, endDate })}`, {
+    responseType: 'blob',
+});
 
 // Settings
 export const getEmailSettings = () => API.get('/settings/email');

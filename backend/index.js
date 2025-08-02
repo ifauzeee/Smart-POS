@@ -4,7 +4,29 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
-// Import all route files
+// --- Konfigurasi CORS Final dan Benar ---
+const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'];
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Akses ditolak oleh kebijakan CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    exposedHeaders: ['Content-Disposition'],
+};
+
+const app = express();
+
+// Aktifkan pre-flight requests SEBELUM middleware lainnya
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
+
+// Impor semua rute aplikasi
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -23,35 +45,11 @@ const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
 const rawMaterialRoutes = require('./routes/rawMaterialRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 
-const app = express();
-
-// Configure CORS with all necessary options
-app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Content-Disposition'],
-    credentials: true,
-    exposedHeaders: ['Content-Disposition'],
-}));
-
-// Middleware to read JSON
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Optional: Basic error handling for body-parser
-app.use((err, req, res, next) => {
-    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
-        console.error('Bad JSON:', err.message);
-        return res.status(400).send({ message: 'Permintaan tidak valid: JSON salah format.' });
-    }
-    next();
-});
-
-// Middleware to serve static files (uploaded images)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Register all API routes
+// Pendaftaran semua rute
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
@@ -70,13 +68,7 @@ app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
 
-// Basic root route for the backend server
-app.get('/', (req, res) => {
-    res.status(200).send('Smart POS Backend API is running!');
-});
+app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 
 const port = process.env.PORT || 5000;
-
-app.listen(port, () => {
-    console.log(`🚀 Backend server running at http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`🚀 Backend server running at http://localhost:${port}`));

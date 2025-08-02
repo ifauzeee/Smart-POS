@@ -1,20 +1,18 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\SupplierPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../services/api';
 import SupplierFormModal from '../components/SupplierFormModal';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiTruck } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import PageWrapper from '../components/PageWrapper';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 
 // --- Styled Components ---
-const PageContainer = styled.div`
-    padding: 30px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-`;
-
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -25,6 +23,9 @@ const PageHeader = styled.header`
 
 const Title = styled.h1`
     font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 `;
 
 const AddButton = styled.button`
@@ -52,8 +53,8 @@ const TableContainer = styled.div`
 `;
 
 const TableWrapper = styled.div`
-    overflow-x: auto; /* <-- UPDATED: Added horizontal scroll */
-    flex-grow: 1; /* <-- UPDATED: Ensure it grows to fill space */
+    overflow-x: auto;
+    flex-grow: 1;
 `;
 
 const Table = styled.table`
@@ -76,10 +77,10 @@ const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
-    vertical-align: middle; /* Added for better alignment */
+    vertical-align: middle;
 `;
 
-const Tr = styled.tr`
+const Tr = styled(motion.tr)`
     &:last-child {
         ${Td} { border-bottom: none; }
     }
@@ -102,9 +103,6 @@ const EmptyStateContainer = styled.div`
     align-items: center;
     text-align: center;
     color: var(--text-secondary);
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px dashed var(--border-color);
 `;
 
 const EmptyStateTitle = styled.h3`
@@ -115,13 +113,24 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
+// Animation variants for table rows
+const tableRowVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: (i) => ({
+        opacity: 1,
+        y: 0,
+        transition: { delay: i * 0.05 },
+    }),
+};
 
 function SupplierPage() {
     const [suppliers, setSuppliers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false); // Tambahkan state baru
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [supplierToDelete, setSupplierToDelete] = useState(null);
 
     const fetchSuppliers = async () => {
         setLoading(true);
@@ -150,7 +159,7 @@ function SupplierPage() {
     };
 
     const handleSaveSupplier = async (supplierData) => {
-        setIsSubmitting(true); // Set true di awal
+        setIsSubmitting(true);
         const promise = editingSupplier
             ? updateSupplier(editingSupplier.id, supplierData)
             : createSupplier(supplierData);
@@ -159,42 +168,43 @@ function SupplierPage() {
             await toast.promise(promise, {
                 pending: 'Menyimpan data...',
                 success: 'Data berhasil disimpan!',
-                error: 'Gagal menyimpan data.'
+                error: (err) => err.response?.data?.message || 'Gagal menyimpan data.'
             });
             fetchSuppliers();
         } catch (err) {
             console.error(err);
         } finally {
-            setIsSubmitting(false); // Set false di akhir
+            setIsSubmitting(false);
             handleCloseModal();
         }
     };
+    
+    const openDeleteConfirmation = (supplier) => {
+        setSupplierToDelete(supplier);
+        setIsConfirmOpen(true);
+    };
 
-    const handleDeleteSupplier = async (id) => {
-        if (window.confirm('Yakin ingin menghapus pemasok ini?')) {
-            await toast.promise(deleteSupplier(id), {
+    const confirmDelete = async () => {
+        if (!supplierToDelete) return;
+
+        try {
+            await toast.promise(deleteSupplier(supplierToDelete.id), {
                 pending: 'Menghapus data...',
                 success: 'Pemasok berhasil dihapus!',
-                error: 'Gagal menghapus data.'
+                error: (err) => err.response?.data?.message || 'Gagal menghapus data.'
             });
             fetchSuppliers();
+        } catch (err) {
+            console.error("Delete supplier error:", err);
+        } finally {
+            setIsConfirmOpen(false);
+            setSupplierToDelete(null);
         }
     };
 
-    return (
-        <PageContainer>
-            <PageHeader>
-                <Title>Manajemen Pemasok</Title>
-                <AddButton onClick={() => handleOpenModal()}>
-                    <FiPlus /> Tambah Pemasok
-                </AddButton>
-            </PageHeader>
-            
-            {loading ? (
-                <TableContainer>
-                    <Skeleton count={5} height={70} style={{borderRadius: '16px', margin: '15px 20px'}}/>
-                </TableContainer>
-            ) : suppliers.length > 0 ? (
+    const renderTableContent = () => {
+        if (suppliers.length > 0) {
+            return (
                 <TableContainer>
                     <TableWrapper>
                         <Table>
@@ -208,15 +218,15 @@ function SupplierPage() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {suppliers.map(supplier => (
-                                    <Tr key={supplier.id}>
+                                {suppliers.map((supplier, i) => (
+                                    <Tr key={supplier.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
                                         <Td>{supplier.name}</Td>
-                                        <Td>{supplier.contact_person}</Td>
-                                        <Td>{supplier.phone}</Td>
-                                        <Td>{supplier.email}</Td>
+                                        <Td>{supplier.contact_person || '-'}</Td>
+                                        <Td>{supplier.phone || '-'}</Td>
+                                        <Td>{supplier.email || '-'}</Td>
                                         <Td>
                                             <ActionButton onClick={() => handleOpenModal(supplier)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDeleteSupplier(supplier.id)}><FiTrash2 size={18} /></ActionButton>
+                                            <ActionButton $danger onClick={() => openDeleteConfirmation(supplier)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
                                 ))}
@@ -224,22 +234,47 @@ function SupplierPage() {
                         </Table>
                     </TableWrapper>
                 </TableContainer>
-            ) : (
-                <EmptyStateContainer>
-                    <FiTruck size={48} />
-                    <EmptyStateTitle>Belum Ada Pemasok</EmptyStateTitle>
-                    <p>Klik tombol di pojok kanan atas untuk menambahkan pemasok pertama Anda.</p>
-                </EmptyStateContainer>
-            )}
+            );
+        }
+
+        return (
+            <EmptyStateContainer>
+                <FiTruck size={48} />
+                <EmptyStateTitle>Belum Ada Pemasok</EmptyStateTitle>
+                <p>Klik tombol di pojok kanan atas untuk menambahkan pemasok pertama Anda.</p>
+            </EmptyStateContainer>
+        );
+    };
+
+    return (
+        <>
+            <PageWrapper loading={loading}>
+                <PageHeader>
+                    <Title><FiTruck /> Manajemen Pemasok</Title>
+                    <AddButton onClick={() => handleOpenModal()}>
+                        <FiPlus /> Tambah Pemasok
+                    </AddButton>
+                </PageHeader>
+                
+                {renderTableContent()}
+            </PageWrapper>
 
             <SupplierFormModal 
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
                 onSave={handleSaveSupplier}
                 supplier={editingSupplier}
-                isSubmitting={isSubmitting} // Kirim prop baru
+                isSubmitting={isSubmitting}
             />
-        </PageContainer>
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Penghapusan"
+                message={`Apakah Anda yakin ingin menghapus pemasok "${supplierToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+            />
+        </>
     );
 }
 

@@ -7,6 +7,7 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiAward, FiPhone, FiMail, FiUsers } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
+import PageWrapper from '../components/PageWrapper'; 
 
 // --- Styled Components ---
 const PageContainer = styled.div`

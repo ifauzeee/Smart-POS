@@ -1,110 +1,113 @@
-import React, { useState, useEffect } from 'react';
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerFormModal.jsx
+
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FiX } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import { FiX, FiSave } from 'react-icons/fi';
+import { createCustomer } from '../services/api';
+import { toast } from 'react-toastify';
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background-color: rgba(0, 0, 0, 0.7); display: flex;
-  justify-content: center; align-items: center; z-index: 1000;
+  justify-content: center; align-items: center; z-index: 1002;
 `;
 const ModalContainer = styled(motion.div)`
   background-color: var(--bg-surface); border-radius: 16px;
-  border: 1px solid var(--border-color); width: 100%;
-  max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  width: 100%; max-width: 450px; padding: 30px;
 `;
-const ModalHeader = styled.div`
-  padding: 20px 25px; border-bottom: 1px solid var(--border-color);
-  display: flex; justify-content: space-between; align-items: center;
+const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; `;
+const ModalTitle = styled.h2` font-size: 1.5rem; margin: 0; color: var(--text-primary);`;
+const CloseButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); `;
+const Form = styled.form` display: flex; flex-direction: column; gap: 20px; `;
+const InputGroup = styled.div` display: flex; flex-direction: column; gap: 8px; `;
+const Label = styled.label` font-weight: 500; color: var(--text-secondary); `;
+const Input = styled.input`
+    width: 100%; padding: 12px; border: 1px solid var(--border-color);
+    border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary);
 `;
-const ModalTitle = styled.h3` font-size: 1.2rem; font-weight: 600; `;
-const CloseButton = styled.button` background: none; border: none; color: var(--text-secondary); cursor: pointer; &:hover { color: var(--text-primary); } `;
-const ModalBody = styled.div` padding: 25px; display: grid; grid-template-columns: 1fr; gap: 20px; `;
-const InputGroup = styled.div` grid-column: ${props => props.$fullWidth ? '1 / -1' : 'auto'}; `;
-const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); `;
-const Input = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; `;
-const ModalFooter = styled.div` padding: 20px 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 15px; `;
-const Button = styled.button`
-  padding: 10px 25px; border-radius: 8px; border: 1px solid var(--border-color);
-  font-weight: 600; cursor: pointer;
-  background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'};
-  color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
-  &:hover { opacity: 0.9; }
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+const SaveButton = styled.button`
+    padding: 12px 20px; border-radius: 8px; border: none;
+    background-color: var(--primary-color); color: white; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 10px;
+    &:disabled { opacity: 0.5; }
 `;
 
-function CustomerFormModal({ isOpen, onClose, onSave, customer, isSubmitting }) {
-    const [formData, setFormData] = useState({});
-    const isEditing = Boolean(customer);
-
-    useEffect(() => {
-        setFormData(customer || { name: '', phone: '', email: '', address: '' });
-    }, [customer, isOpen]);
+function CustomerFormModal({ isOpen, onClose, onCustomerCreated }) {
+    const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSave(formData);
+        if (!formData.name.trim()) {
+            return toast.warn("Nama pelanggan tidak boleh kosong.");
+        }
+        setIsSubmitting(true);
+        try {
+            // --- PERBAIKAN DIMULAI ---
+            // Mengirim 'phone' sesuai dengan yang diharapkan backend, bukan 'phone_number'
+            const res = await toast.promise(
+                createCustomer({
+                    name: formData.name,
+                    phone: formData.phone,
+                    email: formData.email
+                }),
+            // --- PERBAIKAN SELESAI ---
+                {
+                    pending: 'Menyimpan pelanggan...',
+                    success: 'Pelanggan baru berhasil dibuat!',
+                    error: (err) => err.response?.data?.message || "Gagal menyimpan pelanggan."
+                }
+            );
+            onCustomerCreated({ id: res.data.customerId, ...formData });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
-    const backdropVariants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };
-    const modalVariants = { hidden: { y: "-50px", opacity: 0 }, visible: { y: "0", opacity: 1 } };
+    if (!isOpen) return null;
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <ModalBackdrop initial="hidden" animate="visible" exit="hidden" variants={backdropVariants}>
-                    <ModalContainer variants={modalVariants}>
-                        <form onSubmit={handleSubmit}>
-                            <ModalHeader>
-                                <ModalTitle>{isEditing ? 'Edit Pelanggan' : 'Tambah Pelanggan Baru'}</ModalTitle>
-                                <CloseButton type="button" onClick={onClose}><FiX size={24} /></CloseButton>
-                            </ModalHeader>
-                            <ModalBody>
-                                <InputGroup>
-                                    <Label>Nama Pelanggan</Label>
-                                    <Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus />
-                                </InputGroup>
-                                <InputGroup>
-                                    <Label>Telepon</Label>
-                                    <Input name="phone" value={formData.phone || ''} onChange={handleChange} />
-                                </InputGroup>
-                                <InputGroup>
-                                    <Label>Email</Label>
-                                    <Input type="email" name="email" value={formData.email || ''} onChange={handleChange} />
-                                </InputGroup>
-                                <InputGroup>
-                                    <Label>Alamat</Label>
-                                    <Input as="textarea" rows="2" name="address" value={formData.address || ''} onChange={handleChange} />
-                                </InputGroup>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button type="button" onClick={onClose}>Batal</Button>
-                                <Button type="submit" $primary disabled={isSubmitting}>
-                                    {isSubmitting ? 'Menyimpan...' : 'Simpan'}
-                                </Button>
-                            </ModalFooter>
-                        </form>
-                    </ModalContainer>
-                </ModalBackdrop>
-            )}
-        </AnimatePresence>
+        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }}>
+                <ModalHeader>
+                    <ModalTitle>Tambah Pelanggan Baru</ModalTitle>
+                    <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
+                </ModalHeader>
+                <Form onSubmit={handleSubmit}>
+                    <InputGroup>
+                        <Label htmlFor="name">Nama Pelanggan*</Label>
+                        <Input id="name" name="name" value={formData.name} onChange={handleChange} required autoFocus />
+                    </InputGroup>
+                    <InputGroup>
+                        <Label htmlFor="phone">Nomor Telepon</Label>
+                        <Input id="phone" name="phone" value={formData.phone} onChange={handleChange} />
+                    </InputGroup>
+                    <InputGroup>
+                        <Label htmlFor="email">Email</Label>
+                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
+                    </InputGroup>
+                    <SaveButton type="submit" disabled={isSubmitting}>
+                        <FiSave/> {isSubmitting ? 'Menyimpan...' : 'Simpan Pelanggan'}
+                    </SaveButton>
+                </Form>
+            </ModalContainer>
+        </ModalBackdrop>
     );
 }
 
-export default CustomerFormModal;
-
 CustomerFormModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
-  customer: PropTypes.object,
-  isSubmitting: PropTypes.bool.isRequired,
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onCustomerCreated: PropTypes.func.isRequired,
 };
+
+export default CustomerFormModal;

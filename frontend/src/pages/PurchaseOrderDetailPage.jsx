@@ -1,25 +1,55 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PurchaseOrderDetailPage.jsx
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getPurchaseOrderById } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiArrowLeft, FiClipboard, FiTruck } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import { FiArrowLeft, FiPlusCircle } from 'react-icons/fi'; // <-- FiEdit sudah dihapus
 
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
-const PageHeader = styled.header` margin-bottom: 20px; `;
-const Title = styled.h1` font-size: 1.8rem; display: flex; align-items: center; gap: 12px; `;
-const BackLink = styled(Link)` display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 20px; font-weight: 500; &:hover { color: var(--text-primary); } `;
-const Grid = styled.div` display: grid; grid-template-columns: 1fr 2fr; gap: 30px; @media (max-width: 768px) { grid-template-columns: 1fr; }`;
-const InfoCard = styled.div` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 25px; `;
-const CardTitle = styled.h3` font-size: 1.2rem; font-weight: 600; padding-bottom: 15px; margin: 0 0 20px 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; `;
-const InfoText = styled.p` color: var(--text-secondary); margin: 0 0 10px 0; strong { color: var(--text-primary); display: block; margin-bottom: 2px; }`;
+const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
+const Title = styled.h1` font-size: 1.8rem; `;
+const HeaderActions = styled.div` display: flex; gap: 15px; `;
+const BackButton = styled.button`
+    background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 10px 18px; font-weight: 600; display: flex; align-items: center;
+    gap: 8px; cursor: pointer; &:hover { background-color: var(--bg-main); }
+`;
+const ReceiveButton = styled.button`
+    background-color: var(--primary-color); color: white; border: none;
+    border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex;
+    align-items: center; gap: 8px; cursor: pointer;
+    &:hover { background-color: var(--primary-hover); }
+`;
+const DetailsGrid = styled.div`
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    background-color: var(--bg-surface); border: 1px solid var(--border-color);
+    padding: 25px; border-radius: 16px; margin-bottom: 30px;
+`;
+const DetailItem = styled.div``;
+const DetailLabel = styled.p` font-weight: 500; color: var(--text-secondary); margin: 0 0 5px 0; `;
+const DetailValue = styled.p` font-weight: 600; color: var(--text-primary); margin: 0; `;
+const StatusBadge = styled.span`
+    padding: 5px 12px; border-radius: 20px; font-weight: 600; font-size: 0.9rem;
+    color: ${props => `var(--${props.$statusColor}-text)`};
+    background-color: ${props => `var(--${props.$statusColor}-bg)`};
+`;
+const TableContainer = styled.div` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; `;
 const Table = styled.table` width: 100%; border-collapse: collapse; `;
-const Th = styled.th` text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); `;
-const Td = styled.td` padding: 12px; border-bottom: 1px solid var(--border-color); `;
-const ReceiveButton = styled.button` background-color: var(--green-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 20px; &:hover { opacity: 0.9; } `;
+const Th = styled.th` text-align: left; padding: 15px 20px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); `;
+const Td = styled.td` padding: 15px 20px; border-bottom: 1px solid var(--border-color); `;
+const Tr = styled.tr` &:last-child > td { border-bottom: none; } `;
 
-const formatCurrency = (value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(value || 0);
+const getStatusInfo = (status) => {
+    switch (status) {
+        case 'PENDING': return { text: 'Tertunda', color: 'orange' };
+        case 'COMPLETED': return { text: 'Selesai', color: 'green' };
+        case 'CANCELLED': return { text: 'Dibatalkan', color: 'red' };
+        default: return { text: status, color: 'grey' };
+    }
+};
 
 function PurchaseOrderDetailPage() {
     const { id } = useParams();
@@ -27,25 +57,24 @@ function PurchaseOrderDetailPage() {
     const [poDetails, setPoDetails] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchDetails = useCallback(async () => {
-        try {
-            const res = await getPurchaseOrderById(id);
-            setPoDetails(res.data);
-        } catch (error) {
-            toast.error("Gagal memuat detail Purchase Order.");
-            navigate('/purchase-orders');
-        } finally {
-            setLoading(false);
-        }
+    useEffect(() => {
+        const fetchDetails = async () => {
+            setLoading(true);
+            try {
+                const res = await getPurchaseOrderById(id);
+                setPoDetails(res.data);
+            } catch (error) {
+                toast.error("Gagal memuat detail pesanan pembelian.");
+                navigate('/purchase-orders');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDetails();
     }, [id, navigate]);
 
-    useEffect(() => {
-        fetchDetails();
-    }, [fetchDetails]);
-
     const handleReceiveStock = () => {
-        // We pass the items as state through the navigation
-        navigate('/receive-stock', { state: { poItems: poDetails.items } });
+        navigate('/receive-stock', { state: { poItems: poDetails.items, poId: id, poNumber: poDetails.po_number } });
     };
 
     if (loading) {
@@ -53,43 +82,72 @@ function PurchaseOrderDetailPage() {
     }
 
     if (!poDetails) {
-        return <PageContainer>Data tidak ditemukan.</PageContainer>;
+        return <PageContainer><p>Detail tidak ditemukan.</p></PageContainer>;
     }
+
+    const statusInfo = getStatusInfo(poDetails.status);
 
     return (
         <PageContainer>
             <PageHeader>
-                <BackLink to="/purchase-orders"><FiArrowLeft /> Kembali ke Daftar PO</BackLink>
-                <Title><FiClipboard /> Detail Purchase Order #{poDetails.po_number}</Title>
-            </PageHeader>
-            <Grid>
-                <InfoCard>
-                    <CardTitle><FiTruck /> Info Pemasok & PO</CardTitle>
-                    <InfoText><strong>Pemasok:</strong> {poDetails.supplier_name}</InfoText>
-                    <InfoText><strong>Status:</strong> {poDetails.status}</InfoText>
-                    <InfoText><strong>Tanggal Dibuat:</strong> {new Date(poDetails.created_at).toLocaleDateString('id-ID')}</InfoText>
-                    <InfoText><strong>Catatan:</strong> {poDetails.notes || '-'}</InfoText>
-                    {poDetails.status === 'SUBMITTED' && (
-                        <ReceiveButton onClick={handleReceiveStock}>Terima Barang</ReceiveButton>
+                <Title>Detail Pesanan #{poDetails.po_number}</Title>
+                <HeaderActions>
+                    <BackButton onClick={() => navigate('/purchase-orders')}><FiArrowLeft /> Kembali</BackButton>
+                    {poDetails.status === 'PENDING' && (
+                        <ReceiveButton onClick={handleReceiveStock}>
+                            <FiPlusCircle /> Terima Stok
+                        </ReceiveButton>
                     )}
-                </InfoCard>
-                <InfoCard>
-                    <CardTitle>Item Dipesan</CardTitle>
-                    <Table>
-                        <thead><tr><Th>Produk</Th><Th>Jumlah</Th><Th>Harga Beli</Th><Th>Subtotal</Th></tr></thead>
-                        <tbody>
-                            {poDetails.items.map(item => (
-                                <tr key={item.id}>
-                                    <Td>{item.product_name}</Td>
-                                    <Td>{item.quantity}</Td>
-                                    <Td>{formatCurrency(item.cost_price)}</Td>
-                                    <Td>{formatCurrency(item.quantity * item.cost_price)}</Td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                </InfoCard>
-            </Grid>
+                </HeaderActions>
+            </PageHeader>
+
+            <DetailsGrid>
+                <DetailItem>
+                    <DetailLabel>Nomor PO</DetailLabel>
+                    <DetailValue>{poDetails.po_number}</DetailValue>
+                </DetailItem>
+                <DetailItem>
+                    <DetailLabel>Pemasok</DetailLabel>
+                    <DetailValue>{poDetails.supplier_name}</DetailValue>
+                </DetailItem>
+                <DetailItem>
+                    <DetailLabel>Status</DetailLabel>
+                    <DetailValue>
+                        <StatusBadge $statusColor={statusInfo.color}>{statusInfo.text}</StatusBadge>
+                    </DetailValue>
+                </DetailItem>
+                <DetailItem>
+                    <DetailLabel>Tanggal Pesan</DetailLabel>
+                    <DetailValue>{new Date(poDetails.order_date).toLocaleDateString('id-ID')}</DetailValue>
+                </DetailItem>
+                 <DetailItem>
+                    <DetailLabel>Total Pesanan</DetailLabel>
+                    <DetailValue>Rp {new Intl.NumberFormat('id-ID').format(poDetails.total_amount)}</DetailValue>
+                </DetailItem>
+            </DetailsGrid>
+
+            <TableContainer>
+                <Table>
+                    <thead>
+                        <tr>
+                            <Th>Produk</Th>
+                            <Th>Jumlah</Th>
+                            <Th>Harga Satuan</Th>
+                            <Th>Subtotal</Th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {poDetails.items.map(item => (
+                            <Tr key={item.id}>
+                                <Td>{item.product_name}</Td>
+                                <Td>{item.quantity}</Td>
+                                <Td>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</Td>
+                                <Td>Rp {new Intl.NumberFormat('id-ID').format(item.quantity * item.price)}</Td>
+                            </Tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </TableContainer>
         </PageContainer>
     );
 }

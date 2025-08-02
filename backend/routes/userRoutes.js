@@ -4,16 +4,13 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
 const nodemailer = require('nodemailer');
-const { decrypt } = require('../utils/encryption'); // Needed for sending email with app password
-const { body, param, validationResult } = require('express-validator'); // Import validator
+const { decrypt } = require('../utils/encryption');
+const { body, param, validationResult } = require('express-validator');
 
 const router = express.Router();
-
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
 
 // --- Validation Rules ---
 
@@ -63,12 +60,6 @@ const resetPasswordValidationRules = [
 
 // --- User Authentication & Profile Endpoints ---
 
-/**
- * @route POST /api/users/register
- * @desc Register a new admin user and initialize a new business.
- * This route is designed for the initial setup of the application.
- * @access Public
- */
 router.post('/register', registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -88,31 +79,25 @@ router.post('/register', registerValidationRules, async (req, res) => {
         }
 
         const [[anyAdminBusiness]] = await connection.query('SELECT id FROM businesses WHERE admin_created = 1 LIMIT 1');
-
+        
         let role_id;
         let businessId;
 
         if (!anyAdminBusiness) {
-            // This is the first admin registration for the entire application
             if (registrationKey !== process.env.ADMIN_REGISTRATION_KEY) {
                 await connection.rollback();
                 return res.status(403).json({ message: 'Kode registrasi admin tidak valid.' });
             }
 
-            // Create new business
             const [businessResult] = await connection.query('INSERT INTO businesses (business_name, admin_created) VALUES (?, ?)', [`${name}'s Business`, 1]);
             businessId = businessResult.insertId;
 
-            // Create default 'admin' and 'kasir' roles for the new business
             const [adminRoleResult] = await connection.query(`INSERT INTO roles (business_id, name, description) VALUES (?, 'admin', 'Akses penuh ke semua fitur.')`, [businessId]);
             role_id = adminRoleResult.insertId;
             await connection.query(`INSERT INTO roles (business_id, name, description) VALUES (?, 'kasir', 'Akses terbatas untuk operasional kasir.')`, [businessId]);
-
-            // Initialize email settings for the new business
             await connection.query('INSERT INTO email_settings (business_id) VALUES (?)', [businessId]);
 
         } else {
-            // If an admin business already exists, prevent further direct admin registrations
             await connection.rollback();
             return res.status(403).json({ message: 'Registrasi akun admin hanya dapat dilakukan satu kali. Hubungi admin yang sudah ada untuk membuat akun baru.' });
         }
@@ -131,7 +116,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
         const token = jwt.sign({ id: newUserId, name, email, role: 'admin', business_id: businessId }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         await logActivity(businessId, newUserId, 'USER_REGISTER', `New admin user registered: ${name}.`);
-
         res.status(201).json({ message: 'Registrasi berhasil!', token });
 
     } catch (error) {
@@ -143,11 +127,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
     }
 });
 
-/**
- * @route POST /api/users/login
- * @desc Authenticate user and return JWT token.
- * @access Public
- */
 router.post('/login', loginValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -155,7 +134,7 @@ router.post('/login', loginValidationRules, async (req, res) => {
     }
 
     const { email, password } = req.body;
-    let businessId = null; // Initialize businessId for logging
+    let businessId = null;
 
     try {
         const [[user]] = await db.query(
@@ -170,7 +149,7 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(401).json({ message: 'Email atau password salah.' });
         }
 
-        businessId = user.business_id; // Set businessId if user found
+        businessId = user.business_id;
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
@@ -178,7 +157,6 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(401).json({ message: 'Email atau password salah.' });
         }
 
-        // Check if user is active
         if (user.is_active === 0) {
             await logActivity(businessId, user.id, 'USER_LOGIN_FAILED', `User ${user.name} failed login (account inactive).`);
             return res.status(403).json({ message: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
@@ -195,17 +173,11 @@ router.post('/login', loginValidationRules, async (req, res) => {
 
     } catch (error) {
         console.error("Login Error:", error);
-        // Log error even if businessId is null (e.g., if user not found at all)
         await logActivity(businessId || null, null, 'USER_LOGIN_ERROR', `Login attempt for ${email} failed. Error: ${error.message}`);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });
 
-/**
- * @route POST /api/users/forgot-password
- * @desc Send password reset link to user's email.
- * @access Public
- */
 router.post('/forgot-password', forgotPasswordValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -219,7 +191,6 @@ router.post('/forgot-password', forgotPasswordValidationRules, async (req, res) 
         const [[user]] = await db.query('SELECT id, name, business_id FROM users WHERE email = ? AND is_active = 1', [email]);
 
         if (!user) {
-            // For security, always return a generic success message even if email not found
             return res.status(200).json({ message: 'Jika email terdaftar, tautan reset password telah dikirim.' });
         }
 
@@ -232,9 +203,8 @@ router.post('/forgot-password', forgotPasswordValidationRules, async (req, res) 
             return res.status(500).json({ message: 'Pengaturan email bisnis belum dikonfigurasi. Hubungi admin.' });
         }
 
-        const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' }); // Token expires in 1 hour
+        const resetToken = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        // Store reset token in DB (or update if exists)
         await db.query(
             'INSERT INTO password_resets (user_id, token) VALUES (?, ?) ON DUPLICATE KEY UPDATE token = ?, created_at = CURRENT_TIMESTAMP',
             [user.id, resetToken, resetToken]
@@ -243,28 +213,19 @@ router.post('/forgot-password', forgotPasswordValidationRules, async (req, res) 
         const decryptedAppPassword = decrypt(emailSettings.app_password);
 
         const transporter = nodemailer.createTransport({
-            service: 'gmail', // Or your SMTP details
+            service: 'gmail',
             auth: {
                 user: emailSettings.sender_email,
                 pass: decryptedAppPassword,
             },
         });
 
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`; // Adjust frontend URL
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
         const mailOptions = {
             from: `"${emailSettings.sender_name || 'Smart POS'}" <${emailSettings.sender_email}>`,
             to: user.email,
             subject: 'Reset Password Smart POS Anda',
-            html: `
-                <p>Halo ${user.name},</p>
-                <p>Kami menerima permintaan untuk mereset password akun Smart POS Anda.</p>
-                <p>Silakan klik tautan berikut untuk mereset password Anda:</p>
-                <p><a href="${resetUrl}">${resetUrl}</a></p>
-                <p>Tautan ini akan kedaluwarsa dalam 1 jam.</p>
-                <p>Jika Anda tidak meminta reset password ini, abaikan email ini.</p>
-                <p>Terima kasih,</p>
-                <p>Tim Smart POS</p>
-            `,
+            html: `<p>Halo ${user.name},</p><p>Klik tautan berikut untuk mereset password Anda:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Tautan ini akan kedaluwarsa dalam 1 jam.</p>`,
         };
 
         await transporter.sendMail(mailOptions);
@@ -278,11 +239,6 @@ router.post('/forgot-password', forgotPasswordValidationRules, async (req, res) 
     }
 });
 
-/**
- * @route POST /api/users/reset-password/:token
- * @desc Reset user's password using a valid token.
- * @access Public
- */
 router.post('/reset-password/:token', resetPasswordValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -313,8 +269,8 @@ router.post('/reset-password/:token', resetPasswordValidationRules, async (req, 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        await db.query('UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [hashedPassword, userId]);
-        await db.query('DELETE FROM password_resets WHERE user_id = ?', [userId]); // Invalidate token
+        await db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
+        await db.query('DELETE FROM password_resets WHERE user_id = ?', [userId]);
 
         await logActivity(businessId, userId, 'PASSWORD_RESET_SUCCESS', `Password for user ID ${userId} reset successfully.`);
         res.status(200).json({ message: 'Password berhasil direset!' });
@@ -327,33 +283,22 @@ router.post('/reset-password/:token', resetPasswordValidationRules, async (req, 
             return res.status(400).json({ message: 'Tautan reset password tidak valid.' });
         }
         console.error("Reset Password Error:", error);
-        await logActivity(businessId || null, userId || null, 'PASSWORD_RESET_FAILED', `Password reset failed for user ID ${userId}. Error: ${error.message}`);
+        await logActivity(businessId || null, userId || null, 'PASSWORD_RESET_FAILED', `Password reset failed. Error: ${error.message}`);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });
 
-/**
- * @route GET /api/users/profile
- * @desc Get the profile of the currently logged-in user.
- * @access Private (Authenticated users)
- */
 router.get('/profile', protect, (req, res) => {
-    // req.user is populated by the protect middleware
     res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, business_id: req.user.business_id });
 });
 
 // --- Admin-managed User Endpoints ---
 
-/**
- * @route GET /api/users
- * @desc Get all users for the current business.
- * @access Private (Admin only)
- */
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const [users] = await db.query(
-            `SELECT u.id, u.name, u.email, u.created_at, u.updated_at, u.is_active, r.name as role_name, u.role_id
+            `SELECT u.id, u.name, u.email, u.created_at, u.is_active, r.name as role_name, u.role_id
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
              WHERE u.business_id = ?
@@ -367,11 +312,6 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/users/:id
- * @desc Get a single user's details by ID for the current business.
- * @access Private (Admin only)
- */
 router.get('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -383,7 +323,7 @@ router.get('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
         const businessId = req.user.business_id;
 
         const [[user]] = await db.query(
-            `SELECT u.id, u.name, u.email, u.created_at, u.updated_at, u.is_active, r.name as role_name, u.role_id
+            `SELECT u.id, u.name, u.email, u.created_at, u.is_active, r.name as role_name, u.role_id
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
              WHERE u.id = ? AND u.business_id = ?`,
@@ -400,11 +340,6 @@ router.get('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
     }
 });
 
-/**
- * @route POST /api/users
- * @desc Create a new user for the current business (Admin only).
- * @access Private (Admin only)
- */
 router.post('/', protect, isAdmin, createUserValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -421,7 +356,6 @@ router.post('/', protect, isAdmin, createUserValidationRules, async (req, res) =
             return res.status(400).json({ message: 'Email ini sudah digunakan di bisnis Anda.' });
         }
 
-        // Verify if the role_id exists and belongs to the same business
         const [[role]] = await db.query('SELECT id FROM roles WHERE id = ? AND business_id = ?', [role_id, businessId]);
         if (!role) {
             return res.status(400).json({ message: 'ID peran tidak valid atau bukan milik bisnis Anda.' });
@@ -444,11 +378,6 @@ router.post('/', protect, isAdmin, createUserValidationRules, async (req, res) =
     }
 });
 
-/**
- * @route PUT /api/users/:id
- * @desc Update an existing user for the current business (Admin only).
- * @access Private (Admin only)
- */
 router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -456,7 +385,7 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
     }
 
     const userIdToUpdate = req.params.id;
-    const { name, email, password, role_id, is_active } = req.body; // Added is_active
+    const { name, email, password, role_id, is_active } = req.body;
     const businessId = req.user.business_id;
     const adminUserId = req.user.id;
 
@@ -466,12 +395,10 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
             return res.status(404).json({ message: 'Pengguna tidak ditemukan atau Anda tidak punya akses.' });
         }
 
-        // Prevent admin from deactivating/changing role of themselves
         if (parseInt(userIdToUpdate) === adminUserId) {
             if (is_active !== undefined && is_active === 0) {
                 return res.status(400).json({ message: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' });
             }
-            // Prevent changing own role if it's the only admin
             const [[currentAdminRole]] = await db.query('SELECT name FROM roles WHERE id = ?', [targetUser.role_id]);
             if (currentAdminRole && currentAdminRole.name.toLowerCase() === 'admin' && role_id !== targetUser.role_id) {
                 const [[adminCount]] = await db.query(`
@@ -486,8 +413,6 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
             }
         }
 
-
-        // Check for duplicate email if changing
         if (email !== targetUser.email) {
             const [[emailExists]] = await db.query('SELECT id FROM users WHERE email = ? AND business_id = ? AND id != ?', [email, businessId, userIdToUpdate]);
             if (emailExists) {
@@ -495,7 +420,6 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
             }
         }
 
-        // Verify if the new role_id exists and belongs to the same business
         const [[role]] = await db.query('SELECT id FROM roles WHERE id = ? AND business_id = ?', [role_id, businessId]);
         if (!role) {
             return res.status(400).json({ message: 'ID peran baru tidak valid atau bukan milik bisnis Anda.' });
@@ -507,7 +431,7 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
             hashedPassword = await bcrypt.hash(password, salt);
         }
 
-        const updateFields = [`name = ?`, `email = ?`, `role_id = ?`, `is_active = ?`, `updated_at = CURRENT_TIMESTAMP`];
+        const updateFields = [`name = ?`, `email = ?`, `role_id = ?`, `is_active = ?`];
         const updateValues = [name, email, role_id, is_active];
 
         if (hashedPassword) {
@@ -532,11 +456,6 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
     }
 });
 
-/**
- * @route DELETE /api/users/:id
- * @desc Soft delete (deactivate) a user for the current business (Admin only).
- * @access Private (Admin only)
- */
 router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -551,7 +470,6 @@ router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // 1. Check if the user exists and belongs to this business
         const [[userToDelete]] = await connection.query(
             `SELECT u.name, u.role_id, r.name as role_name
              FROM users u JOIN roles r ON u.role_id = r.id
@@ -564,13 +482,11 @@ router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
             return res.status(404).json({ message: 'Pengguna tidak ditemukan atau sudah tidak aktif.' });
         }
 
-        // 2. Prevent deleting the currently logged-in user
         if (parseInt(userIdToDelete) === adminUserId) {
             await connection.rollback();
             return res.status(400).json({ message: 'Anda tidak dapat menghapus akun Anda sendiri.' });
         }
 
-        // 3. Prevent deleting the last active admin
         if (userToDelete.role_name.toLowerCase() === 'admin') {
             const [[adminCount]] = await connection.query(`
                 SELECT COUNT(u.id) as count
@@ -585,9 +501,8 @@ router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
             }
         }
 
-        // Perform soft delete (set is_active to 0)
         const [result] = await connection.query(
-            'UPDATE users SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND business_id = ?',
+            'UPDATE users SET is_active = 0 WHERE id = ? AND business_id = ?',
             [userIdToDelete, businessId]
         );
 

@@ -13,8 +13,10 @@ const AdminRoute = () => {
     if (token) {
         try {
             const decoded = jwtDecode(token);
-            // Menggunakan .toLowerCase() untuk memastikan perbandingan tidak case-sensitive
-            if (decoded.role && decoded.role.toLowerCase() === 'admin') {
+            // --- PERBAIKAN DIMULAI ---
+            // Menggunakan optional chaining (?.) untuk mencegah error jika decoded.role tidak ada
+            if (decoded?.role?.toLowerCase() === 'admin') {
+            // --- PERBAIKAN SELESAI ---
                 isAdmin = true;
             }
         } catch (error) {
@@ -24,15 +26,12 @@ const AdminRoute = () => {
     }
 
     useEffect(() => {
-        // Logika untuk redirect dan notifikasi sekarang aman di dalam useEffect
         if (!isAdmin) {
             toast.error("Akses ditolak. Hanya untuk admin.");
             navigate('/pos', { state: { from: location }, replace: true });
         }
     }, [isAdmin, navigate, location]);
 
-    // Jika pengguna adalah admin, tampilkan konten halaman (via <Outlet />).
-    // Jika bukan, tampilkan null selagi useEffect melakukan redirect.
     return isAdmin ? <Outlet /> : null;
 };
 

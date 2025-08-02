@@ -28,13 +28,13 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: 350px;
+    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
 
 const ListItem = styled.li`

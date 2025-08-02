@@ -1,17 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { FiFileText, FiTrendingUp, FiDownload } from 'react-icons/fi';
+import { FiFileText, FiTrendingUp, FiDownload, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-
-const PageContainer = styled.div`
-    padding: 30px;
-    max-width: 900px;
-    margin: 0 auto;
-`;
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { exportSalesSummaryPDF as exportReport } from '../services/api';
+import PageWrapper from '../components/PageWrapper';
 
 const PageHeader = styled.header`
     margin-bottom: 30px;
+    flex-shrink: 0;
 `;
 
 const Title = styled.h1`
@@ -23,7 +22,7 @@ const Title = styled.h1`
 
 const ReportGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 25px;
 `;
 
@@ -72,18 +71,79 @@ const ActionButton = styled.button`
     justify-content: center;
     gap: 8px;
     cursor: pointer;
-    margin-top: auto; /* Mendorong tombol ke bawah */
+    margin-top: auto;
 
-    &:hover {
+    &:hover:not(:disabled) {
         background-color: var(--primary-hover);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+const DateFilterContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+`;
+const DatePickerWrapper = styled.div`
+    .react-datepicker-wrapper input {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        font-weight: 500;
+        width: 120px;
+        text-align: center;
     }
 `;
 
 function ReportsPage() {
     const navigate = useNavigate();
+    const [reportStartDate, setReportStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 29)));
+    const [reportEndDate, setReportEndDate] = useState(new Date());
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const handleGenerateReport = async () => {
+        setIsGenerating(true);
+        toast.info("Sedang membuat laporan...");
+        try {
+            const response = await exportReport(reportStartDate, reportEndDate);
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `laporan-penjualan.csv`;
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (fileNameMatch && fileNameMatch.length === 2) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+            
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success("Laporan berhasil diunduh!");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gagal membuat laporan.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
     return (
-        <PageContainer>
+        <PageWrapper loading={false}>
             <PageHeader>
                 <Title><FiFileText /> Pusat Laporan</Title>
             </PageHeader>
@@ -99,19 +159,26 @@ function ReportsPage() {
                 </ReportCard>
 
                 <ReportCard>
-                    <CardTitle><FiDownload /> Laporan Penjualan (PDF)</CardTitle>
+                    <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
                     <CardDescription>
-                        Hasilkan ringkasan penjualan dalam format PDF untuk periode tertentu. Cocok untuk dokumentasi dan arsip. (Fitur ini akan dikembangkan lebih lanjut)
+                        Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
                     </CardDescription>
-                    <ActionButton onClick={() => toast.info('Fitur PDF sedang dalam pengembangan.')}>
-                        Hasilkan PDF
+                    <DateFilterContainer>
+                        <FiCalendar size={18} />
+                        <DatePickerWrapper>
+                            <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
+                        </DatePickerWrapper>
+                        <span>-</span>
+                        <DatePickerWrapper>
+                            <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
+                        </DatePickerWrapper>
+                    </DateFilterContainer>
+                    <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
+                        {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
                     </ActionButton>
                 </ReportCard>
-
-                {/* Anda bisa menambahkan kartu laporan lain di sini di masa depan */}
-
             </ReportGrid>
-        </PageContainer>
+        </PageWrapper>
     );
 }
 

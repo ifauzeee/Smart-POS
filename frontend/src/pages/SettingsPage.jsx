@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\SettingsPage.jsx
+
 import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { ThemeContext } from '../context/ThemeContext';
@@ -6,11 +8,16 @@ import { getEmailSettings, saveEmailSettings, saveBusinessSettings } from '../se
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { FiCheckCircle, FiX } from 'react-icons/fi';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // Import formatters
+import { formatRupiah, parseRupiah } from '../utils/formatters';
 
-// --- Styled Components (tidak ada perubahan pada style yang sudah ada) ---
-const PageContainer = styled.div` padding: 30px; `;
-const Title = styled.h1` font-size: 1.8rem; margin-bottom: 30px; `;
+// --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+`;
+const Title = styled.h1`
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+`;
 const SettingsGrid = styled.div`
     display: grid;
     grid-template-columns: 1fr 1.2fr;
@@ -32,21 +39,148 @@ const SettingsCard = styled.div`
     padding: 25px;
     width: 100%;
 `;
-const CardTitle = styled.h3` font-size: 1.1rem; font-weight: 600; padding-bottom: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; `;
-const SettingRow = styled.div` display: flex; justify-content: space-between; align-items: center; `;
-const SettingLabel = styled.div` p { font-size: 1rem; font-weight: 500; margin: 0; } small { font-size: 0.85rem; color: var(--text-secondary); } `;
-const ThemeSwitchLabel = styled.label` position: relative; display: inline-block; width: 60px; height: 34px; `;
-const ThemeSwitchInput = styled.input` opacity: 0; width: 0; height: 0; &:checked + span { background-color: var(--primary-color); } &:checked + span:before { transform: translateX(26px); } `;
-const ThemeSwitchSlider = styled.span` position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: .4s; border-radius: 34px; &:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; } `;
-const InfoBox = styled.div` padding: 20px; background-color: var(--bg-main); border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; `;
-const Form = styled.form` display: flex; flex-direction: column; gap: 20px; `;
+const CardTitle = styled.h3`
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+`;
+const SettingRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
+const SettingLabel = styled.div`
+    p {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+    }
+    small {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+`;
+const ThemeSwitchLabel = styled.label`
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+`;
+const ThemeSwitchInput = styled.input`
+    opacity: 0;
+    width: 0;
+    height: 0;
+    &:checked + span {
+        background-color: var(--primary-color);
+    }
+    &:checked + span:before {
+        transform: translateX(26px);
+    }
+`;
+const ThemeSwitchSlider = styled.span`
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: .4s;
+    border-radius: 34px;
+    &:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+`;
+const InfoBox = styled.div`
+    padding: 20px;
+    background-color: var(--bg-main);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+`;
+const Form = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+`;
 const InputGroup = styled.div``;
-const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-secondary); `;
-const Input = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary); &:focus { outline: none; border-color: var(--primary-color); } `;
-const Button = styled.button` padding: 10px 20px; border-radius: 8px; border: 1px solid ${props => props.$primary ? 'var(--primary-color)' : 'var(--border-color)'}; font-weight: 600; cursor: pointer; background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'}; color: ${props => props.$primary ? 'white' : 'var(--text-primary)'}; &:hover { opacity: 0.9; } `;
-const TagsContainer = styled.div` display: flex; flex-wrap: wrap; gap: 10px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; min-height: 48px; align-items: center; `;
-const Tag = styled.div` background-color: var(--primary-color); color: white; padding: 5px 10px; border-radius: 5px; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; `;
-const RemoveTagButton = styled.button` background: none; border: none; color: white; cursor: pointer; padding: 0; line-height: 1; display: flex; align-items: center; justify-content: center; `;
+const Label = styled.label`
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+`;
+const Input = styled.input`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+`;
+const Button = styled.button`
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid ${props => props.$primary ? 'var(--primary-color)' : 'var(--border-color)'};
+    font-weight: 600;
+    cursor: pointer;
+    background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'};
+    color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
+    &:hover {
+        opacity: 0.9;
+    }
+`;
+const TagsContainer = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-height: 48px;
+    align-items: center;
+`;
+const Tag = styled.div`
+    background-color: var(--primary-color);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+`;
+const RemoveTagButton = styled.button`
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
 const Select = styled.select`
     width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem;
     background-color: var(--bg-main); color: var(--text-primary); appearance: none;
@@ -54,46 +188,13 @@ const Select = styled.select`
     background-repeat: no-repeat; background-position: right 12px center; background-size: 20px;
     &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); }
 `;
-const CheckboxContainer = styled.div` 
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    input[type="checkbox"] {
-        appearance: none;
-        width: 20px;
-        height: 20px;
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        background-color: var(--bg-main);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        &:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        &:checked::before {
-            content: '✔';
-            font-size: 14px;
-            color: white;
-            display: block;
-        }
-    }
-    label {
-        margin-bottom: 0;
-        cursor: pointer;
-        color: var(--text-primary);
-        font-weight: 500;
-    }
-`;
 
 function SettingsPage() {
     const { theme, toggleTheme } = useContext(ThemeContext);
     const { settings, fetchBusinessSettings } = useContext(BusinessContext);
     const [emailSettings, setEmailSettings] = useState({ email: '', appPassword: '', sender_name: '' });
     const [savedEmail, setSavedEmail] = useState('');
-    const [formData, setFormData] = useState(() => ({
+    const [formData, setFormData] = useState({
         business_name: '',
         address: '',
         phone: '',
@@ -102,8 +203,8 @@ function SettingsPage() {
         receipt_footer_text: '',
         receipt_template: 'STANDARD_RECEIPT_TEMPLATE',
         tax_rate: 0.00,
-        default_starting_cash: 0 // <-- Tambahkan state baru
-    }));
+        default_starting_cash: '0'
+    });
     const [newPaymentMethod, setNewPaymentMethod] = useState('');
     const [isEditingEmail, setIsEditingEmail] = useState(false);
 
@@ -127,10 +228,12 @@ function SettingsPage() {
 
     useEffect(() => {
         if (settings) {
+            const initialCash = String(Math.floor(parseFloat(settings.default_starting_cash || '0')));
+
             setFormData({
                 business_name: settings.business_name || '',
                 address: settings.address || '',
-                phone: settings.phone_number || '', // Pastikan ini phone_number
+                phone: settings.phone_number || '',
                 payment_methods: Array.isArray(settings.payment_methods)
                     ? settings.payment_methods
                     : (settings.payment_methods ? JSON.parse(settings.payment_methods) : []),
@@ -138,18 +241,15 @@ function SettingsPage() {
                 receipt_footer_text: settings.receipt_footer_text || '',
                 receipt_template: settings.receipt_template || 'STANDARD_RECEIPT_TEMPLATE',
                 tax_rate: (parseFloat(settings.tax_rate) || 0) * 100,
-                default_starting_cash: settings.default_starting_cash || 0 // <-- Ambil nilai dari context
+                default_starting_cash: initialCash
             });
         }
     }, [settings]);
 
     const handleEmailChange = (e) => setEmailSettings({ ...emailSettings, [e.target.name]: e.target.value });
     const handleBusinessChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value,
-        }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const handleEmailSave = async (e) => {
@@ -166,10 +266,10 @@ function SettingsPage() {
 
     const handleBusinessSave = async (e) => {
         e.preventDefault();
-        const dataToSave = { 
+        const dataToSave = {
             ...formData,
             tax_rate: (parseFloat(formData.tax_rate) || 0) / 100,
-            default_starting_cash: parseFloat(parseRupiah(formData.default_starting_cash)) || 0 // <-- Pastikan mengirim angka
+            default_starting_cash: parseFloat(parseRupiah(formData.default_starting_cash)) || 0
         };
         
         await toast.promise(saveBusinessSettings(dataToSave), {
@@ -217,20 +317,43 @@ function SettingsPage() {
                             
                             <InputGroup>
                                 <Label>Kas Awal Default untuk Kasir (Rp)</Label>
-                                <Input 
-                                    name="default_starting_cash" 
+                                <Input
+                                    name="default_starting_cash"
                                     type="text"
-                                    value={formatRupiah(formData.default_starting_cash)} 
+                                    value={formatRupiah(formData.default_starting_cash)}
                                     onChange={(e) => setFormData(prev => ({...prev, default_starting_cash: parseRupiah(e.target.value)}))}
                                 />
                             </InputGroup>
                             
+                            <InputGroup>
+                                <Label>Format Struk</Label>
+                                <Select name="receipt_template" value={formData.receipt_template} onChange={handleBusinessChange}>
+                                    <option value="STANDARD_RECEIPT_TEMPLATE">Struk Standar</option>
+                                    <option value="THERMAL_RECEIPT_TEMPLATE">Struk Thermal</option>
+                                </Select>
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>URL Logo Struk</Label>
+                                <Input name="receipt_logo_url" value={formData.receipt_logo_url} onChange={handleBusinessChange} />
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>Teks Footer Struk</Label>
+                                <Input name="receipt_footer_text" value={formData.receipt_footer_text} onChange={handleBusinessChange} />
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>Tarif Pajak Global (%)</Label>
+                                <Input type="number" name="tax_rate" value={formData.tax_rate} onChange={handleBusinessChange} step="0.01" min="0" max="100"/>
+                            </InputGroup>
+                            <InputGroup><Label>Metode Pembayaran</Label><TagsContainer>{formData.payment_methods.map(method => (<Tag key={method}>{method}<RemoveTagButton type="button" onClick={() => removePaymentMethod(method)}><FiX size={16} /></RemoveTagButton></Tag>))}</TagsContainer><div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}><Input value={newPaymentMethod} onChange={(e) => setNewPaymentMethod(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentMethod(); } }} placeholder="Tambah metode baru"/><Button type="button" onClick={addPaymentMethod}>Tambah</Button></div></InputGroup>
+
                             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <Button type="submit" $primary>Simpan Profil</Button>
                             </div>
                         </Form>
                     </SettingsCard>
+                </Column>
 
+                <Column>
                     <SettingsCard>
                         <CardTitle>Tampilan</CardTitle>
                         <SettingRow>
@@ -244,9 +367,6 @@ function SettingsPage() {
                             </ThemeSwitchLabel>
                         </SettingRow>
                     </SettingsCard>
-                </Column>
-
-                <Column>
                     <SettingsCard>
                         <CardTitle>Konfigurasi Email Pengirim Struk</CardTitle>
                         {!isEditingEmail && savedEmail ? (
@@ -265,17 +385,6 @@ function SettingsPage() {
                                 </div>
                             </Form>
                         )}
-                    </SettingsCard>
-                    <SettingsCard>
-                        <CardTitle>Format Struk & Metode Pembayaran</CardTitle>
-                        <Form onSubmit={handleBusinessSave}>
-                            <InputGroup><Label>Metode Pembayaran</Label><TagsContainer>{formData.payment_methods.map(method => (<Tag key={method}>{method}<RemoveTagButton type="button" onClick={() => removePaymentMethod(method)}><FiX size={16} /></RemoveTagButton></Tag>))}</TagsContainer><div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}><Input value={newPaymentMethod} onChange={(e) => setNewPaymentMethod(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentMethod(); } }} placeholder="Tambah metode baru"/><Button type="button" onClick={addPaymentMethod}>Tambah</Button></div></InputGroup>
-                            <InputGroup><Label>Format Struk</Label><Select name="receipt_template" value={formData.receipt_template} onChange={handleBusinessChange}><option value="STANDARD_RECEIPT_TEMPLATE">Struk Standar</option><option value="THERMAL_RECEIPT_TEMPLATE">Struk Thermal</option></Select></InputGroup>
-                            <InputGroup><Label>URL Logo Struk</Label><Input name="receipt_logo_url" value={formData.receipt_logo_url} onChange={handleBusinessChange} /></InputGroup>
-                            <InputGroup><Label>Teks Footer Struk</Label><Input name="receipt_footer_message" value={formData.receipt_footer_text} onChange={handleBusinessChange} /></InputGroup>
-                            <InputGroup><Label>Tarif Pajak Global (%)</Label><Input type="number" name="tax_rate" value={formData.tax_rate} onChange={handleBusinessChange} step="0.01" min="0" max="100"/></InputGroup>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Setelan Bisnis</Button></div>
-                        </Form>
                     </SettingsCard>
                 </Column>
             </SettingsGrid>

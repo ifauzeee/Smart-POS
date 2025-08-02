@@ -7,14 +7,31 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css'; // Don't forget to import the CSS for Skeleton
 import { formatRupiah, parseRupiah } from '../utils/formatters';
+import { motion } from 'framer-motion'; // <-- Import framer-motion
+import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
 
 // --- Styled Components ---
-const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
+const PageContainer = styled(motion.div)` 
+    padding: 30px; 
+    max-width: 900px; 
+    margin: 0 auto; 
+    display: flex;
+    flex-direction: column;
+`;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
 const Title = styled.h1` font-size: 1.8rem; `;
 const BackLink = styled(Link)` display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 20px; font-weight: 500; &:hover { color: var(--text-primary); } `;
-const Form = styled.form` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 25px; `;
+const Form = styled.form` 
+    background-color: var(--bg-surface); 
+    border-radius: 16px; 
+    border: 1px solid var(--border-color); 
+    padding: 25px; 
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+`;
 const FormGrid = styled.div` display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 20px; `;
 const InputGroup = styled.div` grid-column: ${props => props.$fullWidth ? '1 / -1' : 'span 1'}; `;
 const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); `;
@@ -27,7 +44,7 @@ const VariantSection = styled.div` grid-column: 1 / -1; border-top: 1px solid va
 const VariantRow = styled.div` display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
 const AddVariantButton = styled.button` display: flex; align-items: center; gap: 5px; background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { opacity: 0.9; } `;
 const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
-const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
+const FormFooter = styled.div` padding-top: 25px; margin-top: auto; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
 const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
 
 function ProductFormPage() {
@@ -43,7 +60,7 @@ function ProductFormPage() {
         sub_category_id: '',
         supplier_id: '',
         stock: 0,
-        low_stock_threshold: 5, // Tambahkan state baru
+        low_stock_threshold: 5,
         image_url: '',
         expiration_date: '',
         variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
@@ -72,16 +89,16 @@ function ProductFormPage() {
                     sub_category_id: product.sub_category_id || '',
                     supplier_id: product.supplier_id || '',
                     stock: product.stock || 0,
-                    low_stock_threshold: product.low_stock_threshold || 5, // Tambahkan ini
+                    low_stock_threshold: product.low_stock_threshold || 5,
                     image_url: product.image_url || '',
                     expiration_date: product.expiration_date ? new Date(product.expiration_date).toISOString().split('T')[0] : '',
                     variants: product.variants && product.variants.length > 0
                         ? product.variants.map(v => ({
-                            id: v.id,
-                            name: v.name || '',
-                            price: v.price !== undefined ? v.price : '',
-                            cost_price: v.cost_price !== undefined ? v.cost_price : '',
-                            barcode: v.barcode || '',
+                              id: v.id,
+                              name: v.name || '',
+                              price: v.price !== undefined ? v.price : '',
+                              cost_price: v.cost_price !== undefined ? v.cost_price : '',
+                              barcode: v.barcode || '',
                           }))
                         : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
                 });
@@ -228,104 +245,109 @@ function ProductFormPage() {
         }
     };
 
-    if (loading) {
-        return <PageContainer><Skeleton height={400} /></PageContainer>;
-    }
+    const formContent = (
+        <Form onSubmit={handleSubmit}>
+            <FormGrid>
+                <InputGroup $fullWidth>
+                    <Label>Nama Produk</Label>
+                    <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
+                </InputGroup>
+                <InputGroup>
+                    <Label>Kategori</Label>
+                    <Select name="category_id" value={formData.category_id} onChange={handleChange}>
+                        <option value="">-- Pilih Kategori --</option>
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Sub-Kategori</Label>
+                    <Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}>
+                        <option value="">-- Pilih Sub-Kategori --</option>
+                        {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Pemasok</Label>
+                    <Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}>
+                        <option value="">-- Pilih Pemasok --</option>
+                        {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Tanggal Kadaluarsa (Opsional)</Label>
+                    <Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} />
+                </InputGroup>
+                <InputGroup>
+                    <Label>Total Stok</Label>
+                    <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
+                </InputGroup>
+                
+                <InputGroup>
+                    <Label>Ambang Batas Stok Rendah</Label>
+                    <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
+                </InputGroup>
+
+                <VariantSection>
+                    <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
+                    {formData.variants.map((variant, index) => (
+                        <VariantRow key={index}>
+                            <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
+                            <Input
+                                type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
+                                onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
+                                onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
+                                required
+                            />
+                            <Input
+                                type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
+                                onChange={e => handleVariantChange(index, 'price', e.target.value)}
+                                onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
+                                required
+                            />
+                            <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
+                            <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
+                        </VariantRow>
+                    ))}
+                    <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
+                </VariantSection>
+                <InputGroup $fullWidth>
+                    <Label>URL Gambar (atau Unggah)</Label>
+                    <FileInputContainer>
+                        <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
+                        <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
+                        <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                    </FileInputContainer>
+                    {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
+                    {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
+                </InputGroup>
+                <InputGroup $fullWidth>
+                    <Label>Deskripsi</Label>
+                    <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
+                </InputGroup>
+            </FormGrid>
+            <FormFooter>
+                <SaveButton type="submit" disabled={isSubmitting}>
+                    <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
+                </SaveButton>
+            </FormFooter>
+        </Form>
+    );
 
     return (
-        <PageContainer>
+        <PageContainer
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             <BackLink to="/products"><FiArrowLeft /> Kembali ke Daftar Produk</BackLink>
             <PageHeader>
                 <Title>{isEditing ? 'Edit Produk' : 'Tambah Produk Baru'}</Title>
             </PageHeader>
-            <Form onSubmit={handleSubmit}>
-                <FormGrid>
-                    <InputGroup $fullWidth>
-                        <Label>Nama Produk</Label>
-                        <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Kategori</Label>
-                        <Select name="category_id" value={formData.category_id} onChange={handleChange}>
-                            <option value="">-- Pilih Kategori --</option>
-                            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Sub-Kategori</Label>
-                        <Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}>
-                            <option value="">-- Pilih Sub-Kategori --</option>
-                            {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Pemasok</Label>
-                        <Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}>
-                            <option value="">-- Pilih Pemasok --</option>
-                            {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Tanggal Kadaluarsa (Opsional)</Label>
-                        <Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Total Stok</Label>
-                        <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
-                    </InputGroup>
-                    
-                    {/* Input Group Baru untuk Ambang Batas Stok */}
-                    <InputGroup>
-                        <Label>Ambang Batas Stok Rendah</Label>
-                        <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
-                    </InputGroup>
-
-                    <VariantSection>
-                        <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
-                        {formData.variants.map((variant, index) => (
-                            <VariantRow key={index}>
-                                <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
-                                <Input
-                                    type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
-                                    onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
-                                    required
-                                />
-                                <Input
-                                    type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
-                                    onChange={e => handleVariantChange(index, 'price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
-                                    required
-                                />
-                                <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
-                                <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
-                            </VariantRow>
-                        ))}
-                        <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
-                    </VariantSection>
-                    <InputGroup $fullWidth>
-                        <Label>URL Gambar (atau Unggah)</Label>
-                        <FileInputContainer>
-                            <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
-                            <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
-                            <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-                        </FileInputContainer>
-                        {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
-                        {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
-                    </InputGroup>
-                    <InputGroup $fullWidth>
-                        <Label>Deskripsi</Label>
-                        <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
-                    </InputGroup>
-                </FormGrid>
-                <FormFooter>
-                    <SaveButton type="submit" disabled={isSubmitting}>
-                        <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
-                    </SaveButton>
-                </FormFooter>
-            </Form>
+            <PageWrapper loading={loading}>
+                {formContent}
+            </PageWrapper>
         </PageContainer>
     );
 }

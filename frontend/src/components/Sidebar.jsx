@@ -1,7 +1,20 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Sidebar.jsx
+
 import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList, FiSettings, FiZap, FiPower, FiClock, FiFileText } from 'react-icons/fi';
+import {
+    FiGrid,
+    FiShoppingCart,
+    FiPackage,
+    FiLogOut,
+    FiList,
+    FiSettings,
+    FiZap,
+    FiPower,
+    FiClock,
+    FiFileText,
+} from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import { useShift } from '../context/ShiftContext';
 import { BusinessContext } from '../context/BusinessContext';
@@ -14,7 +27,7 @@ const SidebarContainer = styled.div`
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 25px 15px;
     height: 100vh;
     box-sizing: border-box;
     gap: 30px;
@@ -25,7 +38,7 @@ const Logo = styled.h1`
     font-weight: 700;
     color: var(--primary-color);
     text-align: center;
-    margin: 0;
+    margin-bottom: 30px;
 `;
 
 const NavList = styled.ul`
@@ -34,7 +47,7 @@ const NavList = styled.ul`
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     flex-grow: 1;
     overflow-y: auto;
 `;
@@ -45,19 +58,38 @@ const NavItem = styled(NavLink)`
     gap: 15px;
     color: var(--text-secondary);
     text-decoration: none;
-    padding: 12px 15px;
-    border-radius: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
     font-weight: 500;
+    position: relative;
+    overflow: hidden;
     transition: all 0.2s ease-in-out;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 0;
+        width: 4px;
+        background-color: var(--primary-color);
+        transition: height 0.2s ease-in-out;
+    }
 
     &:hover {
         background-color: var(--bg-main);
-        color: var(--primary-color);
+        color: var(--text-primary);
     }
 
     &.active {
-        background-color: var(--primary-color);
-        color: white;
+        background-color: var(--bg-main);
+        color: var(--text-primary);
+        font-weight: 600;
+
+        &::before {
+            height: 60%;
+        }
     }
 `;
 
@@ -65,7 +97,7 @@ const ActionButtonsContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: 20px;
+    margin-top: auto; /* Pushes the buttons to the bottom */
 `;
 
 const CloseShiftButton = styled.button`
@@ -122,7 +154,7 @@ const LogoutButton = styled.button`
 `;
 
 function Sidebar() {
-    const { activeShift, refreshShiftStatus, userRole } = useShift();
+    const { activeShift, refreshShiftStatus } = useShift();
     const { settings } = useContext(BusinessContext);
     const [isCloseShiftModalOpen, setCloseShiftModalOpen] = useState(false);
     const navigate = useNavigate();
@@ -135,14 +167,14 @@ function Sidebar() {
                 const decoded = jwtDecode(token);
                 setLocalUserRole(decoded.role);
             } catch (error) {
-                console.error("Invalid token:", error);
+                console.error('Invalid token:', error);
             }
         }
     }, []);
 
     const handleLogout = () => {
-        if (activeShift) {
-            toast.warn("Anda harus menutup shift terlebih dahulu sebelum logout.");
+        if (localUserRole && localUserRole.toLowerCase() === 'kasir' && activeShift) {
+            toast.warn('Anda harus menutup shift terlebih dahulu sebelum logout.');
             return;
         }
         localStorage.removeItem('token');
@@ -152,8 +184,8 @@ function Sidebar() {
     const handleShiftClosed = () => {
         setCloseShiftModalOpen(false);
         refreshShiftStatus();
-        toast.success("Shift berhasil ditutup. Anda akan logout secara otomatis.");
-        
+        toast.success('Shift berhasil ditutup. Anda akan logout secara otomatis.');
+
         setTimeout(() => {
             localStorage.removeItem('token');
             navigate('/login');
@@ -167,16 +199,48 @@ function Sidebar() {
             <SidebarContainer>
                 <Logo>{businessName}</Logo>
                 <NavList>
-                    <li><NavItem to="/pos"><FiShoppingCart size={20} /> Kasir</NavItem></li>
+                    <li>
+                        <NavItem to="/pos">
+                            <FiShoppingCart size={20} /> Kasir
+                        </NavItem>
+                    </li>
                     {localUserRole && localUserRole.toLowerCase() === 'admin' && (
                         <>
-                            <li><NavItem to="/dashboard"><FiGrid size={20} /> Dashboard</NavItem></li>
-                            <li><NavItem to="/products"><FiPackage size={20} /> Produk</NavItem></li>
-                            <li><NavItem to="/history"><FiList size={20} /> Riwayat</NavItem></li>
-                            <li><NavItem to="/reports"><FiFileText size={20} /> Laporan</NavItem></li>
-                            <li><NavItem to="/shift-history"><FiClock size={20} /> Riwayat Shift</NavItem></li>
-                            <li><NavItem to="/quick-actions"><FiZap size={20} /> Aksi Cepat</NavItem></li>
-                            <li><NavItem to="/settings"><FiSettings size={20} /> Setelan</NavItem></li>
+                            <li>
+                                <NavItem to="/dashboard">
+                                    <FiGrid size={20} /> Dashboard
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/products">
+                                    <FiPackage size={20} /> Produk
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/history">
+                                    <FiList size={20} /> Riwayat
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/reports">
+                                    <FiFileText size={20} /> Laporan
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/shift-history">
+                                    <FiClock size={20} /> Riwayat Shift
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/quick-actions">
+                                    <FiZap size={20} /> Aksi Cepat
+                                </NavItem>
+                            </li>
+                            <li>
+                                <NavItem to="/settings">
+                                    <FiSettings size={20} /> Setelan
+                                </NavItem>
+                            </li>
                         </>
                     )}
                 </NavList>
@@ -187,7 +251,9 @@ function Sidebar() {
                             <FiPower size={20} /> Tutup Shift
                         </CloseShiftButton>
                     )}
-                    <LogoutButton onClick={handleLogout}><FiLogOut size={20} /> Logout</LogoutButton>
+                    <LogoutButton onClick={handleLogout}>
+                        <FiLogOut size={20} /> Logout
+                    </LogoutButton>
                 </ActionButtonsContainer>
             </SidebarContainer>
 

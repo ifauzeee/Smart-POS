@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
 
-// ... (styled-components tetap sama)
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
@@ -29,12 +28,12 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: 350px;
+    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
 
 const ListItem = styled.li`
@@ -108,15 +107,14 @@ const SkeletonContainer = styled.div`
     gap: 10px;
 `;
 
-// --- FIXED CODE ---
 function StaleProductsList({ loading, staleProducts = [] }) {
     if (loading) {
         return (
             <ListContainer>
-                <ListTitle><FiIcons.FiLayers size={22}/> Produk Tidak Laku</ListTitle>
+                <ListTitle><FiIcons.FiLayers size={22}/> Produk Kurang Laku</ListTitle>
                 <SkeletonContainer>
                     {[...Array(5)].map((_, index) => (
-                        <Skeleton 
+                       <Skeleton 
                             key={index}
                             count={1} 
                             height={60} 
@@ -132,13 +130,13 @@ function StaleProductsList({ loading, staleProducts = [] }) {
     }
     return (
         <ListContainer>
-            <ListTitle><FiIcons.FiLayers size={22}/> Produk Tidak Laku</ListTitle>
+            <ListTitle><FiIcons.FiLayers size={22}/> Produk Kurang Laku</ListTitle>
             {staleProducts?.length > 0 ? (
                 <List>
                     {staleProducts.map(p => (
                         <ListItem key={p.id}>
                             <ProductName>{p.name}</ProductName>
-                            <ItemValue>{p.stock} Tersisa ({p.lastSoldDate ? new Date(p.lastSoldDate).toLocaleDateString('id-ID') : 'Belum Terjual'})</ItemValue>
+                            <ItemValue>Stok: {p.stock} ({p.lastSoldDate ? `Terjual ${new Date(p.lastSoldDate).toLocaleDateString('id-ID')}` : 'Belum Pernah Terjual'})</ItemValue>
                         </ListItem>
                     ))}
                 </List>
@@ -148,7 +146,7 @@ function StaleProductsList({ loading, staleProducts = [] }) {
                         <FiIcons.FiLayers size={48}/>
                     </EmptyStateIcon>
                     <EmptyStateText>
-                        Tidak ada produk yang tidak laku.
+                        Semua produk Anda laris! Tidak ada produk yang tidak laku.
                     </EmptyStateText>
                 </EmptyStateContainer>
             )}

@@ -1,22 +1,25 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\DashboardPage.jsx
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { useReactToPrint } from 'react-to-print';
 import { jwtDecode } from 'jwt-decode';
 import { toast } from 'react-toastify';
-import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate } from 'react-router-dom';
-
 import {
-    getStats, getDailySales, getProductSalesPerformance, getTopProducts,
-    getCashierPerformance, getRecentSuppliers, getNotifications, getInsights,
+    getStats, getDailyRevenueProfit, getTopProducts,
+    getCashierPerformance, getNotifications, getInsights,
     getRevenueTarget, getStockInfo, getStaleProducts, getExpiredProducts,
-    getTopCustomers, getDailyRevenueProfit
+    getTopCustomers
 } from '../../services/api';
 
+// Imports for the new layout and animations
+import { motion } from 'framer-motion';
+import PageWrapper from '../../components/PageWrapper';
+
+// Dashboard Components
 import DashboardHeader from './components/DashboardHeader';
 import StatCardGrid from './components/StatCardGrid';
-import SalesChart from './components/SalesChart';
 import DailyReport from '../../components/DailyReport';
 import NotificationsPanel from './components/NotificationsPanel';
 import TopProductsChart from './components/TopProductsChart';
@@ -27,220 +30,229 @@ import StockInfoList from './components/StockInfoList';
 import StaleProductsList from './components/StaleProductsList';
 import ExpiredProductsList from './components/ExpiredProductsList';
 import CashierPerformanceList from './components/CashierPerformanceList';
-import RecentSuppliersList from './components/RecentSuppliersList';
-import { FiCalendar, FiFastForward } from 'react-icons/fi';
 import { useShift } from '../../context/ShiftContext';
 import StartShiftModal from '../../components/StartShiftModal';
 import CloseShiftModal from '../../components/CloseShiftModal';
-import AnimatedPage from '../../components/AnimatedPage';
 
-const DashboardGrid = styled.div`
+
+// --- Styled Components with Animations ---
+const DashboardGrid = styled(motion.div)`
     display: grid;
     grid-template-columns: repeat(12, 1fr);
     gap: 24px;
     width: 100%;
-    padding: 24px;
 `;
 
-const FilterContainer = styled.div`
-    grid-column: 1 / -1;
-    background-color: var(--bg-surface);
-    padding: 20px 25px;
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-`;
-const DatePickerWrapper = styled.div`
-    .react-datepicker-wrapper input {
-        padding: 10px 15px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background-color: var(--bg-main);
-        color: var(--text-primary);
-        font-weight: 500;
-        width: 130px;
-        cursor: pointer;
-        text-align: center;
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: {
+            type: "spring",
+            stiffness: 100
+        }
     }
-`;
-const FilterRow = styled.div` display: flex; align-items: center; gap: 15px; flex-wrap: wrap; `;
-const CheckboxContainer = styled.div` display: flex; align-items: center; gap: 8px; `;
-const QuickAccessCard = styled.div`
-    grid-column: 1 / -1;
-    background: var(--bg-surface);
-    padding: 28px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-`;
-const QuickAccessButton = styled.button`
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 15px 30px;
-    font-weight: 600;
-    font-size: 1.1rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    &:hover {
-        background-color: var(--primary-hover);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-    }
-`;
+};
 
 function DashboardPage() {
-    const navigate = useNavigate();
     const [currentTime, setCurrentTime] = useState(new Date());
     const [userName, setUserName] = useState('Pengguna');
     const [loading, setLoading] = useState(true);
-    const [dashboardData, setDashboardData] = useState({ stats: { current: {}, previous: null }, dailyRevenueProfit: [] });
+    const [dashboardData, setDashboardData] = useState({
+        stats: { current: {}, previous: null },
+        dailyRevenueProfit: [],
+        topCustomers: [],
+        stockInfo: [],
+        staleProducts: [],
+        expiredProducts: [],
+        cashierPerformance: [],
+        notifications: [],
+        insights: [],
+        topProducts: [],
+    });
+    const [revenueTarget, setRevenueTarget] = useState(0);
     const [dailyReportData, setDailyReportData] = useState(null);
+    const reportRef = useRef();
+    const { activeShift, refreshShiftStatus } = useShift();
+    const [isStartShiftModalOpen, setStartShiftModalOpen] = useState(false);
+    const [isCloseShiftModalOpen, setCloseShiftModalOpen] = useState(false);
     const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 29)));
     const [endDate, setEndDate] = useState(new Date());
-    const [isComparing, setIsComparing] = useState(false);
-    const [compareStartDate, setCompareStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 59)));
-    const [compareEndDate, setCompareEndDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
-    const reportRef = useRef(null);
-    const { activeShift, refreshShiftStatus } = useShift();
-    const [startShiftModalOpen, setStartShiftModalOpen] = useState(false);
-    const [closeShiftModalOpen, setCloseShiftModalOpen] = useState(false);
-
-    const handleStartShift = () => setStartShiftModalOpen(true);
-    const handleCloseShift = () => setCloseShiftModalOpen(true);
-    const handlePrint = useReactToPrint({ content: () => reportRef.current });
-
-    const handlePrepareDailyReport = async () => {
-        // ... (fungsi ini tidak berubah)
-    };
-    const handleManualPrint = () => {
-        // ... (fungsi ini tidak berubah)
-    };
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            if (token) setUserName(jwtDecode(token).name || 'Kasir');
-
-            const statsParams = { startDate, endDate };
-            if (isComparing) {
-                statsParams.compareStartDate = compareStartDate;
-                statsParams.compareEndDate = compareEndDate;
-            }
-
             const [
-                statsRes, revenueTargetRes, dailySalesRes, stockInfoRes, staleProductsRes,
-                expiredProductsRes, topCustomersRes, cashierPerformanceRes, recentSuppliersRes,
-                notificationsRes, insightsRes, productSalesPerformanceRes, dailyRevenueProfitRes
+                statsData, revenueTargetData, dailyRevenueProfitData, topCustomersData, stockInfoData,
+                staleProductsData, expiredProductsData, cashierPerformanceData,
+                notificationsData, insightsData, topProductsData
             ] = await Promise.all([
-                getStats(statsParams.startDate, statsParams.endDate, isComparing ? statsParams.compareStartDate : null, isComparing ? statsParams.compareEndDate : null),
-                getRevenueTarget(), getDailySales(startDate, endDate), getStockInfo(),
-                getStaleProducts(), getExpiredProducts(), getTopCustomers(startDate, endDate),
-                getCashierPerformance(startDate, endDate), getRecentSuppliers(), getNotifications(),
-                getInsights(startDate, endDate), getProductSalesPerformance(startDate, endDate),
-                getDailyRevenueProfit(startDate, endDate)
+                getStats(startDate, endDate),
+                getRevenueTarget(),
+                getDailyRevenueProfit(startDate, endDate),
+                getTopCustomers(startDate, endDate),
+                getStockInfo(),
+                getStaleProducts(),
+                getExpiredProducts(),
+                getCashierPerformance(startDate, endDate),
+                getNotifications(),
+                getInsights(startDate, endDate),
+                getTopProducts(startDate, endDate),
             ]);
-
-            const finalStats = {
-                current: { ...statsRes.data.current, monthly_revenue_target: revenueTargetRes.data.monthly_revenue_target },
-                previous: statsRes.data.previous
-            };
-
             setDashboardData({
-                stats: finalStats,
-                dailySales: dailySalesRes.data,
-                stockInfo: stockInfoRes.data,
-                staleProducts: staleProductsRes.data,
-                expiredProducts: expiredProductsRes.data,
-                topCustomers: topCustomersRes.data,
-                cashierPerformance: cashierPerformanceRes.data,
-                recentSuppliers: recentSuppliersRes.data,
-                notifications: notificationsRes.data,
-                insights: insightsRes.data,
-                productSalesPerformance: productSalesPerformanceRes.data,
-                dailyRevenueProfit: dailyRevenueProfitRes.data,
+                stats: statsData.data,
+                dailyRevenueProfit: dailyRevenueProfitData.data,
+                topCustomers: topCustomersData.data,
+                stockInfo: stockInfoData.data,
+                staleProducts: staleProductsData.data,
+                expiredProducts: expiredProductsData.data,
+                cashierPerformance: cashierPerformanceData.data,
+                notifications: notificationsData.data,
+                insights: insightsData.data,
+                topProducts: topProductsData.data,
             });
-        } catch (err) {
-            toast.error("Gagal memuat sebagian data dashboard.");
+            setRevenueTarget(revenueTargetData.data.monthly_revenue_target);
+        } catch (error) {
+            toast.error("Gagal memuat data dashboard.");
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate, isComparing, compareStartDate, compareEndDate]);
+    }, [startDate, endDate]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        const token = localStorage.getItem('token');
+        if (token) setUserName(jwtDecode(token).name || 'Kasir');
+        return () => clearInterval(timer);
+    }, []);
+    
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handlePrepareDailyReport = () => {
+        const reportPayload = {
+            startDate,
+            endDate,
+            ...dashboardData.stats.current,
+            topProducts: dashboardData.topProducts,
+        };
+        setDailyReportData(reportPayload);
+        toast.info("Laporan harian siap, klik 'Cetak Laporan' untuk mencetak.");
+    };
+
+    const handleManualPrint = useReactToPrint({ content: () => reportRef.current });
 
     return (
-        <AnimatedPage>
-            <DashboardGrid>
-                <DashboardHeader
-                    currentTime={currentTime} onRefresh={fetchData} onPrint={handlePrepareDailyReport}
-                    onManualPrint={handleManualPrint} activeShift={activeShift} onStartShift={handleStartShift}
-                    onCloseShift={handleCloseShift} userName={userName}
-                />
-                <FilterContainer>
-                    <FilterRow>
-                        <FiCalendar size={20} />
-                        <span>Tampilkan Data Dari:</span>
-                        <DatePickerWrapper><DatePicker selected={startDate} onChange={setStartDate} dateFormat="dd/MM/yyyy" maxDate={endDate} /></DatePickerWrapper>
-                        <span>sampai</span>
-                        <DatePickerWrapper><DatePicker selected={endDate} onChange={setEndDate} dateFormat="dd/MM/yyyy" minDate={startDate} /></DatePickerWrapper>
-                    </FilterRow>
-                    <FilterRow>
-                        <CheckboxContainer>
-                            <input type="checkbox" id="compare-checkbox" checked={isComparing} onChange={(e) => setIsComparing(e.target.checked)} />
-                            <label htmlFor="compare-checkbox">Bandingkan dengan Periode Lain</label>
-                        </CheckboxContainer>
-                        {isComparing && (
-                            <>
-                                <DatePickerWrapper><DatePicker selected={compareStartDate} onChange={setCompareStartDate} dateFormat="dd/MM/yyyy" maxDate={compareEndDate} /></DatePickerWrapper>
-                                <span>sampai</span>
-                                <DatePickerWrapper><DatePicker selected={compareEndDate} onChange={setCompareEndDate} dateFormat="dd/MM/yyyy" minDate={compareStartDate} /></DatePickerWrapper>
-                            </>
-                        )}
-                    </FilterRow>
-                </FilterContainer>
-                
-                <StatCardGrid loading={loading} stats={dashboardData.stats.current} previousStats={dashboardData.stats.previous} userName={userName} />
-                <NotificationsPanel loading={loading} notifications={dashboardData.notifications} insights={dashboardData.insights} />
-                <TargetChart loading={loading} stats={dashboardData.stats.current} />
-                <SalesChart loading={loading} data={dashboardData.dailySales} />
-                <ProfitRevenueChart loading={loading} data={dashboardData.dailyRevenueProfit} />
-                <TopProductsChart loading={loading} data={dashboardData.productSalesPerformance} />
-                <TopCustomersList loading={loading} topCustomers={dashboardData.topCustomers} />
-                <StockInfoList loading={loading} stockInfo={dashboardData.stockInfo} />
-                <StaleProductsList loading={loading} staleProducts={dashboardData.staleProducts} />
-                <ExpiredProductsList loading={loading} expiredProducts={dashboardData.expiredProducts} />
-                <CashierPerformanceList loading={loading} cashierPerformance={dashboardData.cashierPerformance} />
-                <RecentSuppliersList loading={loading} recentSuppliers={dashboardData.recentSuppliers} />
+        <>
+            <PageWrapper loading={loading}>
+                <DashboardGrid
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                        hidden: { opacity: 0 },
+                        visible: {
+                            opacity: 1,
+                            transition: {
+                                staggerChildren: 0.1
+                            }
+                        }
+                    }}
+                >
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <DashboardHeader
+                            currentTime={currentTime}
+                            onRefresh={fetchData}
+                            onPrint={handlePrepareDailyReport}
+                            onManualPrint={handleManualPrint}
+                            activeShift={activeShift}
+                            onStartShift={() => setStartShiftModalOpen(true)}
+                            onCloseShift={() => setCloseShiftModalOpen(true)}
+                            userName={userName}
+                            isRefreshing={loading}
+                        />
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <StatCardGrid
+                            loading={loading}
+                            stats={dashboardData.stats.current}
+                            previousStats={dashboardData.stats.previous}
+                            userName={userName}
+                        />
+                    </motion.div>
 
-                <QuickAccessCard>
-                    <QuickAccessButton onClick={() => navigate('/quick-actions')}>
-                        <FiFastForward size={22} />
-                        Lihat Semua Aksi & Manajemen
-                    </QuickAccessButton>
-                </QuickAccessCard>
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <TargetChart
+                            loading={loading}
+                            stats={{ ...dashboardData.stats.current, monthly_revenue_target: revenueTarget }}
+                        />
+                    </motion.div>
 
-                <div style={{ display: 'none' }}><DailyReport ref={reportRef} data={dailyReportData} /></div>
-                
-                {startShiftModalOpen && <StartShiftModal onShiftStarted={() => { setStartShiftModalOpen(false); refreshShiftStatus(); }} />}
-                {closeShiftModalOpen && activeShift && <CloseShiftModal shiftId={activeShift.id} onClose={() => setCloseShiftModalOpen(false)} onShiftClosed={() => { setCloseShiftModalOpen(false); refreshShiftStatus(); }} />}
-            </DashboardGrid>
-        </AnimatedPage>
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <ProfitRevenueChart
+                            loading={loading}
+                            data={dashboardData.dailyRevenueProfit}
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <TopProductsChart
+                            loading={loading}
+                            data={dashboardData.topProducts}
+                        />
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <NotificationsPanel
+                            loading={loading}
+                            notifications={dashboardData.notifications}
+                            insights={dashboardData.insights}
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <TopCustomersList
+                            loading={loading}
+                            topCustomers={dashboardData.topCustomers}
+                        />
+                    </motion.div>
+                    
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <CashierPerformanceList
+                            loading={loading}
+                            cashierPerformance={dashboardData.cashierPerformance}
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <StockInfoList
+                            loading={loading}
+                            stockInfo={dashboardData.stockInfo}
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <StaleProductsList
+                            loading={loading}
+                            staleProducts={dashboardData.staleProducts}
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
+                        <ExpiredProductsList
+                            loading={loading}
+                            expiredProducts={dashboardData.expiredProducts}
+                        />
+                    </motion.div>
+                </DashboardGrid>
+            </PageWrapper>
+            
+            {isStartShiftModalOpen && <StartShiftModal onShiftStarted={() => { refreshShiftStatus(); setStartShiftModalOpen(false); }} />}
+            {isCloseShiftModalOpen && activeShift && <CloseShiftModal shiftId={activeShift.id} onShiftClosed={() => { refreshShiftStatus(); setCloseShiftModalOpen(false); }} onClose={() => setCloseShiftModalOpen(false)} />}
+            <div style={{ display: 'none' }}><DailyReport ref={reportRef} data={dailyReportData} /></div>
+        </>
     );
 }
 

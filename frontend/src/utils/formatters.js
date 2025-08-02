@@ -1,28 +1,31 @@
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js
 
 /**
- * Membersihkan string Rupiah (misal: "Rp 10.000") menjadi string angka mentah ("10000").
+ * Membersihkan nilai apapun (string/number) menjadi string angka murni.
+ * Contoh: "Rp 50.000" -> "50000"
  * @param {string | number} value Nilai yang akan dibersihkan.
- * @returns {string} String angka mentah.
+ * @returns {string} String yang hanya berisi angka.
  */
 export const parseRupiah = (value) => {
-    if (typeof value !== 'string' && typeof value !== 'number') return '';
-    return String(value).replace(/Rp\s?|\./g, '');
+    if (value === null || value === undefined) return '';
+    // Hapus semua karakter yang bukan digit (0-9)
+    return String(value).replace(/[^0-9]/g, '');
 };
 
 /**
- * Memformat angka atau string angka menjadi format Rupiah (misal: 10000 -> "Rp 10.000").
+ * Memformat string angka atau angka menjadi format mata uang Rupiah.
+ * Contoh: "50000" -> "Rp 50.000"
  * @param {string | number} value Nilai yang akan diformat.
  * @returns {string} String dalam format Rupiah.
  */
 export const formatRupiah = (value) => {
-    if (value === null || value === undefined || value === '') return '';
-    
-    // PERBAIKAN: Gunakan parseRupiah terlebih dahulu untuk membersihkan nilai sebelum memformat.
-    const number = parseFloat(parseRupiah(value));
+    const cleanValue = parseRupiah(value);
+    if (cleanValue === '') return '';
 
+    const number = Number(cleanValue);
     if (isNaN(number)) return '';
-    
+
+    // Menggunakan Intl.NumberFormat untuk pemformatan yang andal
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',

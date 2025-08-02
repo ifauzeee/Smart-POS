@@ -28,12 +28,14 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Menggunakan gap untuk jarak antar item */
     flex-grow: 1;
-    max-height: 350px;
 `;
 
 const ListItem = styled.li`
@@ -43,7 +45,6 @@ const ListItem = styled.li`
     padding: 16px 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    margin-bottom: 8px;
     background-color: var(--bg-main);
     transition: all 0.2s ease;
     
@@ -52,10 +53,6 @@ const ListItem = styled.li`
         border-color: var(--primary-color, #007bff);
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    &:last-child {
-        margin-bottom: 0;
     }
 `;
 
@@ -163,6 +160,7 @@ function StockInfoList({ loading, stockInfo = [] }) {
         <ListContainer>
             <ListTitle><FiIcons.FiArchive size={22}/> Informasi Stok</ListTitle>
             {stockInfo?.length > 0 ? (
+                // Mengubah List agar tidak ada scrollbar
                 <List>
                     {stockInfo.map(p => {
                         const stockColor = getStockColor(p.stock);

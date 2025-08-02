@@ -5,7 +5,9 @@ import { getSuppliers, getProducts, createPurchaseOrder } from '../services/api'
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // <-- Impor formatter
 
+// --- Styled Components ---
 const PageContainer = styled.div` padding: 30px; max-width: 1000px; margin: 0 auto; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
 const Title = styled.h1` font-size: 1.8rem; `;
@@ -20,7 +22,7 @@ const ItemsSection = styled.div` border-top: 1px solid var(--border-color); marg
 const AddProductButton = styled.button` display: flex; align-items: center; gap: 8px; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { background-color: var(--primary-color); color: white; }`;
 const Table = styled.table` width: 100%; border-collapse: collapse; margin-top: 20px; `;
 const Th = styled.th` text-align: left; padding: 12px; border-bottom: 1px solid var(--border-color); color: var(--text-secondary); `;
-const Td = styled.td` padding: 12px; border-bottom: 1px solid var(--border-color); `;
+const Td = styled.td` padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; `;
 const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
 const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
 
@@ -30,6 +32,7 @@ const ModalContainer = styled.div` background: var(--bg-surface); padding: 20px;
 const ProductSearchInput = styled(Input)` margin-bottom: 15px; `;
 const ProductSelectionList = styled.ul` list-style: none; padding: 0; overflow-y: auto; `;
 const ProductListItem = styled.li` padding: 10px; border-radius: 6px; cursor: pointer; &:hover { background-color: var(--bg-main); } `;
+
 
 function PurchaseOrderForm() {
     const navigate = useNavigate();
@@ -62,7 +65,13 @@ function PurchaseOrderForm() {
 
     const handleItemChange = (index, field, value) => {
         const newItems = [...formData.items];
-        newItems[index][field] = value;
+        // --- PENYEMPURNAAN UX DIMULAI ---
+        if (field === 'cost_price') {
+            newItems[index][field] = parseRupiah(value);
+        } else {
+            newItems[index][field] = value;
+        }
+        // --- PENYEMPURNAAN UX SELESAI ---
         setFormData({ ...formData, items: newItems });
     };
 
@@ -145,7 +154,15 @@ function PurchaseOrderForm() {
                                         <tr key={index}>
                                             <Td>{item.name}</Td>
                                             <Td><Input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} /></Td>
-                                            <Td><Input type="number" min="0" value={item.cost_price} onChange={(e) => handleItemChange(index, 'cost_price', e.target.value)} /></Td>
+                                            <Td>
+                                                {/* --- PENYEMPURNAAN UX DIMULAI --- */}
+                                                <Input 
+                                                    type="text" 
+                                                    value={formatRupiah(item.cost_price)} 
+                                                    onChange={(e) => handleItemChange(index, 'cost_price', e.target.value)} 
+                                                />
+                                                {/* --- PENYEMPURNAAN UX SELESAI --- */}
+                                            </Td>
                                             <Td><button type="button" onClick={() => removeItemFromPO(index)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-color)'}}><FiTrash2 /></button></Td>
                                         </tr>
                                     ))}
