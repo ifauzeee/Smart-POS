@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\settingsRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -13,13 +15,10 @@ router.get('/business', protect, isAdmin, async (req, res) => {
             'SELECT business_name, address, phone_number, website, logo_url, payment_methods, receipt_logo_url, receipt_footer_text, tax_rate, default_starting_cash FROM businesses WHERE id = ?',
             [businessId]
         );
-
         if (!settings) {
             return res.status(404).json({ message: 'Pengaturan bisnis tidak ditemukan.' });
         }
-        
         res.json(settings);
-
     } catch (error) {
         console.error("Error fetching business settings:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
@@ -29,26 +28,19 @@ router.get('/business', protect, isAdmin, async (req, res) => {
 // POST /api/settings/business
 router.post('/business', protect, isAdmin, async (req, res) => {
     const {
-        business_name,
-        address,
-        phone,
-        website,
-        logo_url,
-        payment_methods,
-        receipt_logo_url,
-        receipt_footer_text,
-        tax_rate,
-        default_starting_cash // <-- Variabel baru
+        business_name, address, phone, website, logo_url, payment_methods,
+        receipt_logo_url, receipt_footer_text, tax_rate, default_starting_cash
     } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
     try {
+        const cashValue = parseFloat(default_starting_cash) || 0;
         await db.query(
             `UPDATE businesses SET 
                 business_name = ?, address = ?, phone_number = ?, website = ?, 
                 logo_url = ?, payment_methods = ?, receipt_logo_url = ?, 
-                receipt_footer_text = ?, tax_rate = ?, default_starting_cash = ? 
+                receipt_footer_text = ?, tax_rate = ?, default_starting_cash = ?, cash_in_drawer = ? 
             WHERE id = ?`,
             [
                 business_name || null,
@@ -60,7 +52,8 @@ router.post('/business', protect, isAdmin, async (req, res) => {
                 receipt_logo_url || null,
                 receipt_footer_text || null,
                 parseFloat(tax_rate) || 0,
-                parseFloat(default_starting_cash) || 0, // <-- Simpan nilai baru
+                cashValue,
+                cashValue, // Set cash_in_drawer sama dengan default_starting_cash
                 businessId
             ]
         );

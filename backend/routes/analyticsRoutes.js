@@ -1,21 +1,11 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\analyticsRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin from authMiddleware
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
 
 const router = express.Router();
-
-// The local isAdmin function is removed as it's now imported from authMiddleware.js.
-// This ensures consistency and reusability.
-
-// Debug endpoint - useful for checking token and user details during development
-router.get('/debug-token', protect, async (req, res) => {
-    res.json({
-        headers: req.headers,
-        user: req.user,
-        token: req.headers.authorization
-    });
-});
 
 /**
  * Helper function to fetch various statistical data for a given business within a specified date range.
@@ -37,19 +27,18 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
             CAST(
                 COALESCE(
                     (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
-                    FROM order_items oi
-                    JOIN orders o2 ON oi.order_id = o2.id
+                    FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
                     WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                 , 0)
             AS DECIMAL(15,2)) as totalProfit,
             COALESCE((
                 SELECT SUM(oi.quantity)
-                FROM order_items oi
-                JOIN orders o2 ON oi.order_id = o2.id
-                WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?
+                FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
+                WHERE o2.business_id = ? AND created_at BETWEEN ? AND ?
             ), 0) as totalSoldUnits,
-            (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
-            (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
+            (SELECT COUNT(id) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
+            (SELECT SUM(amount) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses,
+            (SELECT expected_cash FROM cashier_shifts WHERE business_id = ? AND status = 'closed' ORDER BY end_time DESC LIMIT 1) as cashInDrawer
     `;
     const params = [
         businessId, startDate, endDate,
@@ -57,20 +46,41 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         businessId, startDate, endDate,
         businessId, startDate, endDate,
         businessId, startDate, endDate,
-        businessId, startDate, endDate
+        businessId, startDate, endDate,
+        businessId
     ];
+
     const [[stats]] = await db.query(statsQuery, params);
+    
+    // Fetch default starting cash as a fallback
+    const [[defaultCashSetting]] = await db.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
+
     return {
         totalRevenue: Number(stats.totalRevenue),
         totalTransactions: Number(stats.totalTransactions),
         totalProfit: Number(stats.totalProfit),
         totalSoldUnits: Number(stats.totalSoldUnits),
         newCustomers: Number(stats.newCustomers),
-        totalExpenses: Number(stats.totalExpenses),
+        totalExpenses: Number(stats.totalExpenses) || 0,
+        // If there's no closed shift, use the default starting cash from settings
+        cashInDrawer: Number(stats.cashInDrawer) || Number(defaultCashSetting.default_starting_cash),
     };
 };
 
 // --- Dashboard Statistics Endpoints ---
+
+/**
+ * @route GET /api/admin/debug-token
+ * @desc Debug endpoint - useful for checking token and user details during development
+ * @access Private (Admin only)
+ */
+router.get('/debug-token', protect, isAdmin, async (req, res) => {
+    res.json({
+        headers: req.headers,
+        user: req.user,
+        token: req.headers.authorization
+    });
+});
 
 /**
  * @route GET /api/admin/stats
@@ -542,7 +552,8 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
                     END
                 AS DECIMAL(10,2)) as profit_margin_percentage
             FROM products p
-            JOIN order_items oi ON p.id = oi.product_id
+            LEFT JOIN product_variants pv ON p.id = pv.product_id
+            JOIN order_items oi ON pv.id = oi.variant_id
             JOIN orders o ON oi.order_id = o.id
             WHERE p.business_id = ? AND o.created_at BETWEEN ? AND ? AND p.is_archived = 0
             GROUP BY p.id, p.name

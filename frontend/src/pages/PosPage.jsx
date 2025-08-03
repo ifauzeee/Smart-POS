@@ -28,12 +28,53 @@ const PanelHeader = styled.header` padding: 20px 25px; border-bottom: 1px solid 
 const SearchContainer = styled.div` position: relative; width: 100%; max-width: 450px; `;
 const SearchIcon = styled(FiSearch)` position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-placeholder); `;
 const SearchInput = styled.input` width: 100%; padding: 12px 20px 12px 45px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary); &:focus { outline: none; border-color: var(--primary-color); } `;
-const ProductGrid = styled(motion.div)` flex-grow: 1; padding: 25px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 22px; overflow-y: auto; `;
+const ProductGrid = styled(motion.div)`
+    flex-grow: 1;
+    padding: 25px;
+    display: grid;
+    // --- PERUBAHAN DI SINI ---
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 18px; 
+    // --- AKHIR PERUBAHAN ---
+    overflow-y: auto;
+`;
 const ProductCard = styled(motion.div)` background-color: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; position: relative; cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')}; opacity: ${(props) => (props.$disabled ? 0.5 : 1)}; transition: all 0.2s ease-in-out; &:hover:not([disabled]) { border-color: var(--primary-color); transform: translateY(-4px); } `;
 const ProductImage = styled.div` width: 100%; padding-top: 100%; background-image: url(${(props) => props.src}); background-size: cover; background-position: center; `;
-const ProductInfo = styled.div` padding: 5px 15px 10px; text-align: left; flex-grow: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border-color); `;
-const ProductName = styled.h4` margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); line-height: 1.2em; max-height: 2.4em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; `;
-const ProductPrice = styled.p` margin: 0; padding-top: 2px; color: var(--primary-color); font-weight: 600; font-size: 1rem; `;
+const ProductInfo = styled.div`
+    // --- PERUBAHAN DI SINI ---
+    padding: 12px; 
+    // --- AKHIR PERUBAHAN ---
+    text-align: left;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--border-color);
+`;
+const ProductName = styled.h4`
+    margin: 0 0 2px 0;
+    // --- PERUBAHAN DI SINI ---
+    font-size: 0.85rem;
+    // --- AKHIR PERUBAHAN ---
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.3em;
+    max-height: 2.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+`;
+const ProductPrice = styled.p`
+    margin: 0;
+    padding-top: 4px;
+    color: var(--primary-color);
+    font-weight: 600;
+    // --- PERUBAHAN DI SINI ---
+    font-size: 0.95rem;
+    // --- AKHIR PERUBAHAN ---
+`;
 const CartPanel = styled(motion.aside)` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden; `;
 const CartHeader = styled.div` padding: 20px 25px; flex-shrink: 0; border-bottom: 1px solid var(--border-color); `;
 const PanelTitle = styled.h1` font-size: 1.5rem; font-weight: 600; color: var(--text-primary); `;
@@ -58,7 +99,6 @@ const Badge = styled.span` position: absolute; top: -5px; right: -5px; backgroun
 const SkeletonCard = () => ( <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}> <Skeleton height={136} /> <div style={{ padding: '15px' }}> <Skeleton height={20} style={{ marginBottom: '8px' }} count={2} /> <Skeleton height={24} width="60%" style={{ marginTop: '8px' }} /> </div> </div> );
 const PromoInput = styled.input` flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); `;
 const PromoSection = styled.div` display: flex; gap: 10px; margin-bottom: 20px; `;
-
 
 function PosPage() {
     const [products, setProducts] = useState([]);
@@ -351,11 +391,11 @@ function PosPage() {
             <PageWrapper loading={true}>
                 <PageGrid>
                     <ProductsPanel>
-                       <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
-                       <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
+                        <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
+                        <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
                     </ProductsPanel>
                     <CartPanel><Skeleton height="100%" /></CartPanel>
-                 </PageGrid>
+                   </PageGrid>
             </PageWrapper>
         );
     }

@@ -91,8 +91,8 @@ router.post('/close/:id', protect, async (req, res) => {
             total_sales, expected_cash, difference, shiftId
         ]);
         
-        const nextStartingCash = physicalEndingCash;
-        await connection.query('UPDATE businesses SET default_starting_cash = ? WHERE id = ?', [nextStartingCash, businessId]);
+        // Update both default_starting_cash and cash_in_drawer for synchronization
+        await connection.query('UPDATE businesses SET default_starting_cash = ?, cash_in_drawer = ? WHERE id = ?', [physicalEndingCash, physicalEndingCash, businessId]);
 
         await connection.commit();
         await logActivity(businessId, userId, 'CLOSE_SHIFT', `Shift ID ${shiftId} ditutup secara otomatis.`);
@@ -107,11 +107,119 @@ router.post('/close/:id', protect, async (req, res) => {
     }
 });
 
-// ... Sisa rute (current, history, dll.) tetap sama seperti sebelumnya ...
-router.get('/current', protect, async (req, res) => { const { id: userId } = req.user; try { const [[currentShift]] = await db.query('SELECT * FROM cashier_shifts WHERE user_id = ? AND status = "open"', [userId]); res.json({ active: !!currentShift, shift: currentShift || null }); } catch (error) { console.error("Error checking current shift:", error); res.status(500).json({ message: "Gagal memeriksa shift." }); } });
-router.get('/history', protect, isAdmin, async (req, res) => { const businessId = req.user.business_id; try { const query = `SELECT s.*, u.name as user_name FROM cashier_shifts s JOIN users u ON s.user_id = u.id WHERE s.business_id = ? AND s.status = 'closed' ORDER BY s.end_time DESC`; const [history] = await db.query(query, [businessId]); res.json(history); } catch (error) { console.error("Error fetching shift history:", error); res.status(500).json({ message: "Gagal mengambil riwayat shift." }); } });
-router.delete('/clear-history', protect, isAdmin, async (req, res) => { const { business_id: businessId, id: userId } = req.user; const connection = await db.getConnection(); try { await connection.beginTransaction(); const [result] = await connection.query('DELETE FROM cashier_shifts WHERE business_id = ? AND status = "closed"',[businessId]); await connection.commit(); await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY', `Cleared ${result.affectedRows} closed shifts.`); res.status(200).json({ message: 'Semua riwayat shift telah berhasil dihapus.' }); } catch (error) { await connection.rollback(); console.error("Error clearing shift history:", error); await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY_FAILED', `Error: ${error.message}`); res.status(500).json({ message: 'Gagal menghapus riwayat shift.', error: error.message }); } finally { if (connection) connection.release(); } });
-router.get('/export', protect, isAdmin, async (req, res) => { const businessId = req.user.business_id; try { const query = `SELECT s.*, u.name as user_name FROM cashier_shifts s JOIN users u ON s.user_id = u.id WHERE s.business_id = ? AND s.status = 'closed' ORDER BY s.end_time DESC`; const [shifts] = await db.query(query, [businessId]); if (shifts.length === 0) { return res.status(404).json({ message: "Tidak ada riwayat shift untuk diekspor." }); } const exportsDir = path.join(__dirname, '..', 'exports'); if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true }); const filePath = path.join(exportsDir, `shift-history-${Date.now()}.csv`); const csvWriter = createCsvWriter({ path: filePath, header: [{id: 'id', title: 'SHIFT_ID'},{id: 'user_name', title: 'KASIR'},{id: 'start_time', title: 'WAKTU_MULAI'},{id: 'end_time', title: 'WAKTU_SELESAI'},{id: 'starting_cash', title: 'KAS_AWAL'},{id: 'ending_cash', title: 'KAS_AKHIR_FISIK'},{id: 'expected_cash', title: 'KAS_AKHIR_SISTEM'},{id: 'difference', title: 'SELISIH'},{id: 'total_sales', title: 'TOTAL_PENJUALAN'},{id: 'cash_sales', title: 'PENJUALAN_TUNAI'},{id: 'card_sales', title: 'PENJUALAN_KARTU'},{id: 'qris_sales', title: 'PENJUALAN_QRIS'},] }); await csvWriter.writeRecords(shifts); res.download(filePath, (err) => { if (err) console.error("Error sending file:", err); fs.unlink(filePath, (unlinkErr) => { if (unlinkErr) console.error("Error deleting temp file:", unlinkErr); }); }); } catch (error) { console.error("Error exporting shift history:", error); res.status(500).json({ message: "Gagal mengekspor data." }); } });
+// GET /api/shifts/current
+router.get('/current', protect, async (req, res) => {
+    const { id: userId } = req.user;
+    try {
+        const [[currentShift]] = await db.query('SELECT * FROM cashier_shifts WHERE user_id = ? AND status = "open"', [userId]);
+        res.json({ active: !!currentShift, shift: currentShift || null });
+    } catch (error) {
+        console.error("Error checking current shift:", error);
+        res.status(500).json({ message: "Gagal memeriksa shift." });
+    }
+});
 
+// GET /api/shifts/history
+router.get('/history', protect, isAdmin, async (req, res) => {
+    const businessId = req.user.business_id;
+    try {
+        const query = `
+            SELECT s.*, u.name as user_name FROM cashier_shifts s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.business_id = ? AND s.status = 'closed'
+            ORDER BY s.end_time DESC
+        `;
+        const [history] = await db.query(query, [businessId]);
+        res.json(history);
+    } catch (error) {
+        console.error("Error fetching shift history:", error);
+        res.status(500).json({ message: "Gagal mengambil riwayat shift." });
+    }
+});
+
+// DELETE /api/shifts/clear-history
+router.delete('/clear-history', protect, isAdmin, async (req, res) => {
+    const { business_id: businessId, id: userId } = req.user;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [result] = await connection.query('DELETE FROM cashier_shifts WHERE business_id = ? AND status = "closed"', [businessId]);
+        await connection.commit();
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY', `Cleared ${result.affectedRows} closed shifts.`);
+        res.status(200).json({ message: 'Semua riwayat shift telah berhasil dihapus.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error clearing shift history:", error);
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: 'Gagal menghapus riwayat shift.', error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
+// GET /api/shifts/export
+router.get('/export', protect, isAdmin, async (req, res) => {
+    const businessId = req.user.business_id;
+    try {
+        const query = `
+            SELECT s.*, u.name as user_name FROM cashier_shifts s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.business_id = ? AND s.status = 'closed'
+            ORDER BY s.end_time DESC
+        `;
+        const [shifts] = await db.query(query, [businessId]);
+        if (shifts.length === 0) {
+            return res.status(404).json({ message: "Tidak ada riwayat shift untuk diekspor." });
+        }
+        const exportsDir = path.join(__dirname, '..', 'exports');
+        if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+        const filePath = path.join(exportsDir, `shift-history-${Date.now()}.csv`);
+        const csvWriter = createCsvWriter({
+            path: filePath,
+            header: [
+                { id: 'id', title: 'SHIFT_ID' },
+                { id: 'user_name', title: 'KASIR' },
+                { id: 'start_time', title: 'WAKTU_MULAI' },
+                { id: 'end_time', title: 'WAKTU_SELESAI' },
+                { id: 'starting_cash', title: 'KAS_AWAL' },
+                { id: 'ending_cash', title: 'KAS_AKHIR_FISIK' },
+                { id: 'expected_cash', title: 'KAS_AKHIR_SISTEM' },
+                { id: 'difference', title: 'SELISIH' },
+                { id: 'total_sales', title: 'TOTAL_PENJUALAN' },
+                { id: 'cash_sales', title: 'PENJUALAN_TUNAI' },
+                { id: 'card_sales', title: 'PENJUALAN_KARTU' },
+                { id: 'qris_sales', title: 'PENJUALAN_QRIS' },
+            ]
+        });
+        await csvWriter.writeRecords(shifts);
+        res.download(filePath, (err) => {
+            if (err) console.error("Error sending file:", err);
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error("Error deleting temp file:", unlinkErr);
+            });
+        });
+    } catch (error) {
+        console.error("Error exporting shift history:", error);
+        res.status(500).json({ message: "Gagal mengekspor data." });
+    }
+});
+
+// DELETE /api/shifts/:id (optional, but good practice to allow deleting single shifts if needed)
+router.delete('/:id', protect, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { business_id: businessId, id: userId } = req.user;
+    try {
+        const [result] = await db.query('DELETE FROM cashier_shifts WHERE id = ? AND business_id = ?', [id, businessId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Riwayat shift tidak ditemukan.' });
+        }
+        await logActivity(businessId, userId, 'DELETE_SHIFT_HISTORY', `Deleted shift ID ${id}.`);
+        res.json({ message: 'Riwayat shift berhasil dihapus.' });
+    } catch (error) {
+        console.error("Error deleting shift history:", error);
+        await logActivity(businessId, userId, 'DELETE_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: 'Gagal menghapus riwayat shift.' });
+    }
+});
 
 module.exports = router;
