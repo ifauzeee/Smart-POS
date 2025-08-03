@@ -301,7 +301,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
             `SELECT u.id, u.name, u.email, u.created_at, u.is_active, r.name as role_name, u.role_id
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
-             WHERE u.business_id = ?
+             WHERE u.business_id = ? AND u.is_active = 1
              ORDER BY u.created_at DESC`,
             [businessId]
         );

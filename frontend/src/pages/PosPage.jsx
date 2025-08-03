@@ -18,17 +18,12 @@ import Receipt from '../components/Receipt';
 import StartShiftModal from '../components/StartShiftModal';
 import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
-import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
+import PageWrapper from '../components/PageWrapper';
+import { jwtDecode } from 'jwt-decode';
 
-// --- Styled Components ---
-const PageGrid = styled.div`
-    display: grid; grid-template-columns: 1fr 420px; gap: 30px;
-    width: 100%; height: 100%; padding: 30px; overflow: hidden;
-    @media (max-width: 1024px) { grid-template-columns: 1fr; height: auto; }
-`;
-const ProductsPanel = styled(motion.div)` // <-- Tambahkan motion
-    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden;
-`;
+// ... (Semua styled-components dari file PosPage.jsx Anda biarkan di sini) ...
+const PageGrid = styled.div` display: grid; grid-template-columns: 1fr 420px; gap: 30px; width: 100%; height: 100%; padding: 30px; overflow: hidden; @media (max-width: 1024px) { grid-template-columns: 1fr; height: auto; } `;
+const ProductsPanel = styled(motion.div)` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; `;
 const PanelHeader = styled.header` padding: 20px 25px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; `;
 const SearchContainer = styled.div` position: relative; width: 100%; max-width: 450px; `;
 const SearchIcon = styled(FiSearch)` position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-placeholder); `;
@@ -39,9 +34,7 @@ const ProductImage = styled.div` width: 100%; padding-top: 100%; background-imag
 const ProductInfo = styled.div` padding: 5px 15px 10px; text-align: left; flex-grow: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border-color); `;
 const ProductName = styled.h4` margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); line-height: 1.2em; max-height: 2.4em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; `;
 const ProductPrice = styled.p` margin: 0; padding-top: 2px; color: var(--primary-color); font-weight: 600; font-size: 1rem; `;
-const CartPanel = styled(motion.aside)` // <-- Tambahkan motion
-    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden;
-`;
+const CartPanel = styled(motion.aside)` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden; `;
 const CartHeader = styled.div` padding: 20px 25px; flex-shrink: 0; border-bottom: 1px solid var(--border-color); `;
 const PanelTitle = styled.h1` font-size: 1.5rem; font-weight: 600; color: var(--text-primary); `;
 const CartItemsList = styled.ul` list-style: none; padding: 0 25px; margin: 0; flex-grow: 1; overflow-y: auto; `;
@@ -66,6 +59,7 @@ const SkeletonCard = () => ( <div style={{ border: '1px solid var(--border-color
 const PromoInput = styled.input` flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); `;
 const PromoSection = styled.div` display: flex; gap: 10px; margin-bottom: 20px; `;
 
+
 function PosPage() {
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
@@ -80,14 +74,30 @@ function PosPage() {
     const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
     const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
     const { settings } = useContext(BusinessContext);
-    const { activeShift, isLoadingShift, refreshShiftStatus, userRole } = useContext(ShiftContext);
+    const { activeShift, isLoadingShift, refreshShiftStatus } = useContext(ShiftContext);
     const [heldCarts, setHeldCarts] = useState(() => {
         const saved = localStorage.getItem('heldCarts');
         return saved ? JSON.parse(saved) : [];
     });
     const [couponCode, setCouponCode] = useState('');
     const [appliedDiscount, setAppliedDiscount] = useState(null);
+    const [userRole, setUserRole] = useState(null);
 
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUserRole(decoded.role?.toLowerCase());
+            } catch (e) {
+                console.error("Token tidak valid");
+                setUserRole(''); // Set to empty string on error to stop loading
+            }
+        } else {
+            setUserRole(''); // Set to empty string if no token
+        }
+    }, []);
+    
     const [orderToPrint, setOrderToPrint] = useState(null);
     const receiptRef = useRef();
     const handlePrint = useReactToPrint({
@@ -333,23 +343,28 @@ function PosPage() {
         </CartPanel>
     );
 
-    if (isLoadingShift) {
+    // --- PERBAIKAN UTAMA DI SINI ---
+    // Tampilkan loading skeleton sampai status shift DAN peran pengguna selesai dimuat.
+    // userRole === null berarti data peran belum selesai diambil.
+    if (isLoadingShift || userRole === null) {
         return (
             <PageWrapper loading={true}>
-                 <PageGrid>
-                     <ProductsPanel>
-                        <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
-                        <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
-                     </ProductsPanel>
-                     <CartPanel><Skeleton height="100%" /></CartPanel>
+                <PageGrid>
+                    <ProductsPanel>
+                       <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
+                       <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
+                    </ProductsPanel>
+                    <CartPanel><Skeleton height="100%" /></CartPanel>
                  </PageGrid>
             </PageWrapper>
         );
     }
     
+    // Setelah loading selesai, baru periksa apakah perlu menampilkan modal "Mulai Shift".
     if (userRole === 'kasir' && !activeShift) {
         return <StartShiftModal onShiftStarted={refreshShiftStatus} />;
     }
+    // --- AKHIR PERBAIKAN ---
 
     return (
         <>

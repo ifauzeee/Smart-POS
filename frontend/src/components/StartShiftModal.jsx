@@ -27,7 +27,7 @@ function StartShiftModal({ onShiftStarted }) {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            // PERBAIKAN: Tidak perlu mengirim data apa pun
+            // Tidak perlu mengirim data apa pun, backend akan otomatis menggunakan nilai default
             await toast.promise(startShift(), {
                 pending: 'Memulai shift...',
                 success: 'Shift berhasil dimulai!',

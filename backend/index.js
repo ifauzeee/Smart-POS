@@ -1,10 +1,11 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\index.js
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
-// --- Konfigurasi CORS Final dan Benar ---
 const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'];
 const corsOptions = {
     origin: (origin, callback) => {
@@ -22,7 +23,6 @@ const corsOptions = {
 
 const app = express();
 
-// Aktifkan pre-flight requests SEBELUM middleware lainnya
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
@@ -38,7 +38,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const shiftRoutes = require('./routes/shiftRoutes');
+const shiftRoutes = require('./routes/shiftRoutes'); // Variabel yang benar
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
@@ -61,12 +61,16 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/shifts', shiftRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
+
+// =================================================================
+// PERBAIKAN DI SINI: Menggunakan variabel 'shiftRoutes' yang benar
+// =================================================================
+app.use('/api/shifts', shiftRoutes);
 
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 

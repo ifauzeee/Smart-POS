@@ -52,8 +52,8 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 
+// Menghapus overflow-x: auto untuk menghilangkan scrollbar
 const TableWrapper = styled.div`
-    overflow-x: auto;
     flex-grow: 1;
 `;
 

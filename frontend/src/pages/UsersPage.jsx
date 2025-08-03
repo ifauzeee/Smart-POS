@@ -51,8 +51,8 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+// Menghapus scrollbar dengan menghapus overflow-x: auto
 const TableWrapper = styled.div`
-    overflow-x: auto;
     flex-grow: 1;
 `;
 const Table = styled.table`
@@ -167,19 +167,30 @@ function UsersPage() {
 
     const confirmDelete = async () => {
         if (!userToDelete) return;
+        
+        // Buat promise di sini untuk dikelola oleh toast
+        const deletePromise = deleteUser(userToDelete.id);
+
         try {
-            await toast.promise(
-                deleteUser(userToDelete.id),
-                {
-                    pending: 'Menghapus pengguna...',
-                    success: 'Pengguna berhasil dihapus!',
-                    error: (err) => err.response?.data?.message || 'Gagal menghapus pengguna.'
+            // Gunakan toast.promise untuk menampilkan notifikasi
+            await toast.promise(deletePromise, {
+                pending: 'Menghapus pengguna...',
+                success: 'Pengguna berhasil dihapus!',
+                error: {
+                    render({ data }) {
+                        // Menampilkan pesan spesifik dari backend
+                        return data.response?.data?.message || 'Gagal menghapus pengguna.';
+                    }
                 }
-            );
+            });
+
+            // Hanya memuat ulang data jika penghapusan berhasil
             fetchUsersAndRoles();
         } catch (error) {
+            // Log error, tapi tidak perlu toast.error lagi karena sudah ditangani
             console.error("Delete user error:", error);
         } finally {
+            // Tutup modal dan reset state terlepas dari berhasil atau tidaknya operasi
             setIsConfirmOpen(false);
             setUserToDelete(null);
         }

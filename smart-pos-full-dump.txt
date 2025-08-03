@@ -3579,32 +3579,27 @@ SOFTWARE.
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\.env =====
 
-# --- Konfigurasi Database ---
+# Konfigurasi Database
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=smart_pos_db
 
-# --- Kunci Rahasia JWT (Ganti dengan teks acak yang panjang!) ---
-JWT_SECRET=INI_KUNCI_RAHASIA_YANG_SANGAT_PANJANG_DAN_AMAN_HARUS_DIGANTI
+# Kunci Rahasia JWT (Ganti dengan teks acak yang sangat panjang, contoh: dari https://randomkeygen.com/)
+JWT_SECRET=GANTI_DENGAN_KUNCI_RAHASIA_SUPER_PANJANG_ANDA
 
-# --- Kunci Registrasi Admin Pertama ---
-# Pastikan ini sangat rahasia. Hanya untuk pendaftaran admin pertama kali.
-ADMIN_REGISTRATION_KEY="KODE_RAHASIA_UNTUK_REGISTRASI_ADMIN_PERTAMA"
+# Kunci Enkripsi (HARUS TEPAT 32 KARAKTER, contoh: dari https://randomkeygen.com/)
+ENCRYPTION_KEY=GANTI_DENGAN_32_KARAKTER_ACAK_ANDA
 
-# --- Kunci Enkripsi (Ganti dengan 32 karakter acak!) ---
-# Gunakan tool seperti https://randomkeygen.com/ untuk membuat string acak.
-# Contoh: 9s5Gq7Z2kHjX1cD8bP3fV4nM6yT0wU9xY
-ENCRYPTION_KEY=ganti_dengan_32_karakter_acak__
+# Kunci Registrasi Admin Pertama (Ubah sesuai keinginan Anda)
+ADMIN_REGISTRATION_KEY="RAHASIA123"
 
-# --- Konfigurasi Email (untuk Kirim Struk) ---
-EMAIL_USER=emailanda@gmail.com
-EMAIL_PASS=sandi16karaktergoogleapp
-
-# --- URL FRONTEND (PENTING UNTUK CORS) ---
-# Tambahkan atau perbaiki baris ini.
+# URL Frontend (Untuk CORS)
 FRONTEND_URL=http://localhost:5173
 
+# Konfigurasi Email (Opsional, untuk kirim struk)
+EMAIL_USER=email.anda@gmail.com
+EMAIL_PASS=sandi_aplikasi_16_digit_dari_google
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\example.env =====
 
@@ -3651,6 +3646,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
+// --- Konfigurasi CORS Final dan Benar ---
 const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'];
 const corsOptions = {
     origin: (origin, callback) => {
@@ -3668,17 +3664,11 @@ const corsOptions = {
 
 const app = express();
 
-// --- PERBAIKAN DI SINI ---
 // Aktifkan pre-flight requests SEBELUM middleware lainnya
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
-// --- AKHIR PERBAIKAN ---
 
-app.get('/api/version', (req, res) => {
-    res.status(200).json({ message: "Server is running the LATEST code version. CORS is fixed." });
-});
-
-// --- Rute-rute Aplikasi (Pastikan semua diimpor) ---
+// Impor semua rute aplikasi
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -3690,7 +3680,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const shiftRoutes = require('./routes/shiftRoutes');
+const shiftRoutes = require('./routes/shiftRoutes'); // Baris yang benar
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
@@ -3701,7 +3691,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Pendaftaran Rute ---
+// Pendaftaran semua rute
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
@@ -3713,7 +3703,7 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/shifts', shiftRoutes);
+app.use('/api/shifts', shiftRoutes); // Baris yang benar
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
@@ -3739,21 +3729,20 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "ISC",
       "dependencies": {
         "bcrypt": "^5.1.1",
-        "body-parser": "^2.2.0",
+        "body-parser": "^1.20.2",
         "cors": "^2.8.5",
         "csv-writer": "^1.6.0",
-        "dotenv": "^17.2.0",
-        "express": "^5.1.0",
-        "express-validator": "^7.2.1",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "express-validator": "^7.1.0",
         "jsonwebtoken": "^9.0.2",
-        "jwt-decode": "^4.0.0",
-        "multer": "^2.0.2",
-        "mysql2": "^3.14.2",
-        "nodemailer": "^7.0.5",
+        "multer": "^1.4.5-lts.1",
+        "mysql2": "^3.10.0",
+        "nodemailer": "^6.9.14",
         "pdfkit": "^0.15.0"
       },
       "devDependencies": {
-        "nodemon": "^3.1.10"
+        "nodemon": "^3.1.2"
       }
     },
     "node_modules/@mapbox/node-pre-gyp": {
@@ -3792,13 +3781,13 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "ISC"
     },
     "node_modules/accepts": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/accepts/-/accepts-2.0.0.tgz",
-      "integrity": "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==",
+      "version": "1.3.8",
+      "resolved": "https://registry.npmjs.org/accepts/-/accepts-1.3.8.tgz",
+      "integrity": "sha512-PYAthTa2m2VKxuvSD3DPC/Gy+U+sOA1LAuT8mkmRuvw+NACSaeXEQ+NHcVF7rONl6qcaxV3Uuemwawk+7+SJLw==",
       "license": "MIT",
       "dependencies": {
-        "mime-types": "^3.0.0",
-        "negotiator": "^1.0.0"
+        "mime-types": "~2.1.34",
+        "negotiator": "0.6.3"
       },
       "engines": {
         "node": ">= 0.6"
@@ -3815,6 +3804,29 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "engines": {
         "node": ">= 6.0.0"
       }
+    },
+    "node_modules/agent-base/node_modules/debug": {
+      "version": "4.4.1",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.1.tgz",
+      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
+      "license": "MIT",
+      "dependencies": {
+        "ms": "^2.1.3"
+      },
+      "engines": {
+        "node": ">=6.0"
+      },
+      "peerDependenciesMeta": {
+        "supports-color": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/agent-base/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
     },
     "node_modules/ansi-regex": {
       "version": "5.0.1",
@@ -3865,6 +3877,20 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">=10"
       }
     },
+    "node_modules/are-we-there-yet/node_modules/readable-stream": {
+      "version": "3.6.2",
+      "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-3.6.2.tgz",
+      "integrity": "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==",
+      "license": "MIT",
+      "dependencies": {
+        "inherits": "^2.0.3",
+        "string_decoder": "^1.1.1",
+        "util-deprecate": "^1.0.1"
+      },
+      "engines": {
+        "node": ">= 6"
+      }
+    },
     "node_modules/array-buffer-byte-length": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/array-buffer-byte-length/-/array-buffer-byte-length-1.0.2.tgz",
@@ -3880,6 +3906,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "funding": {
         "url": "https://github.com/sponsors/ljharb"
       }
+    },
+    "node_modules/array-flatten": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/array-flatten/-/array-flatten-1.1.1.tgz",
+      "integrity": "sha512-PCVAQswWemu6UdxsDFFX/+gVeYqKAod3D3UVm91jHwynguOwAvYPhx8nNlM++NqRcK6CxxpUafjmhIdKiHibqg==",
+      "license": "MIT"
     },
     "node_modules/available-typed-arrays": {
       "version": "1.0.7",
@@ -3959,23 +3991,27 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/body-parser": {
-      "version": "2.2.0",
-      "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-2.2.0.tgz",
-      "integrity": "sha512-02qvAaxv8tp7fBa/mw1ga98OGm+eCbqzJOKoRt70sLmfEEi+jyBYVTDGfCL/k06/4EMk/z01gCe7HoCH/f2LTg==",
+      "version": "1.20.3",
+      "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-1.20.3.tgz",
+      "integrity": "sha512-7rAxByjUMqQ3/bHJy7D6OGXvx/MMc4IqBn/X0fcM1QUcAItpZrBEYhWGem+tzXH90c+G01ypMcYJBO9Y30203g==",
       "license": "MIT",
       "dependencies": {
-        "bytes": "^3.1.2",
-        "content-type": "^1.0.5",
-        "debug": "^4.4.0",
-        "http-errors": "^2.0.0",
-        "iconv-lite": "^0.6.3",
-        "on-finished": "^2.4.1",
-        "qs": "^6.14.0",
-        "raw-body": "^3.0.0",
-        "type-is": "^2.0.0"
+        "bytes": "3.1.2",
+        "content-type": "~1.0.5",
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "destroy": "1.2.0",
+        "http-errors": "2.0.0",
+        "iconv-lite": "0.4.24",
+        "on-finished": "2.4.1",
+        "qs": "6.13.0",
+        "raw-body": "2.5.2",
+        "type-is": "~1.6.18",
+        "unpipe": "1.0.0"
       },
       "engines": {
-        "node": ">=18"
+        "node": ">= 0.8",
+        "npm": "1.2.8000 || >= 1.4.16"
       }
     },
     "node_modules/brace-expansion": {
@@ -4148,17 +4184,17 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "MIT"
     },
     "node_modules/concat-stream": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/concat-stream/-/concat-stream-2.0.0.tgz",
-      "integrity": "sha512-MWufYdFw53ccGjCA+Ol7XJYpAlW6/prSMzuPOTRnJGcGzuhLn4Scrz7qf6o8bROZ514ltazcIFJZevcfbo0x7A==",
+      "version": "1.6.2",
+      "resolved": "https://registry.npmjs.org/concat-stream/-/concat-stream-1.6.2.tgz",
+      "integrity": "sha512-27HBghJxjiZtIk3Ycvn/4kbJk/1uZuJFfuPEns6LaEvpvG1f0hTea8lilrouyo9mVc2GWdcEZ8OLoGmSADlrCw==",
       "engines": [
-        "node >= 6.0"
+        "node >= 0.8"
       ],
       "license": "MIT",
       "dependencies": {
         "buffer-from": "^1.0.0",
         "inherits": "^2.0.3",
-        "readable-stream": "^3.0.2",
+        "readable-stream": "^2.2.2",
         "typedarray": "^0.0.6"
       }
     },
@@ -4169,9 +4205,9 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "ISC"
     },
     "node_modules/content-disposition": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-1.0.0.tgz",
-      "integrity": "sha512-Au9nRL8VNUut/XSzbQA38+M78dzP4D+eqg3gfJHMIHHYa3bg067xj1KxMUWj+VULbiZMowKngFFbKczUrNJ1mg==",
+      "version": "0.5.4",
+      "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-0.5.4.tgz",
+      "integrity": "sha512-FveZTNuGw04cxlAiWbzi6zTAL/lhehaWbTtgluJh4/E95DqMwTmha3KZN1aAWA8cFIhHzMZUvLevkw5Rqk+tSQ==",
       "license": "MIT",
       "dependencies": {
         "safe-buffer": "5.2.1"
@@ -4190,22 +4226,25 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/cookie": {
-      "version": "0.7.2",
-      "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.7.2.tgz",
-      "integrity": "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==",
+      "version": "0.7.1",
+      "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.7.1.tgz",
+      "integrity": "sha512-6DnInpx7SJ2AK3+CTUE/ZM0vWTUboZCegxhC2xiIydHR9jNuTAASBrfEpHhiGOZw/nX51bHt6YQl8jsGo4y/0w==",
       "license": "MIT",
       "engines": {
         "node": ">= 0.6"
       }
     },
     "node_modules/cookie-signature": {
-      "version": "1.2.2",
-      "resolved": "https://registry.npmjs.org/cookie-signature/-/cookie-signature-1.2.2.tgz",
-      "integrity": "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==",
-      "license": "MIT",
-      "engines": {
-        "node": ">=6.6.0"
-      }
+      "version": "1.0.6",
+      "resolved": "https://registry.npmjs.org/cookie-signature/-/cookie-signature-1.0.6.tgz",
+      "integrity": "sha512-QADzlaHc8icV8I7vbaJXJwod9HWYp8uCqf1xa4OfNu1T7JVxQIrUgOWtHdNDtPiywmFbiS12VjotIXLrKM3orQ==",
+      "license": "MIT"
+    },
+    "node_modules/core-util-is": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.3.tgz",
+      "integrity": "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==",
+      "license": "MIT"
     },
     "node_modules/cors": {
       "version": "2.8.5",
@@ -4233,20 +4272,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "MIT"
     },
     "node_modules/debug": {
-      "version": "4.4.1",
-      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.1.tgz",
-      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
+      "version": "2.6.9",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-2.6.9.tgz",
+      "integrity": "sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==",
       "license": "MIT",
       "dependencies": {
-        "ms": "^2.1.3"
-      },
-      "engines": {
-        "node": ">=6.0"
-      },
-      "peerDependenciesMeta": {
-        "supports-color": {
-          "optional": true
-        }
+        "ms": "2.0.0"
       }
     },
     "node_modules/deep-equal": {
@@ -4339,6 +4370,16 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">= 0.8"
       }
     },
+    "node_modules/destroy": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/destroy/-/destroy-1.2.0.tgz",
+      "integrity": "sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8",
+        "npm": "1.2.8000 || >= 1.4.16"
+      }
+    },
     "node_modules/detect-libc": {
       "version": "2.0.4",
       "resolved": "https://registry.npmjs.org/detect-libc/-/detect-libc-2.0.4.tgz",
@@ -4355,9 +4396,9 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "MIT"
     },
     "node_modules/dotenv": {
-      "version": "17.2.1",
-      "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-17.2.1.tgz",
-      "integrity": "sha512-kQhDYKZecqnM0fCnzI5eIv5L4cAe/iRI+HqMbO/hbRdTAeXDG+M9FjipUxNfbARuEg4iHIbhnhs78BCHNbSxEQ==",
+      "version": "16.6.1",
+      "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-16.6.1.tgz",
+      "integrity": "sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==",
       "license": "BSD-2-Clause",
       "engines": {
         "node": ">=12"
@@ -4476,41 +4517,45 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/express": {
-      "version": "5.1.0",
-      "resolved": "https://registry.npmjs.org/express/-/express-5.1.0.tgz",
-      "integrity": "sha512-DT9ck5YIRU+8GYzzU5kT3eHGA5iL+1Zd0EutOmTE9Dtk+Tvuzd23VBU+ec7HPNSTxXYO55gPV/hq4pSBJDjFpA==",
+      "version": "4.21.2",
+      "resolved": "https://registry.npmjs.org/express/-/express-4.21.2.tgz",
+      "integrity": "sha512-28HqgMZAmih1Czt9ny7qr6ek2qddF4FclbMzwhCREB6OFfH+rXAnuNCwo1/wFvrtbgsQDb4kSbX9de9lFbrXnA==",
       "license": "MIT",
       "dependencies": {
-        "accepts": "^2.0.0",
-        "body-parser": "^2.2.0",
-        "content-disposition": "^1.0.0",
-        "content-type": "^1.0.5",
-        "cookie": "^0.7.1",
-        "cookie-signature": "^1.2.1",
-        "debug": "^4.4.0",
-        "encodeurl": "^2.0.0",
-        "escape-html": "^1.0.3",
-        "etag": "^1.8.1",
-        "finalhandler": "^2.1.0",
-        "fresh": "^2.0.0",
-        "http-errors": "^2.0.0",
-        "merge-descriptors": "^2.0.0",
-        "mime-types": "^3.0.0",
-        "on-finished": "^2.4.1",
-        "once": "^1.4.0",
-        "parseurl": "^1.3.3",
-        "proxy-addr": "^2.0.7",
-        "qs": "^6.14.0",
-        "range-parser": "^1.2.1",
-        "router": "^2.2.0",
-        "send": "^1.1.0",
-        "serve-static": "^2.2.0",
-        "statuses": "^2.0.1",
-        "type-is": "^2.0.1",
-        "vary": "^1.1.2"
+        "accepts": "~1.3.8",
+        "array-flatten": "1.1.1",
+        "body-parser": "1.20.3",
+        "content-disposition": "0.5.4",
+        "content-type": "~1.0.4",
+        "cookie": "0.7.1",
+        "cookie-signature": "1.0.6",
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "etag": "~1.8.1",
+        "finalhandler": "1.3.1",
+        "fresh": "0.5.2",
+        "http-errors": "2.0.0",
+        "merge-descriptors": "1.0.3",
+        "methods": "~1.1.2",
+        "on-finished": "2.4.1",
+        "parseurl": "~1.3.3",
+        "path-to-regexp": "0.1.12",
+        "proxy-addr": "~2.0.7",
+        "qs": "6.13.0",
+        "range-parser": "~1.2.1",
+        "safe-buffer": "5.2.1",
+        "send": "0.19.0",
+        "serve-static": "1.16.2",
+        "setprototypeof": "1.2.0",
+        "statuses": "2.0.1",
+        "type-is": "~1.6.18",
+        "utils-merge": "1.0.1",
+        "vary": "~1.1.2"
       },
       "engines": {
-        "node": ">= 18"
+        "node": ">= 0.10.0"
       },
       "funding": {
         "type": "opencollective",
@@ -4544,17 +4589,18 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/finalhandler": {
-      "version": "2.1.0",
-      "resolved": "https://registry.npmjs.org/finalhandler/-/finalhandler-2.1.0.tgz",
-      "integrity": "sha512-/t88Ty3d5JWQbWYgaOGCCYfXRwV1+be02WqYYlL6h0lEiUAMPM8o8qKGO01YIkOHzka2up08wvgYD0mDiI+q3Q==",
+      "version": "1.3.1",
+      "resolved": "https://registry.npmjs.org/finalhandler/-/finalhandler-1.3.1.tgz",
+      "integrity": "sha512-6BN9trH7bp3qvnrRyzsBz+g3lZxTNZTbVO2EV1CS0WIcDbawYVdYvGflME/9QP0h0pYlCDBCTjYa9nZzMDpyxQ==",
       "license": "MIT",
       "dependencies": {
-        "debug": "^4.4.0",
-        "encodeurl": "^2.0.0",
-        "escape-html": "^1.0.3",
-        "on-finished": "^2.4.1",
-        "parseurl": "^1.3.3",
-        "statuses": "^2.0.1"
+        "debug": "2.6.9",
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "on-finished": "2.4.1",
+        "parseurl": "~1.3.3",
+        "statuses": "2.0.1",
+        "unpipe": "~1.0.0"
       },
       "engines": {
         "node": ">= 0.8"
@@ -4602,12 +4648,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/fresh": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/fresh/-/fresh-2.0.0.tgz",
-      "integrity": "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==",
+      "version": "0.5.2",
+      "resolved": "https://registry.npmjs.org/fresh/-/fresh-0.5.2.tgz",
+      "integrity": "sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==",
       "license": "MIT",
       "engines": {
-        "node": ">= 0.8"
+        "node": ">= 0.6"
       }
     },
     "node_modules/fs-minipass": {
@@ -4881,15 +4927,6 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">= 0.8"
       }
     },
-    "node_modules/http-errors/node_modules/statuses": {
-      "version": "2.0.1",
-      "resolved": "https://registry.npmjs.org/statuses/-/statuses-2.0.1.tgz",
-      "integrity": "sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==",
-      "license": "MIT",
-      "engines": {
-        "node": ">= 0.8"
-      }
-    },
     "node_modules/https-proxy-agent": {
       "version": "5.0.1",
       "resolved": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz",
@@ -4903,13 +4940,36 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">= 6"
       }
     },
-    "node_modules/iconv-lite": {
-      "version": "0.6.3",
-      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz",
-      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
+    "node_modules/https-proxy-agent/node_modules/debug": {
+      "version": "4.4.1",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.1.tgz",
+      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
       "license": "MIT",
       "dependencies": {
-        "safer-buffer": ">= 2.1.2 < 3.0.0"
+        "ms": "^2.1.3"
+      },
+      "engines": {
+        "node": ">=6.0"
+      },
+      "peerDependenciesMeta": {
+        "supports-color": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/https-proxy-agent/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
+    "node_modules/iconv-lite": {
+      "version": "0.4.24",
+      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.4.24.tgz",
+      "integrity": "sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==",
+      "license": "MIT",
+      "dependencies": {
+        "safer-buffer": ">= 2.1.2 < 3"
       },
       "engines": {
         "node": ">=0.10.0"
@@ -5137,12 +5197,6 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "url": "https://github.com/sponsors/ljharb"
       }
     },
-    "node_modules/is-promise": {
-      "version": "4.0.0",
-      "resolved": "https://registry.npmjs.org/is-promise/-/is-promise-4.0.0.tgz",
-      "integrity": "sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==",
-      "license": "MIT"
-    },
     "node_modules/is-property": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/is-property/-/is-property-1.0.2.tgz",
@@ -5289,6 +5343,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "npm": ">=6"
       }
     },
+    "node_modules/jsonwebtoken/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
     "node_modules/jwa": {
       "version": "1.4.2",
       "resolved": "https://registry.npmjs.org/jwa/-/jwa-1.4.2.tgz",
@@ -5308,15 +5368,6 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "dependencies": {
         "jwa": "^1.4.1",
         "safe-buffer": "^5.0.1"
-      }
-    },
-    "node_modules/jwt-decode": {
-      "version": "4.0.0",
-      "resolved": "https://registry.npmjs.org/jwt-decode/-/jwt-decode-4.0.0.tgz",
-      "integrity": "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==",
-      "license": "MIT",
-      "engines": {
-        "node": ">=18"
       }
     },
     "node_modules/linebreak": {
@@ -5450,42 +5501,60 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/media-typer": {
-      "version": "1.1.0",
-      "resolved": "https://registry.npmjs.org/media-typer/-/media-typer-1.1.0.tgz",
-      "integrity": "sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==",
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/media-typer/-/media-typer-0.3.0.tgz",
+      "integrity": "sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==",
       "license": "MIT",
       "engines": {
-        "node": ">= 0.8"
+        "node": ">= 0.6"
       }
     },
     "node_modules/merge-descriptors": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/merge-descriptors/-/merge-descriptors-2.0.0.tgz",
-      "integrity": "sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==",
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/merge-descriptors/-/merge-descriptors-1.0.3.tgz",
+      "integrity": "sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==",
       "license": "MIT",
-      "engines": {
-        "node": ">=18"
-      },
       "funding": {
         "url": "https://github.com/sponsors/sindresorhus"
       }
     },
+    "node_modules/methods": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/methods/-/methods-1.1.2.tgz",
+      "integrity": "sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/mime": {
+      "version": "1.6.0",
+      "resolved": "https://registry.npmjs.org/mime/-/mime-1.6.0.tgz",
+      "integrity": "sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==",
+      "license": "MIT",
+      "bin": {
+        "mime": "cli.js"
+      },
+      "engines": {
+        "node": ">=4"
+      }
+    },
     "node_modules/mime-db": {
-      "version": "1.54.0",
-      "resolved": "https://registry.npmjs.org/mime-db/-/mime-db-1.54.0.tgz",
-      "integrity": "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==",
+      "version": "1.52.0",
+      "resolved": "https://registry.npmjs.org/mime-db/-/mime-db-1.52.0.tgz",
+      "integrity": "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==",
       "license": "MIT",
       "engines": {
         "node": ">= 0.6"
       }
     },
     "node_modules/mime-types": {
-      "version": "3.0.1",
-      "resolved": "https://registry.npmjs.org/mime-types/-/mime-types-3.0.1.tgz",
-      "integrity": "sha512-xRc4oEhT6eaBpU1XF7AjpOFD+xQmXNB5OVKwp4tqCuBpHLS/ZbBDrc07mYTDqVMg6PfxUjjNp85O6Cd2Z/5HWA==",
+      "version": "2.1.35",
+      "resolved": "https://registry.npmjs.org/mime-types/-/mime-types-2.1.35.tgz",
+      "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==",
       "license": "MIT",
       "dependencies": {
-        "mime-db": "^1.54.0"
+        "mime-db": "1.52.0"
       },
       "engines": {
         "node": ">= 0.6"
@@ -5559,70 +5628,28 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/ms": {
-      "version": "2.1.3",
-      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
-      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.0.0.tgz",
+      "integrity": "sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==",
       "license": "MIT"
     },
     "node_modules/multer": {
-      "version": "2.0.2",
-      "resolved": "https://registry.npmjs.org/multer/-/multer-2.0.2.tgz",
-      "integrity": "sha512-u7f2xaZ/UG8oLXHvtF/oWTRvT44p9ecwBBqTwgJVq0+4BW1g8OW01TyMEGWBHbyMOYVHXslaut7qEQ1meATXgw==",
+      "version": "1.4.5-lts.2",
+      "resolved": "https://registry.npmjs.org/multer/-/multer-1.4.5-lts.2.tgz",
+      "integrity": "sha512-VzGiVigcG9zUAoCNU+xShztrlr1auZOlurXynNvO9GiWD1/mTBbUljOKY+qMeazBqXgRnjzeEgJI/wyjJUHg9A==",
+      "deprecated": "Multer 1.x is impacted by a number of vulnerabilities, which have been patched in 2.x. You should upgrade to the latest 2.x version.",
       "license": "MIT",
       "dependencies": {
         "append-field": "^1.0.0",
-        "busboy": "^1.6.0",
-        "concat-stream": "^2.0.0",
-        "mkdirp": "^0.5.6",
+        "busboy": "^1.0.0",
+        "concat-stream": "^1.5.2",
+        "mkdirp": "^0.5.4",
         "object-assign": "^4.1.1",
-        "type-is": "^1.6.18",
-        "xtend": "^4.0.2"
+        "type-is": "^1.6.4",
+        "xtend": "^4.0.0"
       },
       "engines": {
-        "node": ">= 10.16.0"
-      }
-    },
-    "node_modules/multer/node_modules/media-typer": {
-      "version": "0.3.0",
-      "resolved": "https://registry.npmjs.org/media-typer/-/media-typer-0.3.0.tgz",
-      "integrity": "sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==",
-      "license": "MIT",
-      "engines": {
-        "node": ">= 0.6"
-      }
-    },
-    "node_modules/multer/node_modules/mime-db": {
-      "version": "1.52.0",
-      "resolved": "https://registry.npmjs.org/mime-db/-/mime-db-1.52.0.tgz",
-      "integrity": "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==",
-      "license": "MIT",
-      "engines": {
-        "node": ">= 0.6"
-      }
-    },
-    "node_modules/multer/node_modules/mime-types": {
-      "version": "2.1.35",
-      "resolved": "https://registry.npmjs.org/mime-types/-/mime-types-2.1.35.tgz",
-      "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==",
-      "license": "MIT",
-      "dependencies": {
-        "mime-db": "1.52.0"
-      },
-      "engines": {
-        "node": ">= 0.6"
-      }
-    },
-    "node_modules/multer/node_modules/type-is": {
-      "version": "1.6.18",
-      "resolved": "https://registry.npmjs.org/type-is/-/type-is-1.6.18.tgz",
-      "integrity": "sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==",
-      "license": "MIT",
-      "dependencies": {
-        "media-typer": "0.3.0",
-        "mime-types": "~2.1.24"
-      },
-      "engines": {
-        "node": ">= 0.6"
+        "node": ">= 6.0.0"
       }
     },
     "node_modules/mysql2": {
@@ -5645,6 +5672,18 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">= 8.0"
       }
     },
+    "node_modules/mysql2/node_modules/iconv-lite": {
+      "version": "0.6.3",
+      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz",
+      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
+      "license": "MIT",
+      "dependencies": {
+        "safer-buffer": ">= 2.1.2 < 3.0.0"
+      },
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
     "node_modules/named-placeholders": {
       "version": "1.1.3",
       "resolved": "https://registry.npmjs.org/named-placeholders/-/named-placeholders-1.1.3.tgz",
@@ -5658,9 +5697,9 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/negotiator": {
-      "version": "1.0.0",
-      "resolved": "https://registry.npmjs.org/negotiator/-/negotiator-1.0.0.tgz",
-      "integrity": "sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==",
+      "version": "0.6.3",
+      "resolved": "https://registry.npmjs.org/negotiator/-/negotiator-0.6.3.tgz",
+      "integrity": "sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==",
       "license": "MIT",
       "engines": {
         "node": ">= 0.6"
@@ -5693,9 +5732,9 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/nodemailer": {
-      "version": "7.0.5",
-      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-7.0.5.tgz",
-      "integrity": "sha512-nsrh2lO3j4GkLLXoeEksAMgAOqxOv6QumNRVQTJwKH4nuiww6iC2y7GyANs9kRAxCexg3+lTWM3PZ91iLlVjfg==",
+      "version": "6.10.1",
+      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-6.10.1.tgz",
+      "integrity": "sha512-Z+iLaBGVaSjbIzQ4pX6XV41HrooLsQ10ZWPUehGmuantvzWoDVBnmsdUcOIDM1t+yPor5pDhVlDESgOMEGxhHA==",
       "license": "MIT-0",
       "engines": {
         "node": ">=6.0.0"
@@ -5729,6 +5768,31 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "type": "opencollective",
         "url": "https://opencollective.com/nodemon"
       }
+    },
+    "node_modules/nodemon/node_modules/debug": {
+      "version": "4.4.1",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.1.tgz",
+      "integrity": "sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==",
+      "dev": true,
+      "license": "MIT",
+      "dependencies": {
+        "ms": "^2.1.3"
+      },
+      "engines": {
+        "node": ">=6.0"
+      },
+      "peerDependenciesMeta": {
+        "supports-color": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/nodemon/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "dev": true,
+      "license": "MIT"
     },
     "node_modules/nopt": {
       "version": "5.0.0",
@@ -5880,13 +5944,10 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/path-to-regexp": {
-      "version": "8.2.0",
-      "resolved": "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.2.0.tgz",
-      "integrity": "sha512-TdrF7fW9Rphjq4RjrW0Kp2AW0Ahwu9sRGTkS6bvDi0SCwZlEZYmcfDbEsTz8RVk0EHIS/Vd1bv3JhG+1xZuAyQ==",
-      "license": "MIT",
-      "engines": {
-        "node": ">=16"
-      }
+      "version": "0.1.12",
+      "resolved": "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-0.1.12.tgz",
+      "integrity": "sha512-RA1GjUVMnvYFxuqovrEqZoxxW5NUZqbwKtYz/Tt7nXerk0LbLblQmrsgdeOxV5SFHf0UDggjS/bSeOZwt1pmEQ==",
+      "license": "MIT"
     },
     "node_modules/pdfkit": {
       "version": "0.15.2",
@@ -5928,6 +5989,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "node": ">= 0.4"
       }
     },
+    "node_modules/process-nextick-args": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-2.0.1.tgz",
+      "integrity": "sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==",
+      "license": "MIT"
+    },
     "node_modules/proxy-addr": {
       "version": "2.0.7",
       "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.7.tgz",
@@ -5949,12 +6016,12 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "MIT"
     },
     "node_modules/qs": {
-      "version": "6.14.0",
-      "resolved": "https://registry.npmjs.org/qs/-/qs-6.14.0.tgz",
-      "integrity": "sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==",
+      "version": "6.13.0",
+      "resolved": "https://registry.npmjs.org/qs/-/qs-6.13.0.tgz",
+      "integrity": "sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==",
       "license": "BSD-3-Clause",
       "dependencies": {
-        "side-channel": "^1.1.0"
+        "side-channel": "^1.0.6"
       },
       "engines": {
         "node": ">=0.6"
@@ -5973,14 +6040,14 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/raw-body": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/raw-body/-/raw-body-3.0.0.tgz",
-      "integrity": "sha512-RmkhL8CAyCRPXCE28MMH0z2PNWQBNk2Q09ZdxM9IOOXwxwZbN+qbWaatPkdkWIKL2ZVDImrN/pK5HTRz2PcS4g==",
+      "version": "2.5.2",
+      "resolved": "https://registry.npmjs.org/raw-body/-/raw-body-2.5.2.tgz",
+      "integrity": "sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==",
       "license": "MIT",
       "dependencies": {
         "bytes": "3.1.2",
         "http-errors": "2.0.0",
-        "iconv-lite": "0.6.3",
+        "iconv-lite": "0.4.24",
         "unpipe": "1.0.0"
       },
       "engines": {
@@ -5988,18 +6055,31 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/readable-stream": {
-      "version": "3.6.2",
-      "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-3.6.2.tgz",
-      "integrity": "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==",
+      "version": "2.3.8",
+      "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.3.8.tgz",
+      "integrity": "sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA==",
       "license": "MIT",
       "dependencies": {
-        "inherits": "^2.0.3",
-        "string_decoder": "^1.1.1",
-        "util-deprecate": "^1.0.1"
-      },
-      "engines": {
-        "node": ">= 6"
+        "core-util-is": "~1.0.0",
+        "inherits": "~2.0.3",
+        "isarray": "~1.0.0",
+        "process-nextick-args": "~2.0.0",
+        "safe-buffer": "~5.1.1",
+        "string_decoder": "~1.1.1",
+        "util-deprecate": "~1.0.1"
       }
+    },
+    "node_modules/readable-stream/node_modules/isarray": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
+      "integrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
+      "license": "MIT"
+    },
+    "node_modules/readable-stream/node_modules/safe-buffer": {
+      "version": "5.1.2",
+      "resolved": "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz",
+      "integrity": "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==",
+      "license": "MIT"
     },
     "node_modules/readdirp": {
       "version": "3.6.0",
@@ -6054,22 +6134,6 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       },
       "funding": {
         "url": "https://github.com/sponsors/isaacs"
-      }
-    },
-    "node_modules/router": {
-      "version": "2.2.0",
-      "resolved": "https://registry.npmjs.org/router/-/router-2.2.0.tgz",
-      "integrity": "sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==",
-      "license": "MIT",
-      "dependencies": {
-        "debug": "^4.4.0",
-        "depd": "^2.0.0",
-        "is-promise": "^4.0.0",
-        "parseurl": "^1.3.3",
-        "path-to-regexp": "^8.0.0"
-      },
-      "engines": {
-        "node": ">= 18"
       }
     },
     "node_modules/safe-buffer": {
@@ -6128,26 +6192,43 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/send": {
-      "version": "1.2.0",
-      "resolved": "https://registry.npmjs.org/send/-/send-1.2.0.tgz",
-      "integrity": "sha512-uaW0WwXKpL9blXE2o0bRhoL2EGXIrZxQ2ZQ4mgcfoBxdFmQold+qWsD2jLrfZ0trjKL6vOw0j//eAwcALFjKSw==",
+      "version": "0.19.0",
+      "resolved": "https://registry.npmjs.org/send/-/send-0.19.0.tgz",
+      "integrity": "sha512-dW41u5VfLXu8SJh5bwRmyYUbAoSB3c9uQh6L8h/KtsFREPWpbX1lrljJo186Jc4nmci/sGUZ9a0a0J2zgfq2hw==",
       "license": "MIT",
       "dependencies": {
-        "debug": "^4.3.5",
-        "encodeurl": "^2.0.0",
-        "escape-html": "^1.0.3",
-        "etag": "^1.8.1",
-        "fresh": "^2.0.0",
-        "http-errors": "^2.0.0",
-        "mime-types": "^3.0.1",
-        "ms": "^2.1.3",
-        "on-finished": "^2.4.1",
-        "range-parser": "^1.2.1",
-        "statuses": "^2.0.1"
+        "debug": "2.6.9",
+        "depd": "2.0.0",
+        "destroy": "1.2.0",
+        "encodeurl": "~1.0.2",
+        "escape-html": "~1.0.3",
+        "etag": "~1.8.1",
+        "fresh": "0.5.2",
+        "http-errors": "2.0.0",
+        "mime": "1.6.0",
+        "ms": "2.1.3",
+        "on-finished": "2.4.1",
+        "range-parser": "~1.2.1",
+        "statuses": "2.0.1"
       },
       "engines": {
-        "node": ">= 18"
+        "node": ">= 0.8.0"
       }
+    },
+    "node_modules/send/node_modules/encodeurl": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/encodeurl/-/encodeurl-1.0.2.tgz",
+      "integrity": "sha512-TPJXq8JqFaVYm2CWmPvnP2Iyo4ZSM7/QKcSmuMLDObfpH5fi7RUGmd/rTDf+rut/saiDiQEeVTNgAmJEdAOx0w==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/send/node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
     },
     "node_modules/seq-queue": {
       "version": "0.0.5",
@@ -6155,18 +6236,18 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "integrity": "sha512-hr3Wtp/GZIc/6DAGPDcV4/9WoZhjrkXsi5B/07QgX8tsdc6ilr7BFM6PM6rbdAX1kFSDYeZGLipIZZKyQP0O5Q=="
     },
     "node_modules/serve-static": {
-      "version": "2.2.0",
-      "resolved": "https://registry.npmjs.org/serve-static/-/serve-static-2.2.0.tgz",
-      "integrity": "sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==",
+      "version": "1.16.2",
+      "resolved": "https://registry.npmjs.org/serve-static/-/serve-static-1.16.2.tgz",
+      "integrity": "sha512-VqpjJZKadQB/PEbEwvFdO43Ax5dFBZ2UECszz8bQ7pi7wt//PWe1P6MN7eCnjsatYtBT6EuiClbjSWP2WrIoTw==",
       "license": "MIT",
       "dependencies": {
-        "encodeurl": "^2.0.0",
-        "escape-html": "^1.0.3",
-        "parseurl": "^1.3.3",
-        "send": "^1.2.0"
+        "encodeurl": "~2.0.0",
+        "escape-html": "~1.0.3",
+        "parseurl": "~1.3.3",
+        "send": "0.19.0"
       },
       "engines": {
-        "node": ">= 18"
+        "node": ">= 0.8.0"
       }
     },
     "node_modules/set-blocking": {
@@ -6314,9 +6395,9 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/statuses": {
-      "version": "2.0.2",
-      "resolved": "https://registry.npmjs.org/statuses/-/statuses-2.0.2.tgz",
-      "integrity": "sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==",
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/statuses/-/statuses-2.0.1.tgz",
+      "integrity": "sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==",
       "license": "MIT",
       "engines": {
         "node": ">= 0.8"
@@ -6344,13 +6425,19 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       }
     },
     "node_modules/string_decoder": {
-      "version": "1.3.0",
-      "resolved": "https://registry.npmjs.org/string_decoder/-/string_decoder-1.3.0.tgz",
-      "integrity": "sha512-hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==",
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/string_decoder/-/string_decoder-1.1.1.tgz",
+      "integrity": "sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg==",
       "license": "MIT",
       "dependencies": {
-        "safe-buffer": "~5.2.0"
+        "safe-buffer": "~5.1.0"
       }
+    },
+    "node_modules/string_decoder/node_modules/safe-buffer": {
+      "version": "5.1.2",
+      "resolved": "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.1.2.tgz",
+      "integrity": "sha512-Gd2UZBJDkXlY7GbJxfsE8/nvKkUEU1G38c1siN6QP6a9PT9MmHB8GnpscSmMJSoF8LOIrt8ud/wPtojys4G6+g==",
+      "license": "MIT"
     },
     "node_modules/string-width": {
       "version": "4.2.3",
@@ -6471,14 +6558,13 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "license": "0BSD"
     },
     "node_modules/type-is": {
-      "version": "2.0.1",
-      "resolved": "https://registry.npmjs.org/type-is/-/type-is-2.0.1.tgz",
-      "integrity": "sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==",
+      "version": "1.6.18",
+      "resolved": "https://registry.npmjs.org/type-is/-/type-is-1.6.18.tgz",
+      "integrity": "sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==",
       "license": "MIT",
       "dependencies": {
-        "content-type": "^1.0.5",
-        "media-typer": "^1.1.0",
-        "mime-types": "^3.0.0"
+        "media-typer": "0.3.0",
+        "mime-types": "~2.1.24"
       },
       "engines": {
         "node": ">= 0.6"
@@ -6531,6 +6617,15 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       "resolved": "https://registry.npmjs.org/util-deprecate/-/util-deprecate-1.0.2.tgz",
       "integrity": "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==",
       "license": "MIT"
+    },
+    "node_modules/utils-merge": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/utils-merge/-/utils-merge-1.0.1.tgz",
+      "integrity": "sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4.0"
+      }
     },
     "node_modules/validator": {
       "version": "13.12.0",
@@ -6667,31 +6762,29 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js",
-    "test": "echo \"Error: no test specified && exit 1"
+    "test": "echo \"Error: no test specified && exit 1\""
   },
   "author": "Muhammad Ibnu Fauzi",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^5.1.1",
-    "body-parser": "^2.2.0",
+    "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "csv-writer": "^1.6.0",
-    "dotenv": "^17.2.0",
-    "express": "^5.1.0",
-    "express-validator": "^7.2.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "jwt-decode": "^4.0.0",
-    "multer": "^2.0.2",
-    "mysql2": "^3.14.2",
-    "nodemailer": "^7.0.5",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.10.0",
+    "nodemailer": "^6.9.14",
     "pdfkit": "^0.15.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.2"
   }
 }
-
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\config\db.js =====
 
@@ -8009,7 +8102,6 @@ const fs = require('fs');
 
 const router = express.Router();
 
-// --- PERBAIKAN DIMULAI: HELPER FUNCTION UNTUK MANAJEMEN STOK ---
 /**
  * Memproses perubahan stok untuk produk dan bahan baku.
  * @param {object} connection - Koneksi database.
@@ -8048,7 +8140,6 @@ async function handleStockUpdate(connection, items, factor = -1, validateOnly = 
         }
     }
 }
-// --- PERBAIKAN SELESAI ---
 
 // POST /api/orders - Membuat pesanan baru
 router.post('/', protect, async (req, res) => {
@@ -8065,7 +8156,7 @@ router.post('/', protect, async (req, res) => {
         await connection.beginTransaction();
 
         // TAHAP 1: VALIDASI STOK (Menggunakan helper function)
-        await handleStockUpdate(connection, items, -1, true); // factor -1 (mengurangi), validateOnly true
+        await handleStockUpdate(connection, items, -1, true);
 
         // TAHAP 2: BUAT PESANAN & ITEM PESANAN
         const pointsEarned = Math.floor(total_amount / 10000);
@@ -8080,7 +8171,7 @@ router.post('/', protect, async (req, res) => {
         }
 
         // TAHAP 3: PENGURANGAN STOK (Menggunakan helper function)
-        await handleStockUpdate(connection, items, -1, false); // factor -1 (mengurangi), validateOnly false
+        await handleStockUpdate(connection, items, -1, false);
 
         // TAHAP 4: UPDATE POIN PELANGGAN
         if (customer_id && pointsEarned > 0) {
@@ -8102,7 +8193,7 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// GET /api/orders - (Tidak ada perubahan di sini, tetap sama)
+// GET /api/orders - Mendapatkan semua riwayat transaksi
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -8123,7 +8214,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// GET /api/orders/:id - (Tidak ada perubahan, tetap sama)
+// GET /api/orders/:id - Mendapatkan detail pesanan tunggal
 router.get('/:id', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -8147,7 +8238,6 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-
 // DELETE /api/orders/clear-history - Menghapus seluruh riwayat transaksi
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
@@ -8161,20 +8251,20 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
 
         if (ordersInBusiness.length > 0) {
             const orderIdsToDelete = ordersInBusiness.map(order => order.id);
-
-            // --- PERBAIKAN DIMULAI ---
-            // Hapus log poin pelanggan, BUKAN mereset poin semua pelanggan
-            await connection.query('DELETE FROM customer_points_log WHERE order_id IN (?)', [orderIdsToDelete]);
             
+            // Hapus data terkait terlebih dahulu
+            await connection.query('DELETE FROM customer_points_log WHERE order_id IN (?)', [orderIdsToDelete]);
             await connection.query('DELETE FROM order_items WHERE order_id IN (?)', [orderIdsToDelete]);
+            
+            // Hapus pesanan utama
             const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE id IN (?)', [orderIdsToDelete]);
             
-            // Perintah ALTER TABLE yang berisiko sudah dihapus
-            // --- PERBAIKAN SELESAI ---
+            // Perintah untuk me-reset ID Pesanan kembali ke 1
+            await connection.query('ALTER TABLE orders AUTO_INCREMENT = 1');
 
             await connection.commit();
-            await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders.`);
-            res.status(200).json({ message: 'Semua riwayat transaksi dan log poin terkait telah dihapus.' });
+            await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders and reset ID.`);
+            res.status(200).json({ message: 'Semua riwayat transaksi telah dihapus dan ID Pesanan telah di-reset.' });
 
         } else {
             await connection.commit();
@@ -8189,7 +8279,6 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
         connection.release();
     }
 });
-
 
 // DELETE /api/orders/:id - Menghapus pesanan tunggal dan mengembalikan stok
 router.delete('/:id', protect, isAdmin, async (req, res) => {
@@ -8210,10 +8299,9 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         
         const [itemsToRevert] = await connection.query('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
 
-        // --- PERBAIKAN DIMULAI ---
         // Panggil helper function untuk MENGEMBALIKAN stok
         if (itemsToRevert.length > 0) {
-            await handleStockUpdate(connection, itemsToRevert, 1, false); // factor 1 (mengembalikan), validateOnly false
+            await handleStockUpdate(connection, itemsToRevert, 1, false);
         }
         
         // Kembalikan poin jika ada
@@ -8225,7 +8313,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         // Hapus data pesanan
         await connection.query('DELETE FROM order_items WHERE order_id = ?', [orderId]);
         await connection.query('DELETE FROM orders WHERE id = ?', [orderId]);
-        // --- PERBAIKAN SELESAI ---
 
         await connection.commit();
         await logActivity(businessId, userId, 'DELETE_ORDER', `Deleted order ID ${orderId}. Stock and points reverted.`);
@@ -8241,7 +8328,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 });
 
 
-// Rute lain (export, send-receipt) tidak memerlukan perubahan
+// Rute untuk ekspor data transaksi
 router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -8286,6 +8373,8 @@ router.get('/export', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Gagal mengekspor data." });
     }
 });
+
+// Rute untuk mengirim struk via email
 router.post('/:id/send-receipt', protect, async (req, res) => {
     const orderId = req.params.id;
     const { email: recipientEmail } = req.body;
@@ -8572,47 +8661,73 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     const { items, purchase_order_id } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
-    const connection = await db.getConnection();
+
+    // Langkah 1: Validasi awal sebelum memulai transaksi
+    const productIds = items.map(item => item.productId);
+    if (productIds.length === 0) {
+        return res.status(400).json({ message: 'Daftar item tidak boleh kosong.' });
+    }
+
     try {
-        await connection.beginTransaction();
-        for (const item of items) {
-            const { productId, quantity } = item;
-            const [[productExists]] = await connection.query('SELECT id FROM products WHERE id = ? AND business_id = ? AND is_archived = 0', [productId, businessId]);
-            if (!productExists) {
-                await connection.rollback();
-                return res.status(404).json({ message: `Produk dengan ID ${productId} tidak ditemukan atau bukan milik bisnis Anda.` });
-            }
-            await connection.query(
-                'UPDATE products SET stock = stock + ? WHERE id = ? AND business_id = ?',
-                [parseInt(quantity, 10), productId, businessId]
-            );
+        // Langkah 2: Cek semua ID produk dalam satu kueri
+        const [validProducts] = await db.query(
+            'SELECT id FROM products WHERE business_id = ? AND is_archived = 0 AND id IN (?)',
+            [businessId, productIds]
+        );
+        const validProductIds = new Set(validProducts.map(p => p.id));
+        const invalidProductIds = productIds.filter(id => !validProductIds.has(parseInt(id)));
+
+        // Langkah 3: Jika ada ID tidak valid, kembalikan semua dalam satu pesan error
+        if (invalidProductIds.length > 0) {
+            return res.status(404).json({
+                message: `Beberapa produk tidak ditemukan atau bukan milik bisnis Anda. ID tidak valid: [${invalidProductIds.join(', ')}]`,
+            });
         }
-        if (purchase_order_id) {
-            const [[poExists]] = await connection.query('SELECT id FROM purchase_orders WHERE id = ? AND business_id = ?', [purchase_order_id, businessId]);
-            if (!poExists) {
-                await connection.rollback();
-                return res.status(404).json({ message: `Purchase Order dengan ID ${purchase_order_id} tidak ditemukan.` });
+
+        // Langkah 4: Jika semua valid, lanjutkan dengan transaksi
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            for (const item of items) {
+                // Tidak perlu SELECT lagi di sini, langsung UPDATE
+                await connection.query(
+                    'UPDATE products SET stock = stock + ? WHERE id = ?',
+                    [parseInt(item.quantity, 10), item.productId]
+                );
             }
-            await connection.query(
-                'UPDATE purchase_orders SET status = "COMPLETED", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND business_id = ?',
-                [purchase_order_id, businessId]
-            );
-            await logActivity(businessId, userId, 'PO_COMPLETED', `Purchase Order ID ${purchase_order_id} ditandai selesai via penerimaan stok.`);
+
+            if (purchase_order_id) {
+                // Validasi PO juga bisa dilakukan di sini jika diperlukan, tapi asumsikan sudah benar
+                await connection.query(
+                    'UPDATE purchase_orders SET status = "COMPLETED" WHERE id = ? AND business_id = ?',
+                    [purchase_order_id, businessId]
+                );
+                await logActivity(businessId, userId, 'PO_COMPLETED', `Purchase Order ID ${purchase_order_id} ditandai selesai via penerimaan stok.`);
+            }
+
+            await connection.commit();
+            const itemDetails = items.map(i => `(ID: ${i.productId}, Qty: ${i.quantity})`).join(', ');
+            await logActivity(businessId, userId, 'RECEIVE_STOCK', `Stok diterima untuk item: ${itemDetails}${purchase_order_id ? ` (PO: ${purchase_order_id})` : ''}`);
+            res.status(200).json({ message: 'Stok berhasil diperbarui untuk semua produk.' });
+
+        } catch (error) {
+            await connection.rollback();
+            console.error('Error in transaction while receiving stock:', error);
+            await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED_TRANSACTION', `Error: ${error.message}`);
+            res.status(500).json({ message: error.message || 'Gagal memperbarui stok saat transaksi.' });
+        } finally {
+            if (connection) connection.release();
         }
-        await connection.commit();
-        const itemDetails = items.map(i => `(ID: ${i.productId}, Qty: ${i.quantity})`).join(', ');
-        await logActivity(businessId, userId, 'RECEIVE_STOCK', `Stok diterima untuk item: ${itemDetails}${purchase_order_id ? ` (PO: ${purchase_order_id})` : ''}`);
-        res.status(200).json({ message: 'Stok berhasil diperbarui untuk semua produk.' });
+
     } catch (error) {
-        await connection.rollback();
-        console.error('Error receiving stock:', error);
-        await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: error.message || 'Gagal memperbarui stok.' });
-    } finally {
-        if (connection) connection.release();
+        console.error('Error validating products before receiving stock:', error);
+        await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED_VALIDATION', `Error: ${error.message}`);
+        res.status(500).json({ message: error.message || 'Gagal memvalidasi produk.' });
     }
 });
 
@@ -8863,7 +8978,7 @@ module.exports = router;
 const express = require('express');
 const db = require('../config/db');
 // FIX: Import both protect and isAdmin from the middleware file
-const { protect, isAdmin } = require('../middleware/authMiddleware'); 
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
 const router = express.Router();
 
@@ -8884,15 +8999,20 @@ router.post('/', protect, isAdmin, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const date = new Date();
-        const yyyymmdd = date.getFullYear().toString() + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0');
-        const [[{count}]] = await connection.query('SELECT COUNT(id) as count FROM purchase_orders WHERE DATE(created_at) = CURDATE() AND business_id = ?', [businessId]);
-        const po_number = `PO-${yyyymmdd}-${count + 1}`;
-
-        const poSql = 'INSERT INTO purchase_orders (business_id, supplier_id, po_number, notes) VALUES (?, ?, ?, ?)';
-        const [poResult] = await connection.query(poSql, [businessId, supplier_id, po_number, notes || null]);
+        // Langkah 1: Buat entri PO terlebih dahulu dengan nomor sementara untuk mendapatkan ID unik.
+        const poSql = 'INSERT INTO purchase_orders (business_id, supplier_id, po_number, notes, status) VALUES (?, ?, ?, ?, ?)';
+        const [poResult] = await connection.query(poSql, [businessId, supplier_id, 'PENDING', notes || null, 'DRAFT']);
         const purchaseOrderId = poResult.insertId;
 
+        // Langkah 2: Buat nomor PO yang unik dan tangguh menggunakan ID yang baru dibuat.
+        const date = new Date();
+        const yyyymmdd = date.getFullYear().toString() + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0');
+        const po_number = `PO-${yyyymmdd}-${purchaseOrderId}`;
+
+        // Langkah 3: Perbarui entri PO dengan nomor yang sudah final.
+        await connection.query('UPDATE purchase_orders SET po_number = ? WHERE id = ?', [po_number, purchaseOrderId]);
+
+        // Lanjutkan menyimpan item-item PO
         for (const item of items) {
             if (!item.product_id || !item.quantity || !item.cost_price) {
                 throw new Error('Setiap item harus memiliki produk, kuantitas, dan harga beli.');
@@ -8920,11 +9040,11 @@ router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const query = `
-            SELECT 
-                po.id, 
-                po.po_number, 
-                po.status, 
-                po.created_at, 
+            SELECT
+                po.id,
+                po.po_number,
+                po.status,
+                po.created_at,
                 s.name as supplier_name,
                 (SELECT CAST(SUM(quantity * cost_price) AS DECIMAL(15,2)) FROM purchase_order_items WHERE purchase_order_id = po.id) as total_amount
             FROM purchase_orders po
@@ -9232,161 +9352,70 @@ module.exports = router;
 
 const express = require('express');
 const db = require('../config/db');
-const PDFDocument = require('pdfkit');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
+const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
 
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
-
-/**
- * Helper function to format numbers as Indonesian Rupiah.
- * @param {number} number - The number to format.
- * @returns {string} The formatted currency string.
- */
-const formatCurrency = (number) => {
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0 // Keep as 0 for whole Rupiah amounts
-    }).format(number || 0);
-};
-
-/**
- * @route GET /api/reports/sales-summary
- * @desc Generate a PDF sales summary report based on date range, cashier, and customer.
- * @access Private (Admin only)
- * @queryparam {string} [startDate] - Start date for the report (YYYY-MM-DD). Defaults to current month start.
- * @queryparam {string} [endDate] - End date for the report (YYYY-MM-DD). Defaults to current month end.
- * @queryparam {string} [userId] - Optional: Filter by specific cashier ID ('all' for all cashiers).
- * @queryparam {string} [customerId] - Optional: Filter by specific customer ID ('all' for all customers).
- */
+// --- MENGGANTI FUNGSI PDF DENGAN CSV YANG LEBIH STABIL ---
 router.get('/sales-summary', protect, isAdmin, async (req, res) => {
     try {
-        const { startDate, endDate, userId, customerId } = req.query;
+        const { startDate, endDate } = req.query;
         const businessId = req.user.business_id;
         const { startDate: validStartDate, endDate: validEndDate } = getValidDateRange(startDate, endDate);
 
-        let params = [businessId, validStartDate, validEndDate];
-        let whereClauses = [];
-
-        // Add filters if provided
-        if (userId && userId !== 'all') {
-            whereClauses.push('o.user_id = ?');
-            params.push(userId);
-        }
-        if (customerId && customerId !== 'all') {
-            whereClauses.push('o.customer_id = ?');
-            params.push(customerId);
-        }
-
-        const whereString = whereClauses.length > 0 ? `AND ${whereClauses.join(' AND ')}` : '';
-
-        // Query to fetch sales transactions with profit, cashier name, and customer name
         const query = `
-            SELECT
-                o.id, o.created_at, o.total_amount, o.discount_amount,
-                (SELECT COALESCE(SUM(oi.price * oi.quantity) - SUM(oi.cost_price * oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) as profit,
-                u.name as cashier_name,
-                c.name as customer_name
+            SELECT o.id, o.created_at, o.total_amount, o.payment_method, u.name as cashier_name, c.name as customer_name
             FROM orders o
             JOIN users u ON o.user_id = u.id
             LEFT JOIN customers c ON o.customer_id = c.id
-            WHERE o.business_id = ? AND o.created_at BETWEEN ? AND ? ${whereString}
+            WHERE o.business_id = ? AND o.created_at BETWEEN ? AND ?
             ORDER BY o.created_at ASC
         `;
+        const [transactions] = await db.query(query, [businessId, validStartDate, validEndDate]);
 
-        const [transactions] = await db.query(query, params);
+        if (transactions.length === 0) {
+            return res.status(404).json({ message: "Tidak ada data untuk dilaporkan pada rentang tanggal ini." });
+        }
 
-        let totalRevenue = 0;
-        let totalProfit = 0;
-        let totalDiscount = 0;
-        transactions.forEach(t => {
-            totalRevenue += parseFloat(t.total_amount);
-            totalProfit += parseFloat(t.profit) || 0;
-            totalDiscount += parseFloat(t.discount_amount) || 0;
+        const exportsDir = path.join(__dirname, '..', 'exports');
+        if (!fs.existsSync(exportsDir)) {
+            fs.mkdirSync(exportsDir, { recursive: true });
+        }
+
+        const filePath = path.join(exportsDir, `laporan-penjualan-${Date.now()}.csv`);
+        const csvWriter = createCsvWriter({
+            path: filePath,
+            header: [
+                { id: 'id', title: 'ID Transaksi' },
+                { id: 'created_at', title: 'Tanggal' },
+                { id: 'cashier_name', title: 'Kasir' },
+                { id: 'customer_name', title: 'Pelanggan' },
+                { id: 'payment_method', title: 'Metode Bayar' },
+                { id: 'total_amount', title: 'Total Pendapatan' },
+            ]
         });
 
-        // --- PDF Generation ---
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const records = transactions.map(t => ({
+            ...t,
+            customer_name: t.customer_name || 'Umum',
+            created_at: new Date(t.created_at).toLocaleString('id-ID'),
+        }));
 
-        const filename = `Laporan-Penjualan-${new Date().toISOString().slice(0, 10)}.pdf`; // More descriptive filename
-        res.setHeader('Content-disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-type', 'application/pdf');
+        await csvWriter.writeRecords(records);
 
-        doc.pipe(res);
-
-        // Header
-        doc.fontSize(20).text('Laporan Penjualan', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).text(`Periode: ${new Date(validStartDate).toLocaleDateString('id-ID')} - ${new Date(validEndDate).toLocaleDateString('id-ID')}`);
-        doc.moveDown();
-
-        // Summary Section
-        doc.fontSize(14).text('Ringkasan', { underline: true });
-        doc.moveDown(0.5);
-        doc.fontSize(10).text(`Total Pendapatan: ${formatCurrency(totalRevenue)}`);
-        doc.fontSize(10).text(`Total Laba Kotor: ${formatCurrency(totalProfit)}`);
-        doc.fontSize(10).text(`Total Transaksi: ${transactions.length}`);
-        doc.fontSize(10).text(`Total Diskon Diberikan: ${formatCurrency(totalDiscount)}`);
-        doc.moveDown();
-
-        // Transaction Details Table Header
-        doc.fontSize(14).text('Detail Transaksi', { underline: true });
-        doc.moveDown(0.5);
-
-        const tableTop = doc.y;
-        const idX = 50;
-        const dateX = 100;
-        const cashierX = 200;
-        const customerX = 300;
-        const totalX = 450; // Aligned right
-
-        doc.fontSize(10)
-            .text('ID', idX, tableTop)
-            .text('Tanggal', dateX, tableTop)
-            .text('Kasir', cashierX, tableTop, { width: 90 })
-            .text('Pelanggan', customerX, tableTop, { width: 90 })
-            .text('Total', totalX, tableTop, { width: 90, align: 'right' });
-
-        doc.moveTo(idX - 5, doc.y + 5).lineTo(totalX + 95, doc.y + 5).stroke(); // Line under header
-        doc.moveDown();
-
-        // Transaction Details Table Rows
-        let currentY = doc.y;
-        transactions.forEach(t => {
-            // Check if there's enough space for the next row, if not, add a new page
-            if (currentY + 20 > doc.page.height - doc.page.margins.bottom) {
-                doc.addPage();
-                currentY = doc.y; // Reset currentY for the new page
-                // Re-add table header on new page for continuity
-                doc.fontSize(10)
-                    .text('ID', idX, currentY)
-                    .text('Tanggal', dateX, currentY)
-                    .text('Kasir', cashierX, currentY, { width: 90 })
-                    .text('Pelanggan', customerX, currentY, { width: 90 })
-                    .text('Total', totalX, currentY, { width: 90, align: 'right' });
-                doc.moveTo(idX - 5, doc.y + 5).lineTo(totalX + 95, doc.y + 5).stroke();
-                doc.moveDown();
-                currentY = doc.y;
-            }
-
-            doc.fontSize(9)
-                .text(t.id, idX, currentY)
-                .text(new Date(t.created_at).toLocaleDateString('id-ID'), dateX, currentY)
-                .text(t.cashier_name, cashierX, currentY, { width: 90, ellipsis: true })
-                .text(t.customer_name || 'Umum', customerX, currentY, { width: 90, ellipsis: true })
-                .text(formatCurrency(t.total_amount), totalX, currentY, { width: 90, align: 'right' });
-            currentY += 15; // Move down for the next row
-            doc.y = currentY; // Update doc.y to reflect current position
+        res.download(filePath, (err) => {
+            if (err) console.error("Error sending file:", err);
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error("Error deleting temp file:", unlinkErr);
+            });
         });
-
-        doc.end();
 
     } catch (error) {
-        console.error("Error generating PDF report:", error);
+        console.error("Error generating sales summary CSV:", error);
         res.status(500).json({ message: "Gagal membuat laporan.", error: error.message });
     }
 });
@@ -9731,12 +9760,14 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
+// Rute tes untuk memastikan file termuat dengan benar
+router.get('/test', (req, res) => {
+    res.send('<h1>Server Shift Berhasil Diperbarui!</h1>');
+});
+
 router.post('/start', protect, async (req, res) => {
     const { id: userId, business_id: businessId } = req.user;
-    // --- PERBAIKAN DIMULAI ---
-    // Terima kas awal opsional dari frontend
     const { starting_cash_override } = req.body;
-    // --- PERBAIKAN SELESAI ---
     const connection = await db.getConnection();
 
     try {
@@ -9748,8 +9779,6 @@ router.post('/start', protect, async (req, res) => {
             return res.status(400).json({ message: 'Anda sudah memiliki shift yang aktif.' });
         }
 
-        // --- PERBAIKAN DIMULAI ---
-        // Gunakan nilai override jika ada, jika tidak, ambil dari default pengaturan bisnis
         let starting_cash;
         if (starting_cash_override !== undefined && starting_cash_override !== null) {
             starting_cash = parseFloat(starting_cash_override);
@@ -9757,7 +9786,6 @@ router.post('/start', protect, async (req, res) => {
             const [[business]] = await connection.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
             starting_cash = business?.default_starting_cash || 0;
         }
-        // --- PERBAIKAN SELESAI ---
 
         const [result] = await connection.query(
             'INSERT INTO cashier_shifts (business_id, user_id, start_time, starting_cash, status) VALUES (?, ?, NOW(), ?, "open")',
@@ -9767,7 +9795,6 @@ router.post('/start', protect, async (req, res) => {
         await connection.commit();
         await logActivity(businessId, userId, 'START_SHIFT', `Shift dimulai dengan kas awal Rp ${starting_cash}`);
         res.status(201).json({ message: 'Shift berhasil dimulai!', shiftId: result.insertId });
-
     } catch (error) {
         await connection.rollback();
         console.error("Error starting shift:", error);
@@ -9780,14 +9807,12 @@ router.post('/start', protect, async (req, res) => {
 router.post('/close/:id', protect, async (req, res) => {
     const { id: shiftId } = req.params;
     const { id: userId, business_id: businessId } = req.user;
-    // --- PERBAIKAN DIMULAI ---
-    // Terima jumlah kas akhir fisik dari frontend
     const { ending_cash } = req.body;
+
     if (ending_cash === undefined || ending_cash === null || isNaN(parseFloat(ending_cash))) {
         return res.status(400).json({ message: 'Jumlah kas akhir (fisik) harus diisi dengan angka yang valid.' });
     }
     const physicalEndingCash = parseFloat(ending_cash);
-    // --- PERBAIKAN SELESAI ---
     
     const connection = await db.getConnection();
     try {
@@ -9803,20 +9828,18 @@ router.post('/close/:id', protect, async (req, res) => {
         salesData.forEach(sale => {
             if (sale.payment_method) {
                 const paymentMethod = sale.payment_method.toLowerCase();
-                if (paymentMethod === 'tunai') cash_sales = parseFloat(sale.total);
-                else if (paymentMethod === 'kartu') card_sales = parseFloat(sale.total);
-                else if (paymentMethod === 'qris') qris_sales = parseFloat(sale.total);
-                else other_sales += parseFloat(sale.total);
+                const saleTotal = parseFloat(sale.total) || 0;
+                
+                if (paymentMethod === 'tunai') cash_sales += saleTotal;
+                else if (paymentMethod === 'kartu') card_sales += saleTotal;
+                else if (paymentMethod === 'qris') qris_sales += saleTotal;
+                else other_sales += saleTotal;
             }
         });
 
         const total_sales = cash_sales + card_sales + qris_sales + other_sales;
         const expected_cash = parseFloat(shift.starting_cash) + cash_sales;
-        
-        // --- PERBAIKAN DIMULAI ---
-        // Hitung selisih antara kas fisik dan kas sistem
         const difference = physicalEndingCash - expected_cash;
-        // --- PERBAIKAN SELESAI ---
 
         const updateQuery = `
             UPDATE cashier_shifts SET 
@@ -9826,7 +9849,7 @@ router.post('/close/:id', protect, async (req, res) => {
             WHERE id = ?
         `;
         await connection.query(updateQuery, [
-            physicalEndingCash, // Gunakan kas fisik dari input
+            physicalEndingCash,
             cash_sales, card_sales, qris_sales, other_sales,
             total_sales, expected_cash, difference, shiftId
         ]);
@@ -9846,8 +9869,6 @@ router.post('/close/:id', protect, async (req, res) => {
     }
 });
 
-
-// Rute lainnya (getCurrent, history, export, dll.) tidak berubah
 router.get('/current', protect, async (req, res) => {
     const { id: userId } = req.user;
     try {
@@ -9858,6 +9879,7 @@ router.get('/current', protect, async (req, res) => {
         res.status(500).json({ message: "Gagal memeriksa shift." });
     }
 });
+
 router.get('/history', protect, isAdmin, async (req, res) => {
     const businessId = req.user.business_id;
     try {
@@ -9869,6 +9891,7 @@ router.get('/history', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Gagal mengambil riwayat shift." });
     }
 });
+
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const shiftId = req.params.id;
     const { business_id: businessId, id: userId } = req.user;
@@ -9886,7 +9909,77 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 });
-// Rute export dan clear-history juga tidak berubah
+
+router.get('/export', protect, isAdmin, async (req, res) => {
+    const businessId = req.user.business_id;
+    try {
+        const query = `SELECT s.*, u.name as user_name FROM cashier_shifts s JOIN users u ON s.user_id = u.id WHERE s.business_id = ? AND s.status = 'closed' ORDER BY s.end_time DESC`;
+        const [shifts] = await db.query(query, [businessId]);
+
+        if (shifts.length === 0) {
+            return res.status(404).json({ message: "Tidak ada riwayat shift untuk diekspor." });
+        }
+
+        const exportsDir = path.join(__dirname, '..', 'exports');
+        if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+        
+        const filePath = path.join(exportsDir, `shift-history-${Date.now()}.csv`);
+        const csvWriter = createCsvWriter({
+            path: filePath,
+            header: [
+                {id: 'id', title: 'SHIFT_ID'},
+                {id: 'user_name', title: 'KASIR'},
+                {id: 'start_time', title: 'WAKTU_MULAI'},
+                {id: 'end_time', title: 'WAKTU_SELESAI'},
+                {id: 'starting_cash', title: 'KAS_AWAL'},
+                {id: 'ending_cash', title: 'KAS_AKHIR_FISIK'},
+                {id: 'expected_cash', title: 'KAS_AKHIR_SISTEM'},
+                {id: 'difference', title: 'SELISIH'},
+                {id: 'total_sales', title: 'TOTAL_PENJUALAN'},
+                {id: 'cash_sales', title: 'PENJUALAN_TUNAI'},
+                {id: 'card_sales', title: 'PENJUALAN_KARTU'},
+                {id: 'qris_sales', title: 'PENJUALAN_QRIS'},
+            ]
+        });
+
+        await csvWriter.writeRecords(shifts);
+        res.download(filePath, (err) => {
+            if (err) console.error("Error sending file:", err);
+            fs.unlink(filePath, (unlinkErr) => {
+                if (unlinkErr) console.error("Error deleting temp file:", unlinkErr);
+            });
+        });
+    } catch (error) {
+        console.error("Error exporting shift history:", error);
+        res.status(500).json({ message: "Gagal mengekspor data." });
+    }
+});
+
+router.delete('/clear-history', protect, isAdmin, async (req, res) => {
+    const { business_id: businessId, id: userId } = req.user;
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const [result] = await connection.query(
+            'DELETE FROM cashier_shifts WHERE business_id = ? AND status = "closed"',
+            [businessId]
+        );
+
+        await connection.commit();
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY', `Cleared ${result.affectedRows} closed shifts.`);
+        res.status(200).json({ message: 'Semua riwayat shift telah berhasil dihapus.' });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error clearing shift history:", error);
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: 'Gagal menghapus riwayat shift.', error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+
 module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\stockRoutes.js =====
@@ -10450,7 +10543,7 @@ router.get('/', protect, isAdmin, async (req, res) => {
             `SELECT u.id, u.name, u.email, u.created_at, u.is_active, r.name as role_name, u.role_id
              FROM users u
              LEFT JOIN roles r ON u.role_id = r.id
-             WHERE u.business_id = ?
+             WHERE u.business_id = ? AND u.is_active = 1
              ORDER BY u.created_at DESC`,
             [businessId]
         );
@@ -10964,7 +11057,6 @@ export default defineConfig([
       "version": "1.0.0",
       "dependencies": {
         "axios": "^1.7.7",
-        "bcrypt": "^6.0.0",
         "dexie": "^4.0.11",
         "framer-motion": "^12.0.0",
         "jwt-decode": "^4.0.0",
@@ -14618,20 +14710,6 @@ export default defineConfig([
       "dev": true,
       "license": "MIT"
     },
-    "node_modules/bcrypt": {
-      "version": "6.0.0",
-      "resolved": "https://registry.npmjs.org/bcrypt/-/bcrypt-6.0.0.tgz",
-      "integrity": "sha512-cU8v/EGSrnH+HnxV2z0J7/blxH8gq7Xh2JFT6Aroax7UohdmiJJlxApMxtKfuI7z68NvvVcmR78k2LbT6efhRg==",
-      "hasInstallScript": true,
-      "license": "MIT",
-      "dependencies": {
-        "node-addon-api": "^8.3.0",
-        "node-gyp-build": "^4.8.4"
-      },
-      "engines": {
-        "node": ">= 18"
-      }
-    },
     "node_modules/brace-expansion": {
       "version": "1.1.12",
       "resolved": "https://registry.npmjs.org/brace-expansion/-/brace-expansion-1.1.12.tgz",
@@ -17449,26 +17527,6 @@ export default defineConfig([
       "integrity": "sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==",
       "dev": true,
       "license": "MIT"
-    },
-    "node_modules/node-addon-api": {
-      "version": "8.5.0",
-      "resolved": "https://registry.npmjs.org/node-addon-api/-/node-addon-api-8.5.0.tgz",
-      "integrity": "sha512-/bRZty2mXUIFY/xU5HLvveNHlswNJej+RnxBjOMkidWfwZzgTbPG1E3K5TOxRLOR+5hX7bSofy8yf1hZevMS8A==",
-      "license": "MIT",
-      "engines": {
-        "node": "^18 || ^20 || >= 21"
-      }
-    },
-    "node_modules/node-gyp-build": {
-      "version": "4.8.4",
-      "resolved": "https://registry.npmjs.org/node-gyp-build/-/node-gyp-build-4.8.4.tgz",
-      "integrity": "sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==",
-      "license": "MIT",
-      "bin": {
-        "node-gyp-build": "bin.js",
-        "node-gyp-build-optional": "optional.js",
-        "node-gyp-build-test": "build-test.js"
-      }
     },
     "node_modules/node-releases": {
       "version": "2.0.19",
@@ -20314,7 +20372,6 @@ export default defineConfig([
   },
   "dependencies": {
     "axios": "^1.7.7",
-    "bcrypt": "^6.0.0",
     "dexie": "^4.0.11",
     "framer-motion": "^12.0.0",
     "jwt-decode": "^4.0.0",
@@ -21032,10 +21089,15 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
     return (
        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
             <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} onClick={e => e.stopPropagation()}>
-                <ModalTitle>Tutup & Rekap Shift</ModalTitle>
-                <p style={{color: 'var(--text-secondary)', marginBottom: '30px', textAlign: 'left'}}>
-                    Hitung total uang tunai fisik di laci Anda dan masukkan jumlahnya di bawah untuk menyelesaikan shift.
+                {/* --- KODE YANG DIGANTI DI SINI --- */}
+                <ModalTitle>Konfirmasi Tutup Shift</ModalTitle>
+                <p style={{color: 'var(--text-secondary)', marginBottom: '15px', textAlign: 'left', lineHeight: '1.6'}}>
+                    Setelah shift ditutup, Anda akan otomatis keluar (logout). Pastikan semua transaksi sudah selesai sebelum melanjutkan.
                 </p>
+                <p style={{color: 'var(--text-secondary)', marginBottom: '30px', textAlign: 'left', lineHeight: '1.6'}}>
+                    Hitung total uang tunai fisik di laci Anda dan masukkan jumlahnya di bawah.
+                </p>
+                {/* --- AKHIR KODE YANG DIGANTI --- */}
                 {/* --- PERBAIKAN DIMULAI: Menambahkan form input --- */}
                 <Form onSubmit={handleSubmit}>
                     <Label htmlFor="ending_cash">Jumlah Kas Fisik (Rp)</Label>
@@ -21242,121 +21304,6 @@ CustomerFormModal.propTypes = {
 };
 
 export default CustomerFormModal;
-
-===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerSearchModal.jsx =====
-
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerSelectModal.jsx
-
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import styled from 'styled-components';
-import { motion } from 'framer-motion';
-import { getCustomers, createCustomer } from '../services/api';
-import { toast } from 'react-toastify';
-import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
-
-const ModalBackdrop = styled(motion.div)`
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); display: flex;
-  justify-content: center; align-items: center; z-index: 1001;
-`;
-const ModalContainer = styled(motion.div)`
-  background-color: var(--bg-surface); border-radius: 16px;
-  width: 100%; max-width: 500px; padding: 30px;
-  display: flex; flex-direction: column; height: 70vh;
-`;
-const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
-const ModalTitle = styled.h2` font-size: 1.5rem; margin: 0; color: var(--text-primary);`;
-const CloseButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); `;
-const SearchInput = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 20px; `;
-const CustomerList = styled.ul` list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; `;
-const CustomerItem = styled.li`
-  padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer;
-  &:hover { background-color: var(--bg-main); }
-  &:last-child { border-bottom: none; }
-`;
-const AddCustomerButton = styled.button`
-  width: 100%; padding: 12px; margin-top: 15px; border: 1px dashed var(--border-color);
-  border-radius: 8px; background-color: transparent; color: var(--primary-color);
-  font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-  &:hover { background-color: var(--bg-main); }
-`;
-
-
-function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [customers, setCustomers] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const fetchCustomers = async () => {
-            setLoading(true);
-            try {
-                const res = await getCustomers(searchTerm);
-                setCustomers(res.data);
-            } catch (error) {
-                toast.error("Gagal memuat daftar pelanggan.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        const timer = setTimeout(() => fetchCustomers(), 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm, isOpen]);
-    
-    const handleAddNewCustomer = async () => {
-        const name = prompt("Masukkan nama pelanggan baru:");
-        if (name && name.trim()) {
-            try {
-                const res = await createCustomer({ name: name.trim() });
-                toast.success("Pelanggan baru berhasil ditambahkan!");
-                onSelectCustomer({ id: res.data.customerId, name: name.trim() });
-            } catch (error) {
-                toast.error(error.response?.data?.message || "Gagal menambahkan pelanggan.");
-            }
-        }
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }}>
-                <ModalHeader>
-                    <ModalTitle>Pilih Pelanggan</ModalTitle>
-                    <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
-                </ModalHeader>
-                <SearchInput 
-                    type="text"
-                    placeholder="Ketik nama atau nomor telepon..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    autoFocus
-                />
-                <CustomerList>
-                    {loading ? <p>Mencari...</p> : customers.map(customer => (
-                        <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
-                            <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
-                            <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
-                                {customer.phone_number}
-                            </p>
-                        </CustomerItem>
-                    ))}
-                </CustomerList>
-                 <AddCustomerButton onClick={handleAddNewCustomer}><FiUserPlus/> Tambah Pelanggan Baru</AddCustomerButton>
-            </ModalContainer>
-        </ModalBackdrop>
-    );
-}
-
-CustomerSelectModal.propTypes = {
-    isOpen: PropTypes.bool.isRequired,
-    onClose: PropTypes.func.isRequired,
-    onSelectCustomer: PropTypes.func.isRequired,
-};
-
-export default CustomerSelectModal;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CustomerSelectModal.jsx =====
 
@@ -21922,13 +21869,10 @@ export default HeldCartsModal;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx
-
 import React from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-// Hapus semua import yang berhubungan dengan animasi & useEffect offline dari sini jika tidak diperlukan lagi
 
 const AppContainer = styled.div`
   display: flex;
@@ -21939,16 +21883,16 @@ const AppContainer = styled.div`
 
 const ContentWrapper = styled.main`
   flex: 1;
-  overflow-y: auto; /* Biarkan konten scroll jika lebih panjang dari layar */
+  /* Ini adalah kunci utama: wrapper ini yang menangani scroll */
+  overflow-y: auto;
 `;
 
 function Layout() {
-  // Hapus semua useEffect dari sini untuk menyederhanakan
-
   return (
     <AppContainer>
       <Sidebar />
       <ContentWrapper>
+        {/* Outlet akan merender halaman (misal: ProductsPage) di sini */}
         <Outlet />
       </ContentWrapper>
     </AppContainer>
@@ -22176,64 +22120,50 @@ import { motion, AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 
-// Container utama yang mengatur padding dan layout dasar
-const PageContainer = styled(motion.div)`
-  display: flex;
-  flex-direction: column;
+const PageContainer = styled.div`
+  padding: 30px;
   width: 100%;
   height: 100%;
-  padding: 30px;
+  display: flex;
+  flex-direction: column;
 `;
 
-// Varian animasi yang halus dan profesional
 const pageVariants = {
-  initial: {
-    opacity: 0,
-    filter: 'blur(4px)', // Mulai dengan sedikit blur
-    y: 15,              // Mulai sedikit dari bawah
-  },
-  animate: {
-    opacity: 1,
-    filter: 'blur(0px)', // Menjadi fokus
-    y: 0,               // Masuk ke posisi normal
-  },
-  exit: {
-    opacity: 0,
-    filter: 'blur(4px)',
-    y: -15,             // Keluar ke atas
-  }
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
-// Transisi dengan kurva easing yang sangat halus (ease-out)
 const pageTransition = {
-  duration: 0.35,
-  ease: [0.25, 1, 0.5, 1] // Kurva custom untuk akselerasi dan deselerasi yang natural
+  duration: 0.2, // Animasi fade yang sangat cepat
+  ease: "easeInOut",
 };
 
 const PageWrapper = ({ loading, children }) => {
-  // Tampilan saat loading tidak berubah
   if (loading) {
     return (
       <PageContainer>
         <Skeleton height="40px" style={{ marginBottom: '30px', flexShrink: 0 }} />
-        <Skeleton height="100%" />
+        <Skeleton height="calc(100vh - 150px)" />
       </PageContainer>
     );
   }
 
-  // Konten utama dengan animasi yang disempurnakan
   return (
     <AnimatePresence mode="wait">
-        <PageContainer
-            key="page-content-wrapper" // Beri key yang konsisten
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            variants={pageVariants}
-            transition={pageTransition}
-        >
+      <motion.div
+        key="page-content-wrapper"
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={pageVariants}
+        transition={pageTransition}
+        style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
+      >
+        <PageContainer>
             {children}
         </PageContainer>
+      </motion.div>
     </AnimatePresence>
   );
 };
@@ -22343,14 +22273,31 @@ import { getCategories, getSubCategories, getSuppliers, getProductById, createPr
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css'; // Don't forget to import the CSS for Skeleton
 import { formatRupiah, parseRupiah } from '../utils/formatters';
+import { motion } from 'framer-motion'; // <-- Import framer-motion
+import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
 
 // --- Styled Components ---
-const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
+const PageContainer = styled(motion.div)` 
+    padding: 30px; 
+    max-width: 900px; 
+    margin: 0 auto; 
+    display: flex;
+    flex-direction: column;
+`;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
 const Title = styled.h1` font-size: 1.8rem; `;
 const BackLink = styled(Link)` display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 20px; font-weight: 500; &:hover { color: var(--text-primary); } `;
-const Form = styled.form` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 25px; `;
+const Form = styled.form` 
+    background-color: var(--bg-surface); 
+    border-radius: 16px; 
+    border: 1px solid var(--border-color); 
+    padding: 25px; 
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+`;
 const FormGrid = styled.div` display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 20px; `;
 const InputGroup = styled.div` grid-column: ${props => props.$fullWidth ? '1 / -1' : 'span 1'}; `;
 const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); `;
@@ -22363,7 +22310,7 @@ const VariantSection = styled.div` grid-column: 1 / -1; border-top: 1px solid va
 const VariantRow = styled.div` display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
 const AddVariantButton = styled.button` display: flex; align-items: center; gap: 5px; background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { opacity: 0.9; } `;
 const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
-const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
+const FormFooter = styled.div` padding-top: 25px; margin-top: auto; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
 const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
 
 function ProductFormPage() {
@@ -22379,7 +22326,7 @@ function ProductFormPage() {
         sub_category_id: '',
         supplier_id: '',
         stock: 0,
-        low_stock_threshold: 5, // Tambahkan state baru
+        low_stock_threshold: 5,
         image_url: '',
         expiration_date: '',
         variants: [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
@@ -22408,16 +22355,16 @@ function ProductFormPage() {
                     sub_category_id: product.sub_category_id || '',
                     supplier_id: product.supplier_id || '',
                     stock: product.stock || 0,
-                    low_stock_threshold: product.low_stock_threshold || 5, // Tambahkan ini
+                    low_stock_threshold: product.low_stock_threshold || 5,
                     image_url: product.image_url || '',
                     expiration_date: product.expiration_date ? new Date(product.expiration_date).toISOString().split('T')[0] : '',
                     variants: product.variants && product.variants.length > 0
                         ? product.variants.map(v => ({
-                            id: v.id,
-                            name: v.name || '',
-                            price: v.price !== undefined ? v.price : '',
-                            cost_price: v.cost_price !== undefined ? v.cost_price : '',
-                            barcode: v.barcode || '',
+                              id: v.id,
+                              name: v.name || '',
+                              price: v.price !== undefined ? v.price : '',
+                              cost_price: v.cost_price !== undefined ? v.cost_price : '',
+                              barcode: v.barcode || '',
                           }))
                         : [{ name: 'Reguler', price: '', cost_price: '', barcode: '' }]
                 });
@@ -22564,104 +22511,109 @@ function ProductFormPage() {
         }
     };
 
-    if (loading) {
-        return <PageContainer><Skeleton height={400} /></PageContainer>;
-    }
+    const formContent = (
+        <Form onSubmit={handleSubmit}>
+            <FormGrid>
+                <InputGroup $fullWidth>
+                    <Label>Nama Produk</Label>
+                    <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
+                </InputGroup>
+                <InputGroup>
+                    <Label>Kategori</Label>
+                    <Select name="category_id" value={formData.category_id} onChange={handleChange}>
+                        <option value="">-- Pilih Kategori --</option>
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Sub-Kategori</Label>
+                    <Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}>
+                        <option value="">-- Pilih Sub-Kategori --</option>
+                        {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Pemasok</Label>
+                    <Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}>
+                        <option value="">-- Pilih Pemasok --</option>
+                        {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
+                    </Select>
+                </InputGroup>
+                <InputGroup>
+                    <Label>Tanggal Kadaluarsa (Opsional)</Label>
+                    <Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} />
+                </InputGroup>
+                <InputGroup>
+                    <Label>Total Stok</Label>
+                    <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
+                </InputGroup>
+                
+                <InputGroup>
+                    <Label>Ambang Batas Stok Rendah</Label>
+                    <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
+                </InputGroup>
+
+                <VariantSection>
+                    <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
+                    {formData.variants.map((variant, index) => (
+                        <VariantRow key={index}>
+                            <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
+                            <Input
+                                type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
+                                onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
+                                onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
+                                required
+                            />
+                            <Input
+                                type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
+                                onChange={e => handleVariantChange(index, 'price', e.target.value)}
+                                onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
+                                onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
+                                required
+                            />
+                            <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
+                            <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
+                        </VariantRow>
+                    ))}
+                    <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
+                </VariantSection>
+                <InputGroup $fullWidth>
+                    <Label>URL Gambar (atau Unggah)</Label>
+                    <FileInputContainer>
+                        <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
+                        <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
+                        <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                    </FileInputContainer>
+                    {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
+                    {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
+                </InputGroup>
+                <InputGroup $fullWidth>
+                    <Label>Deskripsi</Label>
+                    <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
+                </InputGroup>
+            </FormGrid>
+            <FormFooter>
+                <SaveButton type="submit" disabled={isSubmitting}>
+                    <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
+                </SaveButton>
+            </FormFooter>
+        </Form>
+    );
 
     return (
-        <PageContainer>
+        <PageContainer
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+        >
             <BackLink to="/products"><FiArrowLeft /> Kembali ke Daftar Produk</BackLink>
             <PageHeader>
                 <Title>{isEditing ? 'Edit Produk' : 'Tambah Produk Baru'}</Title>
             </PageHeader>
-            <Form onSubmit={handleSubmit}>
-                <FormGrid>
-                    <InputGroup $fullWidth>
-                        <Label>Nama Produk</Label>
-                        <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Kategori</Label>
-                        <Select name="category_id" value={formData.category_id} onChange={handleChange}>
-                            <option value="">-- Pilih Kategori --</option>
-                            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Sub-Kategori</Label>
-                        <Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}>
-                            <option value="">-- Pilih Sub-Kategori --</option>
-                            {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Pemasok</Label>
-                        <Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}>
-                            <option value="">-- Pilih Pemasok --</option>
-                            {suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}
-                        </Select>
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Tanggal Kadaluarsa (Opsional)</Label>
-                        <Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} />
-                    </InputGroup>
-                    <InputGroup>
-                        <Label>Total Stok</Label>
-                        <Input name="stock" type="number" value={formData.stock} onChange={handleChange} required />
-                    </InputGroup>
-                    
-                    {/* Input Group Baru untuk Ambang Batas Stok */}
-                    <InputGroup>
-                        <Label>Ambang Batas Stok Rendah</Label>
-                        <Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required />
-                    </InputGroup>
-
-                    <VariantSection>
-                        <Label style={{ fontWeight: 600, marginBottom: '15px' }}>Varian Produk</Label>
-                        {formData.variants.map((variant, index) => (
-                            <VariantRow key={index}>
-                                <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
-                                <Input
-                                    type="text" placeholder="Harga Beli (Modal)" value={formatRupiah(variant.cost_price)}
-                                    onChange={e => handleVariantChange(index, 'cost_price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
-                                    required
-                                />
-                                <Input
-                                    type="text" placeholder="Harga Jual" value={formatRupiah(variant.price)}
-                                    onChange={e => handleVariantChange(index, 'price', e.target.value)}
-                                    onFocus={e => { const rawValue = parseRupiah(e.target.value); e.target.value = isNaN(rawValue) ? '' : rawValue; }}
-                                    onBlur={e => { const rawValue = parseRupiah(e.target.value); e.target.value = formatRupiah(rawValue); }}
-                                    required
-                                />
-                                <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
-                                <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
-                            </VariantRow>
-                        ))}
-                        <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
-                    </VariantSection>
-                    <InputGroup $fullWidth>
-                        <Label>URL Gambar (atau Unggah)</Label>
-                        <FileInputContainer>
-                            <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
-                            <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
-                            <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-                        </FileInputContainer>
-                        {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
-                        {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
-                    </InputGroup>
-                    <InputGroup $fullWidth>
-                        <Label>Deskripsi</Label>
-                        <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
-                    </InputGroup>
-                </FormGrid>
-                <FormFooter>
-                    <SaveButton type="submit" disabled={isSubmitting}>
-                        <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
-                    </SaveButton>
-                </FormFooter>
-            </Form>
+            <PageWrapper loading={loading}>
+                {formContent}
+            </PageWrapper>
         </PageContainer>
     );
 }
@@ -25946,10 +25898,19 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+
+// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 `;
+
 const Table = styled.table`
     width: 100%;
     min-width: 800px;
@@ -26512,14 +26473,17 @@ import Receipt from '../components/Receipt';
 import StartShiftModal from '../components/StartShiftModal';
 import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
+import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
 
 // --- Styled Components ---
 const PageGrid = styled.div`
     display: grid; grid-template-columns: 1fr 420px; gap: 30px;
-    width: 100%; height: 100vh; padding: 30px; overflow: hidden;
+    width: 100%; height: 100%; padding: 30px; overflow: hidden;
     @media (max-width: 1024px) { grid-template-columns: 1fr; height: auto; }
 `;
-const ProductsPanel = styled.div` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; `;
+const ProductsPanel = styled(motion.div)` // <-- Tambahkan motion
+    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden;
+`;
 const PanelHeader = styled.header` padding: 20px 25px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; `;
 const SearchContainer = styled.div` position: relative; width: 100%; max-width: 450px; `;
 const SearchIcon = styled(FiSearch)` position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-placeholder); `;
@@ -26530,7 +26494,9 @@ const ProductImage = styled.div` width: 100%; padding-top: 100%; background-imag
 const ProductInfo = styled.div` padding: 5px 15px 10px; text-align: left; flex-grow: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border-color); `;
 const ProductName = styled.h4` margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); line-height: 1.2em; max-height: 2.4em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; `;
 const ProductPrice = styled.p` margin: 0; padding-top: 2px; color: var(--primary-color); font-weight: 600; font-size: 1rem; `;
-const CartPanel = styled.aside` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden; `;
+const CartPanel = styled(motion.aside)` // <-- Tambahkan motion
+    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden;
+`;
 const CartHeader = styled.div` padding: 20px 25px; flex-shrink: 0; border-bottom: 1px solid var(--border-color); `;
 const PanelTitle = styled.h1` font-size: 1.5rem; font-weight: 600; color: var(--text-primary); `;
 const CartItemsList = styled.ul` list-style: none; padding: 0 25px; margin: 0; flex-grow: 1; overflow-y: auto; `;
@@ -26730,67 +26696,124 @@ function PosPage() {
         const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term));
         return nameMatch || barcodeMatch;
     });
-    
-    if (isLoadingShift) { 
-        return <div style={{padding: '30px'}}><Skeleton height="80vh" /></div>; 
+
+    const productsContent = (
+        <ProductsPanel
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <PanelHeader>
+                <SearchContainer>
+                    <SearchIcon size={18} />
+                    <SearchInput placeholder="Cari nama produk atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </SearchContainer>
+            </PanelHeader>
+            <ProductGrid
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+            >
+                {filteredProducts.map((product) => (
+                    <ProductCard
+                        key={product.id}
+                        $disabled={product.stock <= 0}
+                        onClick={() => handleProductClick(product)}
+                        whileHover={product.stock > 0 ? { scale: 1.05 } : {}}
+                        whileTap={product.stock > 0 ? { scale: 0.95 } : {}}
+                    >
+                        <ProductImage src={product.image_url || `https://placehold.co/200`} />
+                        <ProductInfo>
+                            <ProductName>{product.name}</ProductName>
+                            <ProductPrice>
+                                {product.variants && product.variants.length > 0
+                                    ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}`
+                                    : 'Tidak tersedia'}
+                            </ProductPrice>
+                        </ProductInfo>
+                    </ProductCard>
+                ))}
+            </ProductGrid>
+        </ProductsPanel>
+    );
+
+    const cartContent = (
+        <CartPanel
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader>
+            <CustomerInfo>
+                {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )}
+                <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton>
+            </CustomerInfo>
+            <CartItemsList>
+                <AnimatePresence>
+                    {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )}
+                    {cart.map((item) => (
+                        <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            <CartItemDetails>
+                                <CartItemName>{item.name}</CartItemName>
+                                <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
+                            </CartItemDetails>
+                            <CartItemControls>
+                                <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton>
+                                <QuantityDisplay>{item.quantity}</QuantityDisplay>
+                                <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton>
+                            </CartItemControls>
+                            <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton>
+                        </CartItem>
+                    ))}
+                </AnimatePresence>
+            </CartItemsList>
+            <CheckoutSection>
+                <CartActions>
+                    <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton>
+                    <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton>
+                </CartActions>
+                <PromoSection>
+                    <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} />
+                    {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)}
+                </PromoSection>
+                {cart.length > 0 && (
+                    <>
+                        <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow>
+                        {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)}
+                        <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow>
+                        <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton>
+                    </>
+                )}
+            </CheckoutSection>
+        </CartPanel>
+    );
+
+    if (isLoadingShift) {
+        return (
+            <PageWrapper loading={true}>
+                 <PageGrid>
+                     <ProductsPanel>
+                        <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
+                        <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
+                     </ProductsPanel>
+                     <CartPanel><Skeleton height="100%" /></CartPanel>
+                 </PageGrid>
+            </PageWrapper>
+        );
     }
+    
     if (userRole === 'kasir' && !activeShift) {
         return <StartShiftModal onShiftStarted={refreshShiftStatus} />;
     }
 
     return (
         <>
-            <PageGrid>
-                <ProductsPanel>
-                    <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></SearchContainer></PanelHeader>
-                    {loading ? ( <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid> ) : 
-                    ( <ProductGrid>{filteredProducts.map((product) => ( <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)}> <ProductImage src={product.image_url || `https://placehold.co/200`} /> <ProductInfo> <ProductName>{product.name}</ProductName> <ProductPrice> {product.variants && product.variants.length > 0 ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}` : 'Tidak tersedia'} </ProductPrice> </ProductInfo> </ProductCard> ))}</ProductGrid> )}
-                </ProductsPanel>
-                <CartPanel>
-                    <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader>
-                    <CustomerInfo>
-                        {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )}
-                        <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton>
-                    </CustomerInfo>
-                    <CartItemsList>
-                        <AnimatePresence>
-                            {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )}
-                            {cart.map((item) => (
-                                <CartItem key={item.cartItemId} layout>
-                                    <CartItemDetails>
-                                        <CartItemName>{item.name}</CartItemName>
-                                        <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
-                                    </CartItemDetails>
-                                    <CartItemControls>
-                                        <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton>
-                                        <QuantityDisplay>{item.quantity}</QuantityDisplay>
-                                        <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton>
-                                    </CartItemControls>
-                                    <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton>
-                                </CartItem>
-                            ))}
-                        </AnimatePresence>
-                    </CartItemsList>
-                    <CheckoutSection>
-                        <CartActions>
-                            <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton>
-                            <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton>
-                        </CartActions>
-                        <PromoSection>
-                            <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} />
-                            {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)}
-                        </PromoSection>
-                        {cart.length > 0 && (
-                            <>
-                                <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow>
-                                {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)}
-                                <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow>
-                                <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton>
-                            </>
-                        )}
-                    </CheckoutSection>
-                </CartPanel>
-            </PageGrid>
+            <PageWrapper loading={loading}>
+                <PageGrid>
+                    {productsContent}
+                    {cartContent}
+                </PageGrid>
+            </PageWrapper>
 
             <CheckoutModal isOpen={isCheckoutModalOpen} onClose={() => setIsCheckoutModalOpen(false)} cartTotal={finalTotal} onConfirmCheckout={handleCheckout} paymentMethods={settings.payment_methods} taxRate={settings.tax_rate} />
             <PostCheckoutModal isOpen={isPostCheckoutOpen} onClose={handleClosePostCheckoutModal} orderId={lastOrderId} onPrint={handlePrintReceipt} />
@@ -27230,7 +27253,17 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { motion } from 'framer-motion';
-import PageWrapper from '../components/PageWrapper'; // <-- Import the new wrapper component
+import PageWrapper from '../components/PageWrapper';
+
+// --- PERBAIKAN DI SINI ---
+// Buat sebuah container baru untuk konten internal halaman
+const PageContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+`;
+// --- AKHIR PERBAIKAN ---
 
 // --- Styled Components ---
 const PageHeader = styled.header`
@@ -27238,14 +27271,16 @@ const PageHeader = styled.header`
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    flex-shrink: 0;
+    flex-shrink: 0; /* Mencegah header mengecil */
 `;
+
 const Title = styled.h1`
     font-size: 1.8rem;
     display: flex;
     align-items: center;
     gap: 12px;
 `;
+
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
@@ -27261,23 +27296,38 @@ const AddButton = styled.button`
         background-color: var(--primary-hover);
     }
 `;
+
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
     border: 1px solid var(--border-color);
     overflow: hidden;
-    flex-grow: 1;
+    flex-grow: 1; /* Mengisi sisa ruang vertikal */
     display: flex;
     flex-direction: column;
 `;
+
+// --- PERBAIKAN DI SINI: Menyembunyikan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
+    
+    /* Menghilangkan scrollbar di Chrome, Safari, dan Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    /* Menghilangkan scrollbar di Firefox */
+    scrollbar-width: none;
+    /* Menghilangkan scrollbar di IE dan Edge */
+    -ms-overflow-style: none;
 `;
+// --- AKHIR PERBAIKAN ---
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
+
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -27288,17 +27338,20 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
+
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
+
 const Tr = styled(motion.tr)`
     &:last-child > td {
         border-bottom: none;
     }
 `;
+
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -27309,6 +27362,7 @@ const ActionButton = styled.button`
         color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'};
     }
 `;
+
 const ProductImage = styled.img`
     width: 50px;
     height: 50px;
@@ -27316,10 +27370,12 @@ const ProductImage = styled.img`
     object-fit: cover;
     border: 1px solid var(--border-color);
 `;
+
 const StockStatus = styled.span`
     font-weight: 600;
     color: ${props => props.$lowStock ? 'var(--orange-color)' : 'inherit'};
 `;
+
 const EmptyStateContainer = styled.div`
     flex-grow: 1;
     display: flex;
@@ -27332,6 +27388,7 @@ const EmptyStateContainer = styled.div`
     border-radius: 16px;
     border: 1px dashed var(--border-color);
 `;
+
 const EmptyStateTitle = styled.h3`
     font-size: 1.2rem;
     font-weight: 600;
@@ -27339,6 +27396,7 @@ const EmptyStateTitle = styled.h3`
     margin-top: 20px;
     margin-bottom: 10px;
 `;
+
 const tableRowVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: (i) => ({
@@ -27359,8 +27417,7 @@ function ProductsPage() {
     const [productToDelete, setProductToDelete] = useState(null);
 
     const fetchProducts = async () => {
-        // The `loading` state is now managed by the `PageWrapper`
-        // We set it to true at the start of the fetch, and false in the `finally` block
+        setLoading(true);
         try {
             const res = await getProducts();
             setProducts(res.data);
@@ -27404,66 +27461,68 @@ function ProductsPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiBox/> Daftar Produk</Title>
-                    <AddButton onClick={() => navigate('/products/new')}>
-                        <FiPlus size={18} /> Tambah Produk
-                    </AddButton>
-                </PageHeader>
-
-                {products.length > 0 ? (
-                    <TableContainer>
-                        <TableWrapper>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <Th>Gambar</Th>
-                                        <Th>Nama Produk</Th>
-                                        <Th>Kategori</Th>
-                                        <Th>Stok</Th>
-                                        <Th>Harga</Th>
-                                        <Th style={{ textAlign: 'center' }}>Aksi</Th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {products.map((product, i) => (
-                                        <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                            <Td>
-                                                <ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
-                                            </Td>
-                                            <Td>{product.name}</Td>
-                                            <Td>{product.category_name || '-'}</Td>
-                                            <Td>
-                                                <StockStatus $lowStock={product.stock <= product.low_stock_threshold}>
-                                                    {product.stock}
-                                                </StockStatus>
-                                            </Td>
-                                            <Td>
-                                                {product.variants.length > 1
-                                                    ? `${new Intl.NumberFormat('id-ID').format(product.variants[0].price)} (Varian)`
-                                                    : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.variants[0]?.price || 0)}
-                                            </Td>
-                                            <Td style={{ textAlign: 'center' }}>
-                                                <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}>
-                                                    <FiEdit size={18} />
-                                                </ActionButton>
-                                                <ActionButton $danger onClick={() => openDeleteConfirmation(product)}>
-                                                    <FiTrash2 size={18} />
-                                                </ActionButton>
-                                            </Td>
-                                        </Tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </TableWrapper>
-                    </TableContainer>
-                ) : (
-                    <EmptyStateContainer>
-                        <FiBox size={48} />
-                        <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
-                        <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
-                    </EmptyStateContainer>
-                )}
+                <PageContent>
+                    <PageHeader>
+                        <Title><FiBox/> Daftar Produk</Title>
+                        <AddButton onClick={() => navigate('/products/new')}>
+                            <FiPlus size={18} /> Tambah Produk
+                        </AddButton>
+                    </PageHeader>
+                    
+                    {products.length > 0 ? (
+                        <TableContainer>
+                            <TableWrapper>
+                                <Table>
+                                    <thead>
+                                        <tr>
+                                            <Th>Gambar</Th>
+                                            <Th>Nama Produk</Th>
+                                            <Th>Kategori</Th>
+                                            <Th>Stok</Th>
+                                            <Th>Harga</Th>
+                                            <Th style={{ textAlign: 'center' }}>Aksi</Th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {products.map((product, i) => (
+                                            <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                                <Td>
+                                                    <ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
+                                                </Td>
+                                                <Td>{product.name}</Td>
+                                                <Td>{product.category_name || '-'}</Td>
+                                                <Td>
+                                                    <StockStatus $lowStock={product.stock <= product.low_stock_threshold}>
+                                                        {product.stock}
+                                                    </StockStatus>
+                                                </Td>
+                                                <Td>
+                                                    {product.variants.length > 1
+                                                        ? `${new Intl.NumberFormat('id-ID').format(product.variants[0].price)} (Varian)`
+                                                        : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.variants[0]?.price || 0)}
+                                                </Td>
+                                                <Td style={{ textAlign: 'center' }}>
+                                                    <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}>
+                                                        <FiEdit size={18} />
+                                                    </ActionButton>
+                                                    <ActionButton $danger onClick={() => openDeleteConfirmation(product)}>
+                                                        <FiTrash2 size={18} />
+                                                    </ActionButton>
+                                                </Td>
+                                            </Tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </TableWrapper>
+                        </TableContainer>
+                    ) : (
+                        <EmptyStateContainer>
+                            <FiBox size={48} />
+                            <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
+                            <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
+                        </EmptyStateContainer>
+                    )}
+                </PageContent>
             </PageWrapper>
 
             <ConfirmationModal
@@ -29399,18 +29458,14 @@ import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { FiFileText, FiTrendingUp, FiDownload, FiCalendar } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import DatePicker from 'react-datepicker'; // <-- Import DatePicker
-import "react-datepicker/dist/react-datepicker.css"; // <-- Import CSS-nya
-import { exportSalesSummaryPDF } from '../services/api'; // <-- Import fungsi API baru
-
-const PageContainer = styled.div`
-    padding: 30px;
-    max-width: 900px;
-    margin: 0 auto;
-`;
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { exportSalesSummaryPDF as exportReport } from '../services/api';
+import PageWrapper from '../components/PageWrapper';
 
 const PageHeader = styled.header`
     margin-bottom: 30px;
+    flex-shrink: 0;
 `;
 
 const Title = styled.h1`
@@ -29422,7 +29477,7 @@ const Title = styled.h1`
 
 const ReportGrid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 25px;
 `;
 
@@ -29482,7 +29537,6 @@ const ActionButton = styled.button`
     }
 `;
 
-// --- Style untuk Filter Tanggal ---
 const DateFilterContainer = styled.div`
     display: flex;
     align-items: center;
@@ -29506,37 +29560,45 @@ const DatePickerWrapper = styled.div`
 
 function ReportsPage() {
     const navigate = useNavigate();
-    const [pdfStartDate, setPdfStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 29)));
-    const [pdfEndDate, setPdfEndDate] = useState(new Date());
+    const [reportStartDate, setReportStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 29)));
+    const [reportEndDate, setReportEndDate] = useState(new Date());
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const handleGeneratePDF = async () => {
+    const handleGenerateReport = async () => {
         setIsGenerating(true);
-        toast.info("Sedang membuat laporan PDF...");
+        toast.info("Sedang membuat laporan...");
         try {
-            const response = await exportSalesSummaryPDF(pdfStartDate, pdfEndDate);
+            const response = await exportReport(reportStartDate, reportEndDate);
             
-            // Logika untuk men-trigger download file
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            const fileName = `Laporan-Penjualan-${new Date().toISOString().slice(0, 10)}.pdf`;
+            
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `laporan-penjualan.csv`;
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                if (fileNameMatch && fileNameMatch.length === 2) {
+                    fileName = fileNameMatch[1];
+                }
+            }
+            
             link.setAttribute('download', fileName);
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
 
-            toast.success("Laporan PDF berhasil diunduh!");
+            toast.success("Laporan berhasil diunduh!");
         } catch (error) {
-            toast.error(error.response?.data?.message || "Gagal membuat laporan PDF.");
+            toast.error(error.response?.data?.message || "Gagal membuat laporan.");
         } finally {
             setIsGenerating(false);
         }
     };
 
     return (
-        <PageContainer>
+        <PageWrapper loading={false}>
             <PageHeader>
                 <Title><FiFileText /> Pusat Laporan</Title>
             </PageHeader>
@@ -29552,28 +29614,26 @@ function ReportsPage() {
                 </ReportCard>
 
                 <ReportCard>
-                    <CardTitle><FiDownload /> Laporan Penjualan (PDF)</CardTitle>
+                    <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
                     <CardDescription>
-                        Hasilkan ringkasan penjualan dalam format PDF untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
+                        Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
                     </CardDescription>
-                    
                     <DateFilterContainer>
                         <FiCalendar size={18} />
                         <DatePickerWrapper>
-                            <DatePicker selected={pdfStartDate} onChange={(date) => setPdfStartDate(date)} dateFormat="dd/MM/yy" maxDate={pdfEndDate} />
+                            <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
                         </DatePickerWrapper>
                         <span>-</span>
                         <DatePickerWrapper>
-                            <DatePicker selected={pdfEndDate} onChange={(date) => setPdfEndDate(date)} dateFormat="dd/MM/yy" minDate={pdfStartDate} />
+                            <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
                         </DatePickerWrapper>
                     </DateFilterContainer>
-
-                    <ActionButton onClick={handleGeneratePDF} disabled={isGenerating}>
-                        {isGenerating ? 'Memproses...' : 'Hasilkan PDF'}
+                    <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
+                        {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
                     </ActionButton>
                 </ReportCard>
             </ReportGrid>
-        </PageContainer>
+        </PageWrapper>
     );
 }
 
@@ -30258,12 +30318,35 @@ function SettingsPage() {
                                 />
                             </InputGroup>
                             
+                            <InputGroup>
+                                <Label>Format Struk</Label>
+                                <Select name="receipt_template" value={formData.receipt_template} onChange={handleBusinessChange}>
+                                    <option value="STANDARD_RECEIPT_TEMPLATE">Struk Standar</option>
+                                    <option value="THERMAL_RECEIPT_TEMPLATE">Struk Thermal</option>
+                                </Select>
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>URL Logo Struk</Label>
+                                <Input name="receipt_logo_url" value={formData.receipt_logo_url} onChange={handleBusinessChange} />
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>Teks Footer Struk</Label>
+                                <Input name="receipt_footer_text" value={formData.receipt_footer_text} onChange={handleBusinessChange} />
+                            </InputGroup>
+                            <InputGroup>
+                                <Label>Tarif Pajak Global (%)</Label>
+                                <Input type="number" name="tax_rate" value={formData.tax_rate} onChange={handleBusinessChange} step="0.01" min="0" max="100"/>
+                            </InputGroup>
+                            <InputGroup><Label>Metode Pembayaran</Label><TagsContainer>{formData.payment_methods.map(method => (<Tag key={method}>{method}<RemoveTagButton type="button" onClick={() => removePaymentMethod(method)}><FiX size={16} /></RemoveTagButton></Tag>))}</TagsContainer><div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}><Input value={newPaymentMethod} onChange={(e) => setNewPaymentMethod(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentMethod(); } }} placeholder="Tambah metode baru"/><Button type="button" onClick={addPaymentMethod}>Tambah</Button></div></InputGroup>
+
                             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                                 <Button type="submit" $primary>Simpan Profil</Button>
                             </div>
                         </Form>
                     </SettingsCard>
+                </Column>
 
+                <Column>
                     <SettingsCard>
                         <CardTitle>Tampilan</CardTitle>
                         <SettingRow>
@@ -30277,9 +30360,6 @@ function SettingsPage() {
                             </ThemeSwitchLabel>
                         </SettingRow>
                     </SettingsCard>
-                </Column>
-
-                <Column>
                     <SettingsCard>
                         <CardTitle>Konfigurasi Email Pengirim Struk</CardTitle>
                         {!isEditingEmail && savedEmail ? (
@@ -30298,17 +30378,6 @@ function SettingsPage() {
                                 </div>
                             </Form>
                         )}
-                    </SettingsCard>
-                    <SettingsCard>
-                        <CardTitle>Format Struk & Metode Pembayaran</CardTitle>
-                        <Form onSubmit={handleBusinessSave}>
-                            <InputGroup><Label>Metode Pembayaran</Label><TagsContainer>{formData.payment_methods.map(method => (<Tag key={method}>{method}<RemoveTagButton type="button" onClick={() => removePaymentMethod(method)}><FiX size={16} /></RemoveTagButton></Tag>))}</TagsContainer><div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}><Input value={newPaymentMethod} onChange={(e) => setNewPaymentMethod(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPaymentMethod(); } }} placeholder="Tambah metode baru"/><Button type="button" onClick={addPaymentMethod}>Tambah</Button></div></InputGroup>
-                            <InputGroup><Label>Format Struk</Label><Select name="receipt_template" value={formData.receipt_template} onChange={handleBusinessChange}><option value="STANDARD_RECEIPT_TEMPLATE">Struk Standar</option><option value="THERMAL_RECEIPT_TEMPLATE">Struk Thermal</option></Select></InputGroup>
-                            <InputGroup><Label>URL Logo Struk</Label><Input name="receipt_logo_url" value={formData.receipt_logo_url} onChange={handleBusinessChange} /></InputGroup>
-                            <InputGroup><Label>Teks Footer Struk</Label><Input name="receipt_footer_text" value={formData.receipt_footer_text} onChange={handleBusinessChange} /></InputGroup>
-                            <InputGroup><Label>Tarif Pajak Global (%)</Label><Input type="number" name="tax_rate" value={formData.tax_rate} onChange={handleBusinessChange} step="0.01" min="0" max="100"/></InputGroup>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}><Button type="submit" $primary>Simpan Setelan Bisnis</Button></div>
-                        </Form>
                     </SettingsCard>
                 </Column>
             </SettingsGrid>
@@ -30330,11 +30399,10 @@ import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { motion } from 'framer-motion'; // <-- Import motion
-import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
+import { motion } from 'framer-motion';
+import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components dengan Animasi ---
-// PageContainer diganti dengan PageWrapper
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -30361,10 +30429,19 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+
+// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 `;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
@@ -30391,7 +30468,7 @@ const Td = styled.td`
     &.nowrap { white-space: nowrap; }
     &.text-left { text-align: left; }
 `;
-const Tr = styled(motion.tr)` // <-- Ubah menjadi motion.tr
+const Tr = styled(motion.tr)`
     &:last-child > td { border-bottom: none; }
 `;
 const ActionButton = styled.button`
@@ -31631,19 +31708,30 @@ function UsersPage() {
 
     const confirmDelete = async () => {
         if (!userToDelete) return;
+        
+        // Buat promise di sini untuk dikelola oleh toast
+        const deletePromise = deleteUser(userToDelete.id);
+
         try {
-            await toast.promise(
-                deleteUser(userToDelete.id),
-                {
-                    pending: 'Menghapus pengguna...',
-                    success: 'Pengguna berhasil dihapus!',
-                    error: (err) => err.response?.data?.message || 'Gagal menghapus pengguna.'
+            // Gunakan toast.promise untuk menampilkan notifikasi
+            await toast.promise(deletePromise, {
+                pending: 'Menghapus pengguna...',
+                success: 'Pengguna berhasil dihapus!',
+                error: {
+                    render({ data }) {
+                        // Menampilkan pesan spesifik dari backend
+                        return data.response?.data?.message || 'Gagal menghapus pengguna.';
+                    }
                 }
-            );
+            });
+
+            // Hanya memuat ulang data jika penghapusan berhasil
             fetchUsersAndRoles();
         } catch (error) {
+            // Log error, tapi tidak perlu toast.error lagi karena sudah ditangani
             console.error("Delete user error:", error);
         } finally {
+            // Tutup modal dan reset state terlepas dari berhasil atau tidaknya operasi
             setIsConfirmOpen(false);
             setUserToDelete(null);
         }
@@ -32025,13 +32113,13 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: 350px;
+    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
 
 const ListItem = styled.li`
@@ -32550,12 +32638,12 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: 350px;
+    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
 
 const ListItem = styled.li`
@@ -33364,8 +33452,6 @@ import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
 
-// --- PERBAIKAN: Komponen EmptyStateContainer yang tidak relevan dihapus dari file ini ---
-
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
@@ -33390,12 +33476,12 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
     flex-grow: 1;
-    max-height: 350px;
+    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
 
 const ListItem = styled.li`
@@ -33476,12 +33562,12 @@ function StaleProductsList({ loading, staleProducts = [] }) {
                 <ListTitle><FiIcons.FiLayers size={22}/> Produk Kurang Laku</ListTitle>
                 <SkeletonContainer>
                     {[...Array(5)].map((_, index) => (
-                         <Skeleton 
+                       <Skeleton 
                             key={index}
                             count={1} 
                             height={60} 
                             style={{ 
-                                 marginBottom: '8px',
+                                marginBottom: '8px',
                                 borderRadius: '12px'
                             }} 
                         />
@@ -33756,12 +33842,14 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
+// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Menggunakan gap untuk jarak antar item */
     flex-grow: 1;
-    max-height: 350px;
 `;
 
 const ListItem = styled.li`
@@ -33771,7 +33859,6 @@ const ListItem = styled.li`
     padding: 16px 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
-    margin-bottom: 8px;
     background-color: var(--bg-main);
     transition: all 0.2s ease;
     
@@ -33780,10 +33867,6 @@ const ListItem = styled.li`
         border-color: var(--primary-color, #007bff);
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    &:last-child {
-        margin-bottom: 0;
     }
 `;
 
@@ -33891,6 +33974,7 @@ function StockInfoList({ loading, stockInfo = [] }) {
         <ListContainer>
             <ListTitle><FiIcons.FiArchive size={22}/> Informasi Stok</ListTitle>
             {stockInfo?.length > 0 ? (
+                // Mengubah List agar tidak ada scrollbar
                 <List>
                     {stockInfo.map(p => {
                         const stockColor = getStockColor(p.stock);

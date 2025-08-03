@@ -11,7 +11,14 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
-// --- Styled Components dengan Animasi ---
+// --- Styled Components dengan Perbaikan ---
+const PageContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -38,47 +45,39 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-
-// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
+// Menghapus scrollbar dengan menghapus overflow-x: auto
 const TableWrapper = styled.div`
-    overflow-x: auto;
     flex-grow: 1;
-
-    &::-webkit-scrollbar {
-        display: none;
-    }
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 `;
-
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
     min-width: 800px;
 `;
 const Th = styled.th`
-    text-align: center; 
+    text-align: center;
     padding: 15px 20px;
     background-color: var(--bg-main);
     border-bottom: 1px solid var(--border-color);
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 0.9rem;
-    white-space: nowrap; 
+    white-space: nowrap;
     text-transform: uppercase;
 `;
 const Td = styled.td`
-    text-align: center; 
+    text-align: center;
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
-    
     &.nowrap { white-space: nowrap; }
     &.text-left { text-align: left; }
 `;
 const Tr = styled(motion.tr)`
-    &:last-child > td { border-bottom: none; }
+    &:last-child > td {
+        border-bottom: none;
+    }
 `;
 const ActionButton = styled.button`
     background: none;
@@ -90,7 +89,7 @@ const ActionButton = styled.button`
 `;
 const TimePeriodCell = styled.div`
     font-size: 0.85rem;
-    line-height: 1.3; 
+    line-height: 1.3;
     .start-time { font-weight: 600; }
     .end-time { color: var(--text-secondary); }
 `;
@@ -120,8 +119,6 @@ const EmptyStateContainer = styled.div`
     text-align: center;
     color: var(--text-secondary);
 `;
-
-// --- Varian Animasi ---
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -130,32 +127,14 @@ const tableRowVariants = {
         transition: { delay: i * 0.05 },
     }),
 };
-
-// --- Helper Functions ---
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
-const formatDateTimeCombined = (start, end) => {
-    if (!start || !end) return null;
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    return (
-        <TimePeriodCell>
-            <div className="start-time">{dateStr}</div>
-            <div className="end-time">{startTime} - {endTime}</div>
-        </TimePeriodCell>
-    );
-};
+const formatDateTimeCombined = (start, end) => { if (!start || !end) return null; const startDate = new Date(start); const endDate = new Date(end); const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); return ( <TimePeriodCell> <div className="start-time">{dateStr}</div> <div className="end-time">{startTime} - {endTime}</div> </TimePeriodCell> ); };
 
-// --- Komponen Utama ---
 function ShiftHistoryPage() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-    const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
-    const [modalContent, setModalContent] = useState({ title: '', message: '' });
+    const [modalState, setModalState] = useState({ isOpen: false, action: null, id: null, title: '', message: '' });
 
     const fetchHistory = useCallback(async () => {
         setLoading(true);
@@ -181,13 +160,16 @@ function ShiftHistoryPage() {
     }, [fetchHistory]);
 
     const openConfirmation = (action, id = null) => {
-        setConfirmAction({ action, id });
+        let title = '';
+        let message = '';
         if (action === 'delete') {
-            setModalContent({ title: 'Hapus Shift', message: `Yakin ingin menghapus riwayat shift #${id}?` });
+            title = 'Hapus Shift';
+            message = `Yakin ingin menghapus riwayat shift #${id}?`;
         } else if (action === 'clearAll') {
-            setModalContent({ title: 'Hapus Semua Riwayat', message: 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.' });
+            title = 'Hapus Semua Riwayat';
+            message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.';
         }
-        setIsConfirmOpen(true);
+        setModalState({ isOpen: true, action, id, title, message });
     };
     
     const handleExport = async () => {
@@ -199,6 +181,7 @@ function ShiftHistoryPage() {
             link.href = url;
             link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
             document.body.appendChild(link);
+            link.click();
             link.remove();
         } catch (error) {
             toast.error(error.response?.data?.message || "Gagal mengekspor data.");
@@ -206,11 +189,16 @@ function ShiftHistoryPage() {
     };
 
     const handleConfirm = async () => {
-        const { action, id } = confirmAction;
-        setIsConfirmOpen(false);
+        const { action, id } = modalState;
+        setModalState({ isOpen: false, action: null, id: null, title: '', message: '' });
+
         let promise;
-        if (action === 'delete') promise = deleteShift(id);
-        else if (action === 'clearAll') promise = clearShiftHistory();
+        if (action === 'delete') {
+            promise = deleteShift(id);
+        } else if (action === 'clearAll') {
+            promise = clearShiftHistory();
+        }
+
         if (promise) {
             await toast.promise(promise, {
                 pending: 'Memproses...',
@@ -238,7 +226,11 @@ function ShiftHistoryPage() {
                         </thead>
                         <tbody>
                             {history.map((shift, i) => {
-                                const nonCashSales = (shift.card_sales || 0) + (shift.qris_sales || 0) + (shift.other_sales || 0);
+                                const nonCashSales = 
+                                    (parseFloat(shift.card_sales) || 0) + 
+                                    (parseFloat(shift.qris_sales) || 0) + 
+                                    (parseFloat(shift.other_sales) || 0);
+                                
                                 return (
                                     <Tr key={shift.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
                                         <Td className="text-left">{shift.user_name}</Td> 
@@ -251,7 +243,7 @@ function ShiftHistoryPage() {
                                                 Non-Tunai: {formatCurrency(nonCashSales)}
                                             </SalesDetail>
                                         </Td>
-                                        <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
+                                        <Td className="nowrap">{formatCurrency(shift.expected_cash)}</Td>
                                         {userRole === 'admin' && (
                                             <Td>
                                                 <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
@@ -267,7 +259,7 @@ function ShiftHistoryPage() {
                 </TableWrapper>
             );
         }
-
+        
         return (
             <EmptyStateContainer>
                 <FiClock size={48} />
@@ -279,29 +271,29 @@ function ShiftHistoryPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiClock /> Riwayat Shift</Title>
-                    {userRole === 'admin' && (
-                        <HeaderActions>
-                            <ExportButton onClick={handleExport}><FiDownload/> Ekspor CSV</ExportButton>
-                            <ClearHistoryButton onClick={() => openConfirmation('clearAll')}>
-                                <FiAlertTriangle /> Hapus Semua Riwayat
-                            </ClearHistoryButton>
-                        </HeaderActions>
-                    )}
-                </PageHeader>
-                
-                <TableContainer>
-                    {renderTableContent()}
-                </TableContainer>
+                <PageContent>
+                    <PageHeader>
+                        <Title><FiClock /> Riwayat Shift</Title>
+                        {userRole === 'admin' && (
+                            <HeaderActions>
+                                <ExportButton onClick={handleExport}><FiDownload/> Ekspor CSV</ExportButton>
+                                <ClearHistoryButton onClick={() => openConfirmation('clearAll')}>
+                                    <FiAlertTriangle /> Hapus Semua Riwayat
+                                </ClearHistoryButton>
+                            </HeaderActions>
+                        )}
+                    </PageHeader>
+                    <TableContainer>
+                        {renderTableContent()}
+                    </TableContainer>
+                </PageContent>
             </PageWrapper>
-
             <ConfirmationModal
-                isOpen={isConfirmOpen}
-                onClose={() => setIsConfirmOpen(false)}
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ ...modalState, isOpen: false })}
                 onConfirm={handleConfirm}
-                title={modalContent.title}
-                message={modalContent.message}
+                title={modalState.title}
+                message={modalState.message}
             />
         </>
     );

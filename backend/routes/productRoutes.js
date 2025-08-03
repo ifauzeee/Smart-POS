@@ -248,47 +248,73 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
+
     const { items, purchase_order_id } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
-    const connection = await db.getConnection();
+
+    // Langkah 1: Validasi awal sebelum memulai transaksi
+    const productIds = items.map(item => item.productId);
+    if (productIds.length === 0) {
+        return res.status(400).json({ message: 'Daftar item tidak boleh kosong.' });
+    }
+
     try {
-        await connection.beginTransaction();
-        for (const item of items) {
-            const { productId, quantity } = item;
-            const [[productExists]] = await connection.query('SELECT id FROM products WHERE id = ? AND business_id = ? AND is_archived = 0', [productId, businessId]);
-            if (!productExists) {
-                await connection.rollback();
-                return res.status(404).json({ message: `Produk dengan ID ${productId} tidak ditemukan atau bukan milik bisnis Anda.` });
-            }
-            await connection.query(
-                'UPDATE products SET stock = stock + ? WHERE id = ? AND business_id = ?',
-                [parseInt(quantity, 10), productId, businessId]
-            );
+        // Langkah 2: Cek semua ID produk dalam satu kueri
+        const [validProducts] = await db.query(
+            'SELECT id FROM products WHERE business_id = ? AND is_archived = 0 AND id IN (?)',
+            [businessId, productIds]
+        );
+        const validProductIds = new Set(validProducts.map(p => p.id));
+        const invalidProductIds = productIds.filter(id => !validProductIds.has(parseInt(id)));
+
+        // Langkah 3: Jika ada ID tidak valid, kembalikan semua dalam satu pesan error
+        if (invalidProductIds.length > 0) {
+            return res.status(404).json({
+                message: `Beberapa produk tidak ditemukan atau bukan milik bisnis Anda. ID tidak valid: [${invalidProductIds.join(', ')}]`,
+            });
         }
-        if (purchase_order_id) {
-            const [[poExists]] = await connection.query('SELECT id FROM purchase_orders WHERE id = ? AND business_id = ?', [purchase_order_id, businessId]);
-            if (!poExists) {
-                await connection.rollback();
-                return res.status(404).json({ message: `Purchase Order dengan ID ${purchase_order_id} tidak ditemukan.` });
+
+        // Langkah 4: Jika semua valid, lanjutkan dengan transaksi
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            for (const item of items) {
+                // Tidak perlu SELECT lagi di sini, langsung UPDATE
+                await connection.query(
+                    'UPDATE products SET stock = stock + ? WHERE id = ?',
+                    [parseInt(item.quantity, 10), item.productId]
+                );
             }
-            await connection.query(
-                'UPDATE purchase_orders SET status = "COMPLETED", updated_at = CURRENT_TIMESTAMP WHERE id = ? AND business_id = ?',
-                [purchase_order_id, businessId]
-            );
-            await logActivity(businessId, userId, 'PO_COMPLETED', `Purchase Order ID ${purchase_order_id} ditandai selesai via penerimaan stok.`);
+
+            if (purchase_order_id) {
+                // Validasi PO juga bisa dilakukan di sini jika diperlukan, tapi asumsikan sudah benar
+                await connection.query(
+                    'UPDATE purchase_orders SET status = "COMPLETED" WHERE id = ? AND business_id = ?',
+                    [purchase_order_id, businessId]
+                );
+                await logActivity(businessId, userId, 'PO_COMPLETED', `Purchase Order ID ${purchase_order_id} ditandai selesai via penerimaan stok.`);
+            }
+
+            await connection.commit();
+            const itemDetails = items.map(i => `(ID: ${i.productId}, Qty: ${i.quantity})`).join(', ');
+            await logActivity(businessId, userId, 'RECEIVE_STOCK', `Stok diterima untuk item: ${itemDetails}${purchase_order_id ? ` (PO: ${purchase_order_id})` : ''}`);
+            res.status(200).json({ message: 'Stok berhasil diperbarui untuk semua produk.' });
+
+        } catch (error) {
+            await connection.rollback();
+            console.error('Error in transaction while receiving stock:', error);
+            await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED_TRANSACTION', `Error: ${error.message}`);
+            res.status(500).json({ message: error.message || 'Gagal memperbarui stok saat transaksi.' });
+        } finally {
+            if (connection) connection.release();
         }
-        await connection.commit();
-        const itemDetails = items.map(i => `(ID: ${i.productId}, Qty: ${i.quantity})`).join(', ');
-        await logActivity(businessId, userId, 'RECEIVE_STOCK', `Stok diterima untuk item: ${itemDetails}${purchase_order_id ? ` (PO: ${purchase_order_id})` : ''}`);
-        res.status(200).json({ message: 'Stok berhasil diperbarui untuk semua produk.' });
+
     } catch (error) {
-        await connection.rollback();
-        console.error('Error receiving stock:', error);
-        await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: error.message || 'Gagal memperbarui stok.' });
-    } finally {
-        if (connection) connection.release();
+        console.error('Error validating products before receiving stock:', error);
+        await logActivity(businessId, userId, 'RECEIVE_STOCK_FAILED_VALIDATION', `Error: ${error.message}`);
+        res.status(500).json({ message: error.message || 'Gagal memvalidasi produk.' });
     }
 });
 

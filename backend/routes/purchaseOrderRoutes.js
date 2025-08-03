@@ -3,7 +3,7 @@
 const express = require('express');
 const db = require('../config/db');
 // FIX: Import both protect and isAdmin from the middleware file
-const { protect, isAdmin } = require('../middleware/authMiddleware'); 
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { logActivity } = require('../utils/logUtils');
 const router = express.Router();
 
@@ -24,15 +24,20 @@ router.post('/', protect, isAdmin, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        const date = new Date();
-        const yyyymmdd = date.getFullYear().toString() + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0');
-        const [[{count}]] = await connection.query('SELECT COUNT(id) as count FROM purchase_orders WHERE DATE(created_at) = CURDATE() AND business_id = ?', [businessId]);
-        const po_number = `PO-${yyyymmdd}-${count + 1}`;
-
-        const poSql = 'INSERT INTO purchase_orders (business_id, supplier_id, po_number, notes) VALUES (?, ?, ?, ?)';
-        const [poResult] = await connection.query(poSql, [businessId, supplier_id, po_number, notes || null]);
+        // Langkah 1: Buat entri PO terlebih dahulu dengan nomor sementara untuk mendapatkan ID unik.
+        const poSql = 'INSERT INTO purchase_orders (business_id, supplier_id, po_number, notes, status) VALUES (?, ?, ?, ?, ?)';
+        const [poResult] = await connection.query(poSql, [businessId, supplier_id, 'PENDING', notes || null, 'DRAFT']);
         const purchaseOrderId = poResult.insertId;
 
+        // Langkah 2: Buat nomor PO yang unik dan tangguh menggunakan ID yang baru dibuat.
+        const date = new Date();
+        const yyyymmdd = date.getFullYear().toString() + (date.getMonth() + 1).toString().padStart(2, '0') + date.getDate().toString().padStart(2, '0');
+        const po_number = `PO-${yyyymmdd}-${purchaseOrderId}`;
+
+        // Langkah 3: Perbarui entri PO dengan nomor yang sudah final.
+        await connection.query('UPDATE purchase_orders SET po_number = ? WHERE id = ?', [po_number, purchaseOrderId]);
+
+        // Lanjutkan menyimpan item-item PO
         for (const item of items) {
             if (!item.product_id || !item.quantity || !item.cost_price) {
                 throw new Error('Setiap item harus memiliki produk, kuantitas, dan harga beli.');
@@ -60,11 +65,11 @@ router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const query = `
-            SELECT 
-                po.id, 
-                po.po_number, 
-                po.status, 
-                po.created_at, 
+            SELECT
+                po.id,
+                po.po_number,
+                po.status,
+                po.created_at,
                 s.name as supplier_name,
                 (SELECT CAST(SUM(quantity * cost_price) AS DECIMAL(15,2)) FROM purchase_order_items WHERE purchase_order_id = po.id) as total_amount
             FROM purchase_orders po
