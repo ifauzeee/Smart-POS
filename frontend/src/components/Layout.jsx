@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx
+
 import React from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
@@ -8,11 +10,14 @@ const AppContainer = styled.div`
   height: 100vh;
   width: 100vw;
   background-color: var(--bg-main);
+
+  @media (max-width: 1024px) {
+    flex-direction: column-reverse; /* Pindahkan Sidebar ke bawah */
+  }
 `;
 
 const ContentWrapper = styled.main`
   flex: 1;
-  /* Ini adalah kunci utama: wrapper ini yang menangani scroll */
   overflow-y: auto;
 `;
 
@@ -21,7 +26,6 @@ function Layout() {
     <AppContainer>
       <Sidebar />
       <ContentWrapper>
-        {/* Outlet akan merender halaman (misal: ProductsPage) di sini */}
         <Outlet />
       </ContentWrapper>
     </AppContainer>

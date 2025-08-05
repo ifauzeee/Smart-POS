@@ -1,11 +1,13 @@
-import React, { useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx
+
+import React, { useContext, useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-loading-skeleton/dist/skeleton.css';
-
+import styled from 'styled-components'; // Added styled-components import
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -109,11 +111,6 @@ const GlobalStyle = createGlobalStyle`
         background-color: var(--bg-main);
         color: var(--text-primary);
         transition: background-color 0.3s ease, color 0.3s ease;
-        /*
-        The overflow: hidden; rule might prevent scrolling on pages that need it.
-        Consider moving this to a specific component or a more targeted selector if needed.
-        overflow: hidden; 
-        */
     }
 
     /* Smooth Transitions for All Interactive Elements */
@@ -123,21 +120,128 @@ const GlobalStyle = createGlobalStyle`
 `;
 // --- End of Global Styles ---
 
+// --- Mobile Redirect Component ---
+const MobileRedirectContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    padding: 20px;
+    box-sizing: border-box;
+`;
+
+const AppIcon = styled.img`
+    width: 120px;
+    height: 120px;
+    margin-bottom: 24px;
+`;
+
+const RedirectTitle = styled.h1`
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+`;
+
+const RedirectMessage = styled.p`
+    font-size: 1rem;
+    color: var(--text-secondary);
+    max-width: 400px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+`;
+
+const DownloadButton = styled.a`
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 10px;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+        background-color: var(--primary-hover);
+    }
+`;
+
+const ContinueLink = styled.button`
+    margin-top: 20px;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: underline;
+    font-size: 0.9rem;
+    cursor: pointer;
+`;
+
+function MobileRedirectPage() {
+    const navigate = useNavigate();
+    return (
+        <MobileRedirectContainer>
+            <AppIcon src="/pwa-192x192.png" alt="Smart POS Logo" />
+            <RedirectTitle>Gunakan Aplikasi Smart POS</RedirectTitle>
+            <RedirectMessage>
+                Untuk pengalaman terbaik di perangkat mobile, silakan unduh dan gunakan aplikasi kami.
+            </RedirectMessage>
+            <div>
+                <DownloadButton href="#">Unduh di App Store</DownloadButton>
+                <DownloadButton href="#">Dapatkan di Google Play</DownloadButton>
+            </div>
+            <ContinueLink onClick={() => navigate(-1)}>Lanjutkan di Web Browser</ContinueLink>
+        </MobileRedirectContainer>
+    );
+}
+
+// --- Component to handle mobile redirect logic conditionally
+function MobileRedirectHandler() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        // Only redirect if on mobile and not already on the redirect page
+        if (isMobile && location.pathname !== '/mobile-redirect') {
+            navigate('/mobile-redirect');
+        }
+    }, [isMobile, location.pathname, navigate]);
+
+    // Render nothing, as its sole purpose is to handle navigation
+    return null;
+}
+
+// --- Main App Content Component
 function AppContent() {
     const { theme } = useContext(ThemeContext);
     
-    // The SkeletonTheme base and highlight colors are updated to match the new dark theme colors.
     return (
         <SkeletonTheme baseColor={theme === 'dark' ? '#232834' : '#EAECEF'} highlightColor={theme === 'dark' ? '#3A4151' : '#ffffff'}>
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
             <BrowserRouter>
+                {/* A component that conditionally redirects mobile users */}
+                <MobileRedirectHandler />
+
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/tutorial/app-password" element={<AppPasswordTutorialPage />} />
+                    <Route path="/mobile-redirect" element={<MobileRedirectPage />} />
                     
                     {/* The root path redirects to /pos if a token exists, otherwise to /login */}
                     <Route path="/" element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />} />
@@ -179,7 +283,7 @@ function AppContent() {
                         </Route>
                     </Route>
                     
-                    {/* Catch-all route for any undefined paths */}
+                    {/* Catch-all route for any undefined paths, redirect to login unless already on a auth route */}
                     <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
             </BrowserRouter>
