@@ -38,14 +38,14 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose} // Menambahkan onClick di backdrop untuk menutup modal
+          onClick={onClose}
         >
           <ModalContainer
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            onClick={e => e.stopPropagation()} // Mencegah klik di dalam modal ikut menutup
+            onClick={e => e.stopPropagation()}
           >
             <IconWrapper><FiAlertTriangle size={48} /></IconWrapper>
             <ModalTitle>{title}</ModalTitle>
@@ -60,7 +60,7 @@ function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
     </AnimatePresence>
   );
   // =================================================================
-  // AKHIR PERBAIKAN
+  // AKHIR PERBAAIKAN
   // =================================================================
 }
 

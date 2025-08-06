@@ -3579,33 +3579,15 @@ SOFTWARE.
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\.env =====
 
-# Konfigurasi Database
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=smart_pos_db
-
-# Kunci Rahasia JWT (Ganti dengan teks acak yang sangat panjang, contoh: dari https://randomkeygen.com/)
-JWT_SECRET=GANTI_DENGAN_KUNCI_RAHASIA_SUPER_PANJANG_ANDA
-
-# Kunci Enkripsi (HARUS TEPAT 32 KARAKTER, contoh: dari https://randomkeygen.com/)
-ENCRYPTION_KEY=GANTI_DENGAN_32_KARAKTER_ACAK_ANDA
-
-# Kunci Registrasi Admin Pertama (Ubah sesuai keinginan Anda)
-ADMIN_REGISTRATION_KEY="RAHASIA123"
-
-# URL Frontend (Untuk CORS)
-FRONTEND_URL=http://localhost:5173
-
-# Konfigurasi Email (Opsional, untuk kirim struk)
-EMAIL_USER=email.anda@gmail.com
-EMAIL_PASS=sandi_aplikasi_16_digit_dari_google
-
-===== C:\Users\Ibnu\Project\smart-pos\backend\example.env =====
+# ===================================================================
+# CONTOH KONFIGURASI LINGKUNGAN APLIKASI
+# SALIN FILE INI MENJADI .env DAN ISI DENGAN NILAI ANDA SENDIRI.
+# JANGAN PERNAH UNGGAH FILE .env KE REPOSITORI GIT.
+# ===================================================================
 
 # ===================================================================
 # KONFIGURASI DATABASE
-# Sesuaikan dengan pengaturan database Anda.
+# Sesuaikan dengan pengaturan database MySQL/MariaDB Anda.
 # ===================================================================
 DB_HOST=localhost
 DB_USER=root
@@ -3614,31 +3596,82 @@ DB_NAME=smart_pos_db
 
 # ===================================================================
 # KUNCI RAHASIA APLIKASI (WAJIB DIISI DENGAN NILAI ACAK!)
-# JANGAN GUNAKAN NILAI DEFAULT INI DI PRODUKSI
+# Gunakan generator online seperti https://randomkeygen.com/ untuk membuat nilai ini.
+# JANGAN GUNAKAN NILAI DEFAULT INI DI PRODUKSI.
 # ===================================================================
-# Untuk JWT: Ganti dengan string acak yang sangat panjang (64+ karakter)
+# Untuk JWT: Ganti dengan string acak yang sangat panjang (minimal 64 karakter).
 JWT_SECRET=GANTI_DENGAN_KUNCI_JWT_RAHASIA_ANDA_YANG_SANGAT_PANJANG
 
-# Untuk Enkripsi: Ganti dengan string acak TEPAT 32 KARAKTER
-ENCRYPTION_KEY=GANTI_DENGAN_KUNCI_ENKRIPSI_32_KARAKTER
+# Untuk Enkripsi: Ganti dengan string acak TEPAT 32 KARAKTER.
+ENCRYPTION_KEY=GANTI_DENGAN_KUNCI_ENKRIPSI_32_KARAKTER_ANDA
 
-# Kunci untuk registrasi admin pertama kali (opsional setelah setup)
-ADMIN_REGISTRATION_KEY="KODE_RAHASIA_UNTUK_REGISTRASI_ADMIN_PERTAMA"
+# Kunci untuk registrasi admin pertama kali (opsional setelah setup).
+# Ganti dengan frasa yang unik dan sulit ditebak.
+ADMIN_REGISTRATION_KEY="GANTI_DENGAN_KODE_RAHASIA_ANDA"
 
 # ===================================================================
-# URL FRONTEND (PENTING UNTUK CORS DI PRODUKSI)
+# URL FRONTEND (PENTING UNTUK KEBIJAKAN CORS)
 # Ganti dengan URL domain frontend Anda saat sudah online.
 # ===================================================================
 FRONTEND_URL=http://localhost:5173
 
 # ===================================================================
 # PENGATURAN EMAIL (OPSIONAL: UNTUK KIRIM STRUK)
-# Gunakan kredensial email yang valid dan sandi aplikasi dari Google.
+# Gunakan kredensial email yang valid dan "Sandi Aplikasi" (App Password) dari Google.
+# Lihat tutorial di aplikasi untuk cara mendapatkannya.
 # ===================================================================
-EMAIL_USER=example@gmail.com
-EMAIL_PASS=app_password_google_anda
+EMAIL_USER=email.anda@gmail.com
+EMAIL_PASS=sandi_aplikasi_16_digit_dari_google_disini
+
+===== C:\Users\Ibnu\Project\smart-pos\backend\example.env =====
+
+# ===================================================================
+# CONTOH KONFIGURASI LINGKUNGAN APLIKASI
+# SALIN FILE INI MENJADI .env DAN ISI DENGAN NILAI ANDA SENDIRI.
+# JANGAN PERNAH UNGGAH FILE .env KE REPOSITORI GIT.
+# ===================================================================
+
+# ===================================================================
+# KONFIGURASI DATABASE
+# Sesuaikan dengan pengaturan database MySQL/MariaDB Anda.
+# ===================================================================
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=smart_pos_db
+
+# ===================================================================
+# KUNCI RAHASIA APLIKASI (WAJIB DIISI DENGAN NILAI ACAK!)
+# Gunakan generator online seperti https://randomkeygen.com/ untuk membuat nilai ini.
+# JANGAN GUNAKAN NILAI DEFAULT INI DI PRODUKSI.
+# ===================================================================
+# Untuk JWT: Ganti dengan string acak yang sangat panjang (minimal 64 karakter).
+JWT_SECRET=GANTI_DENGAN_KUNCI_JWT_RAHASIA_ANDA_YANG_SANGAT_PANJANG
+
+# Untuk Enkripsi: Ganti dengan string acak TEPAT 32 KARAKTER.
+ENCRYPTION_KEY=GANTI_DENGAN_KUNCI_ENKRIPSI_32_KARAKTER_ANDA
+
+# Kunci untuk registrasi admin pertama kali (opsional setelah setup).
+# Ganti dengan frasa yang unik dan sulit ditebak.
+ADMIN_REGISTRATION_KEY="GANTI_DENGAN_KODE_RAHASIA_ANDA"
+
+# ===================================================================
+# URL FRONTEND (PENTING UNTUK KEBIJAKAN CORS)
+# Ganti dengan URL domain frontend Anda saat sudah online.
+# ===================================================================
+FRONTEND_URL=http://localhost:5173
+
+# ===================================================================
+# PENGATURAN EMAIL (OPSIONAL: UNTUK KIRIM STRUK)
+# Gunakan kredensial email yang valid dan "Sandi Aplikasi" (App Password) dari Google.
+# Lihat tutorial di aplikasi untuk cara mendapatkannya.
+# ===================================================================
+EMAIL_USER=email.anda@gmail.com
+EMAIL_PASS=sandi_aplikasi_16_digit_dari_google_disini
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\index.js =====
+
+// C:\Users\Ibnu\Project\smart-pos\backend\index.js
 
 require('dotenv').config();
 const express = require('express');
@@ -3646,7 +3679,6 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 
-// --- Konfigurasi CORS Final dan Benar ---
 const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'];
 const corsOptions = {
     origin: (origin, callback) => {
@@ -3664,7 +3696,6 @@ const corsOptions = {
 
 const app = express();
 
-// Aktifkan pre-flight requests SEBELUM middleware lainnya
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
@@ -3680,7 +3711,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const shiftRoutes = require('./routes/shiftRoutes'); // Baris yang benar
+const shiftRoutes = require('./routes/shiftRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
@@ -3703,12 +3734,12 @@ app.use('/api/customers', customerRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/shifts', shiftRoutes); // Baris yang benar
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/shifts', shiftRoutes); // Menggunakan variabel yang benar
 
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 
@@ -6852,10 +6883,8 @@ const protect = async (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    // --- PERBAIKAN DIMULAI ---
     // Menggunakan optional chaining (?.) untuk mencegah error jika req.user atau req.user.role tidak ada
     if (req.user?.role?.toLowerCase() === 'admin') {
-    // --- PERBAIKAN SELESAI ---
         next();
     } else {
         return res.status(403).json({ 
@@ -6879,24 +6908,14 @@ module.exports = { protect, isAdmin, hasPermission };
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\analyticsRoutes.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\analyticsRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin from authMiddleware
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
 
 const router = express.Router();
-
-// The local isAdmin function is removed as it's now imported from authMiddleware.js.
-// This ensures consistency and reusability.
-
-// Debug endpoint - useful for checking token and user details during development
-router.get('/debug-token', protect, async (req, res) => {
-    res.json({
-        headers: req.headers,
-        user: req.user,
-        token: req.headers.authorization
-    });
-});
 
 /**
  * Helper function to fetch various statistical data for a given business within a specified date range.
@@ -6918,19 +6937,18 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
             CAST(
                 COALESCE(
                     (SELECT SUM((oi.price - COALESCE(oi.cost_price, 0)) * oi.quantity)
-                    FROM order_items oi
-                    JOIN orders o2 ON oi.order_id = o2.id
+                    FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
                     WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                 , 0)
             AS DECIMAL(15,2)) as totalProfit,
             COALESCE((
                 SELECT SUM(oi.quantity)
-                FROM order_items oi
-                JOIN orders o2 ON oi.order_id = o2.id
-                WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?
+                FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
+                WHERE o2.business_id = ? AND created_at BETWEEN ? AND ?
             ), 0) as totalSoldUnits,
-            (SELECT COALESCE(COUNT(id), 0) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
-            (SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses
+            (SELECT COUNT(id) FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?) as newCustomers,
+            (SELECT SUM(amount) FROM expenses WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalExpenses,
+            (SELECT expected_cash FROM cashier_shifts WHERE business_id = ? AND status = 'closed' ORDER BY end_time DESC LIMIT 1) as cashInDrawer
     `;
     const params = [
         businessId, startDate, endDate,
@@ -6938,20 +6956,41 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         businessId, startDate, endDate,
         businessId, startDate, endDate,
         businessId, startDate, endDate,
-        businessId, startDate, endDate
+        businessId, startDate, endDate,
+        businessId
     ];
+
     const [[stats]] = await db.query(statsQuery, params);
+    
+    // Fetch default starting cash as a fallback
+    const [[defaultCashSetting]] = await db.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
+
     return {
         totalRevenue: Number(stats.totalRevenue),
         totalTransactions: Number(stats.totalTransactions),
         totalProfit: Number(stats.totalProfit),
         totalSoldUnits: Number(stats.totalSoldUnits),
         newCustomers: Number(stats.newCustomers),
-        totalExpenses: Number(stats.totalExpenses),
+        totalExpenses: Number(stats.totalExpenses) || 0,
+        // If there's no closed shift, use the default starting cash from settings
+        cashInDrawer: Number(stats.cashInDrawer) || Number(defaultCashSetting.default_starting_cash),
     };
 };
 
 // --- Dashboard Statistics Endpoints ---
+
+/**
+ * @route GET /api/admin/debug-token
+ * @desc Debug endpoint - useful for checking token and user details during development
+ * @access Private (Admin only)
+ */
+router.get('/debug-token', protect, isAdmin, async (req, res) => {
+    res.json({
+        headers: req.headers,
+        user: req.user,
+        token: req.headers.authorization
+    });
+});
 
 /**
  * @route GET /api/admin/stats
@@ -7423,7 +7462,8 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
                     END
                 AS DECIMAL(10,2)) as profit_margin_percentage
             FROM products p
-            JOIN order_items oi ON p.id = oi.product_id
+            LEFT JOIN product_variants pv ON p.id = pv.product_id
+            JOIN order_items oi ON pv.id = oi.variant_id
             JOIN orders o ON oi.order_id = o.id
             WHERE p.business_id = ? AND o.created_at BETWEEN ? AND ? AND p.is_archived = 0
             GROUP BY p.id, p.name
@@ -7808,21 +7848,21 @@ const router = express.Router();
 
 const customerValidationRules = [
     body('name').trim().notEmpty().withMessage('Nama pelanggan tidak boleh kosong.'),
-    body('phone').optional({ checkFalsy: true }).trim(), // Menggunakan 'phone'
+    body('phone').optional({ checkFalsy: true }).trim(),
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email tidak valid.').normalizeEmail(),
     body('address').optional({ checkFalsy: true }).trim()
 ];
 
-// PERBAIKAN: Mengganti semua 'phone_number' dengan 'phone'
+// MENGGANTI SEMUA 'phone_number' dengan 'phone'
 router.get('/', protect, async (req, res) => {
     const { search } = req.query;
     const businessId = req.user.business_id;
     try {
-        let query = 'SELECT id, name, phone, email FROM customers WHERE business_id = ?'; // Diubah di sini
+        let query = 'SELECT id, name, phone, email FROM customers WHERE business_id = ?';
         const params = [businessId];
         
         if (search && search.trim() !== '') {
-            query += ' AND (name LIKE ? OR phone LIKE ?)'; // Diubah di sini
+            query += ' AND (name LIKE ? OR phone LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
         
@@ -7869,11 +7909,11 @@ router.post('/', protect, isAdmin, customerValidationRules, async (req, res) => 
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, phone, email, address } = req.body; // Menggunakan 'phone'
+    const { name, phone, email, address } = req.body;
     const { business_id: businessId, id: userId } = req.user;
     try {
         const [result] = await db.query(
-            'INSERT INTO customers (business_id, name, phone, email, address) VALUES (?, ?, ?, ?, ?)', // Diubah di sini
+            'INSERT INTO customers (business_id, name, phone, email, address) VALUES (?, ?, ?, ?, ?)',
             [businessId, name, phone || null, email || null, address || null]
         );
         await logActivity(businessId, userId, 'CREATE_CUSTOMER', `Membuat pelanggan baru: ${name}`);
@@ -7888,11 +7928,11 @@ router.put('/:id', protect, isAdmin, customerValidationRules, async (req, res) =
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const customerId = req.params.id;
-    const { name, phone, email, address } = req.body; // Menggunakan 'phone'
+    const { name, phone, email, address } = req.body;
     const { business_id: businessId, id: userId } = req.user;
     try {
         const [result] = await db.query(
-            'UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE id = ? AND business_id = ?', // Diubah di sini
+            'UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE id = ? AND business_id = ?',
             [name, phone || null, email || null, address || null, customerId, businessId]
         );
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Pelanggan tidak ditemukan.' });
@@ -9585,6 +9625,8 @@ module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\settingsRoutes.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\settingsRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -9600,13 +9642,10 @@ router.get('/business', protect, isAdmin, async (req, res) => {
             'SELECT business_name, address, phone_number, website, logo_url, payment_methods, receipt_logo_url, receipt_footer_text, tax_rate, default_starting_cash FROM businesses WHERE id = ?',
             [businessId]
         );
-
         if (!settings) {
             return res.status(404).json({ message: 'Pengaturan bisnis tidak ditemukan.' });
         }
-        
         res.json(settings);
-
     } catch (error) {
         console.error("Error fetching business settings:", error);
         res.status(500).json({ message: "Server Error", error: error.message });
@@ -9616,26 +9655,19 @@ router.get('/business', protect, isAdmin, async (req, res) => {
 // POST /api/settings/business
 router.post('/business', protect, isAdmin, async (req, res) => {
     const {
-        business_name,
-        address,
-        phone,
-        website,
-        logo_url,
-        payment_methods,
-        receipt_logo_url,
-        receipt_footer_text,
-        tax_rate,
-        default_starting_cash // <-- Variabel baru
+        business_name, address, phone, website, logo_url, payment_methods,
+        receipt_logo_url, receipt_footer_text, tax_rate, default_starting_cash
     } = req.body;
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
     try {
+        const cashValue = parseFloat(default_starting_cash) || 0;
         await db.query(
             `UPDATE businesses SET 
                 business_name = ?, address = ?, phone_number = ?, website = ?, 
                 logo_url = ?, payment_methods = ?, receipt_logo_url = ?, 
-                receipt_footer_text = ?, tax_rate = ?, default_starting_cash = ? 
+                receipt_footer_text = ?, tax_rate = ?, default_starting_cash = ?, cash_in_drawer = ? 
             WHERE id = ?`,
             [
                 business_name || null,
@@ -9647,7 +9679,8 @@ router.post('/business', protect, isAdmin, async (req, res) => {
                 receipt_logo_url || null,
                 receipt_footer_text || null,
                 parseFloat(tax_rate) || 0,
-                parseFloat(default_starting_cash) || 0, // <-- Simpan nilai baru
+                cashValue,
+                cashValue, // Set cash_in_drawer sama dengan default_starting_cash
                 businessId
             ]
         );
@@ -9749,8 +9782,6 @@ module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\shiftRoutes.js =====
 
-// C:\Users\Ibnu\Project\smart-pos\backend\routes\shiftRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -9760,25 +9791,18 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-// Rute tes untuk memastikan file termuat dengan benar
-router.get('/test', (req, res) => {
-    res.send('<h1>Server Shift Berhasil Diperbarui!</h1>');
-});
-
+// Rute untuk memulai shift (Kas Awal Otomatis)
 router.post('/start', protect, async (req, res) => {
     const { id: userId, business_id: businessId } = req.user;
-    const { starting_cash_override } = req.body;
+    const { starting_cash_override } = req.body || {};
     const connection = await db.getConnection();
-
     try {
         await connection.beginTransaction();
-
         const [[existingShift]] = await connection.query('SELECT id FROM cashier_shifts WHERE user_id = ? AND status = "open"', [userId]);
         if (existingShift) {
             await connection.rollback();
             return res.status(400).json({ message: 'Anda sudah memiliki shift yang aktif.' });
         }
-
         let starting_cash;
         if (starting_cash_override !== undefined && starting_cash_override !== null) {
             starting_cash = parseFloat(starting_cash_override);
@@ -9786,12 +9810,10 @@ router.post('/start', protect, async (req, res) => {
             const [[business]] = await connection.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
             starting_cash = business?.default_starting_cash || 0;
         }
-
         const [result] = await connection.query(
             'INSERT INTO cashier_shifts (business_id, user_id, start_time, starting_cash, status) VALUES (?, ?, NOW(), ?, "open")',
             [businessId, userId, starting_cash]
         );
-        
         await connection.commit();
         await logActivity(businessId, userId, 'START_SHIFT', `Shift dimulai dengan kas awal Rp ${starting_cash}`);
         res.status(201).json({ message: 'Shift berhasil dimulai!', shiftId: result.insertId });
@@ -9804,15 +9826,10 @@ router.post('/start', protect, async (req, res) => {
     }
 });
 
+// Rute untuk menutup shift dengan perbaikan final
 router.post('/close/:id', protect, async (req, res) => {
     const { id: shiftId } = req.params;
     const { id: userId, business_id: businessId } = req.user;
-    const { ending_cash } = req.body;
-
-    if (ending_cash === undefined || ending_cash === null || isNaN(parseFloat(ending_cash))) {
-        return res.status(400).json({ message: 'Jumlah kas akhir (fisik) harus diisi dengan angka yang valid.' });
-    }
-    const physicalEndingCash = parseFloat(ending_cash);
     
     const connection = await db.getConnection();
     try {
@@ -9821,25 +9838,27 @@ router.post('/close/:id', protect, async (req, res) => {
         const [[shift]] = await connection.query('SELECT * FROM cashier_shifts WHERE id = ? AND user_id = ? AND status = "open" FOR UPDATE', [shiftId, userId]);
         if (!shift) throw new Error('Shift aktif tidak ditemukan untuk ditutup.');
         
-        const salesQuery = `SELECT payment_method, SUM(total_amount) as total FROM orders WHERE user_id = ? AND business_id = ? AND created_at BETWEEN ? AND NOW() GROUP BY payment_method`;
-        const [salesData] = await connection.query(salesQuery, [userId, businessId, shift.start_time]);
+        const salesQuery = `
+            SELECT
+                COALESCE(SUM(CASE WHEN payment_method = 'Tunai' THEN total_amount ELSE 0 END), 0) as cash_sales,
+                COALESCE(SUM(CASE WHEN payment_method = 'Kartu' THEN total_amount ELSE 0 END), 0) as card_sales,
+                COALESCE(SUM(CASE WHEN payment_method = 'QRIS' THEN total_amount ELSE 0 END), 0) as qris_sales,
+                COALESCE(SUM(CASE WHEN payment_method NOT IN ('Tunai', 'Kartu', 'QRIS') THEN total_amount ELSE 0 END), 0) as other_sales
+            FROM orders 
+            WHERE user_id = ? AND business_id = ? AND created_at BETWEEN ? AND NOW()
+        `;
+        const [[salesData]] = await connection.query(salesQuery, [userId, businessId, shift.start_time]);
 
-        let cash_sales = 0, card_sales = 0, qris_sales = 0, other_sales = 0;
-        salesData.forEach(sale => {
-            if (sale.payment_method) {
-                const paymentMethod = sale.payment_method.toLowerCase();
-                const saleTotal = parseFloat(sale.total) || 0;
-                
-                if (paymentMethod === 'tunai') cash_sales += saleTotal;
-                else if (paymentMethod === 'kartu') card_sales += saleTotal;
-                else if (paymentMethod === 'qris') qris_sales += saleTotal;
-                else other_sales += saleTotal;
-            }
-        });
+        const cash_sales = parseFloat(salesData.cash_sales);
+        const card_sales = parseFloat(salesData.card_sales);
+        const qris_sales = parseFloat(salesData.qris_sales);
+        const other_sales = parseFloat(salesData.other_sales);
 
         const total_sales = cash_sales + card_sales + qris_sales + other_sales;
-        const expected_cash = parseFloat(shift.starting_cash) + cash_sales;
-        const difference = physicalEndingCash - expected_cash;
+        
+        const expected_cash = parseFloat(shift.starting_cash) + total_sales;
+        const physicalEndingCash = expected_cash;
+        const difference = 0;
 
         const updateQuery = `
             UPDATE cashier_shifts SET 
@@ -9854,10 +9873,11 @@ router.post('/close/:id', protect, async (req, res) => {
             total_sales, expected_cash, difference, shiftId
         ]);
         
-        await connection.query('UPDATE businesses SET cash_in_drawer = ? WHERE id = ?', [physicalEndingCash, businessId]);
+        // Update both default_starting_cash and cash_in_drawer for synchronization
+        await connection.query('UPDATE businesses SET default_starting_cash = ?, cash_in_drawer = ? WHERE id = ?', [physicalEndingCash, physicalEndingCash, businessId]);
 
         await connection.commit();
-        await logActivity(businessId, userId, 'CLOSE_SHIFT', `Shift ID ${shiftId} ditutup. Selisih: ${difference}`);
+        await logActivity(businessId, userId, 'CLOSE_SHIFT', `Shift ID ${shiftId} ditutup secara otomatis.`);
         res.json({ message: 'Shift berhasil ditutup.' });
 
     } catch (error) {
@@ -9869,6 +9889,7 @@ router.post('/close/:id', protect, async (req, res) => {
     }
 });
 
+// GET /api/shifts/current
 router.get('/current', protect, async (req, res) => {
     const { id: userId } = req.user;
     try {
@@ -9880,10 +9901,16 @@ router.get('/current', protect, async (req, res) => {
     }
 });
 
+// GET /api/shifts/history
 router.get('/history', protect, isAdmin, async (req, res) => {
     const businessId = req.user.business_id;
     try {
-        const query = `SELECT s.*, u.name as user_name FROM cashier_shifts s JOIN users u ON s.user_id = u.id WHERE s.business_id = ? AND s.status = 'closed' ORDER BY s.end_time DESC`;
+        const query = `
+            SELECT s.*, u.name as user_name FROM cashier_shifts s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.business_id = ? AND s.status = 'closed'
+            ORDER BY s.end_time DESC
+        `;
         const [history] = await db.query(query, [businessId]);
         res.json(history);
     } catch (error) {
@@ -9892,56 +9919,60 @@ router.get('/history', protect, isAdmin, async (req, res) => {
     }
 });
 
-router.delete('/:id', protect, isAdmin, async (req, res) => {
-    const shiftId = req.params.id;
+// DELETE /api/shifts/clear-history
+router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const { business_id: businessId, id: userId } = req.user;
+    const connection = await db.getConnection();
     try {
-        const [result] = await db.query('DELETE FROM cashier_shifts WHERE id = ? AND business_id = ?', [shiftId, businessId]);
-        if (result.affectedRows === 0) {
-            await logActivity(businessId, userId, 'DELETE_SHIFT_FAILED', `Attempted to delete non-existent or unauthorized shift ID ${shiftId}.`);
-            return res.status(404).json({ message: 'Shift tidak ditemukan atau Anda tidak punya akses.' });
-        }
-        await logActivity(businessId, userId, 'DELETE_SHIFT', `Deleted shift ID: ${shiftId}.`);
-        res.status(200).json({ message: 'Shift berhasil dihapus.' });
+        await connection.beginTransaction();
+        const [result] = await connection.query('DELETE FROM cashier_shifts WHERE business_id = ? AND status = "closed"', [businessId]);
+        await connection.commit();
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY', `Cleared ${result.affectedRows} closed shifts.`);
+        res.status(200).json({ message: 'Semua riwayat shift telah berhasil dihapus.' });
     } catch (error) {
-        console.error("Error deleting shift:", error);
-        await logActivity(businessId, userId, 'DELETE_SHIFT_FAILED', `Failed to delete shift ID ${shiftId}. Error: ${error.message}`);
-        res.status(500).json({ message: "Server Error" });
+        await connection.rollback();
+        console.error("Error clearing shift history:", error);
+        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: 'Gagal menghapus riwayat shift.', error: error.message });
+    } finally {
+        if (connection) connection.release();
     }
 });
 
+// GET /api/shifts/export
 router.get('/export', protect, isAdmin, async (req, res) => {
     const businessId = req.user.business_id;
     try {
-        const query = `SELECT s.*, u.name as user_name FROM cashier_shifts s JOIN users u ON s.user_id = u.id WHERE s.business_id = ? AND s.status = 'closed' ORDER BY s.end_time DESC`;
+        const query = `
+            SELECT s.*, u.name as user_name FROM cashier_shifts s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.business_id = ? AND s.status = 'closed'
+            ORDER BY s.end_time DESC
+        `;
         const [shifts] = await db.query(query, [businessId]);
-
         if (shifts.length === 0) {
             return res.status(404).json({ message: "Tidak ada riwayat shift untuk diekspor." });
         }
-
         const exportsDir = path.join(__dirname, '..', 'exports');
         if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
-        
         const filePath = path.join(exportsDir, `shift-history-${Date.now()}.csv`);
         const csvWriter = createCsvWriter({
             path: filePath,
             header: [
-                {id: 'id', title: 'SHIFT_ID'},
-                {id: 'user_name', title: 'KASIR'},
-                {id: 'start_time', title: 'WAKTU_MULAI'},
-                {id: 'end_time', title: 'WAKTU_SELESAI'},
-                {id: 'starting_cash', title: 'KAS_AWAL'},
-                {id: 'ending_cash', title: 'KAS_AKHIR_FISIK'},
-                {id: 'expected_cash', title: 'KAS_AKHIR_SISTEM'},
-                {id: 'difference', title: 'SELISIH'},
-                {id: 'total_sales', title: 'TOTAL_PENJUALAN'},
-                {id: 'cash_sales', title: 'PENJUALAN_TUNAI'},
-                {id: 'card_sales', title: 'PENJUALAN_KARTU'},
-                {id: 'qris_sales', title: 'PENJUALAN_QRIS'},
+                { id: 'id', title: 'SHIFT_ID' },
+                { id: 'user_name', title: 'KASIR' },
+                { id: 'start_time', title: 'WAKTU_MULAI' },
+                { id: 'end_time', title: 'WAKTU_SELESAI' },
+                { id: 'starting_cash', title: 'KAS_AWAL' },
+                { id: 'ending_cash', title: 'KAS_AKHIR_FISIK' },
+                { id: 'expected_cash', title: 'KAS_AKHIR_SISTEM' },
+                { id: 'difference', title: 'SELISIH' },
+                { id: 'total_sales', title: 'TOTAL_PENJUALAN' },
+                { id: 'cash_sales', title: 'PENJUALAN_TUNAI' },
+                { id: 'card_sales', title: 'PENJUALAN_KARTU' },
+                { id: 'qris_sales', title: 'PENJUALAN_QRIS' },
             ]
         });
-
         await csvWriter.writeRecords(shifts);
         res.download(filePath, (err) => {
             if (err) console.error("Error sending file:", err);
@@ -9955,28 +9986,21 @@ router.get('/export', protect, isAdmin, async (req, res) => {
     }
 });
 
-router.delete('/clear-history', protect, isAdmin, async (req, res) => {
+// DELETE /api/shifts/:id (optional, but good practice to allow deleting single shifts if needed)
+router.delete('/:id', protect, isAdmin, async (req, res) => {
+    const { id } = req.params;
     const { business_id: businessId, id: userId } = req.user;
-    const connection = await db.getConnection();
     try {
-        await connection.beginTransaction();
-
-        const [result] = await connection.query(
-            'DELETE FROM cashier_shifts WHERE business_id = ? AND status = "closed"',
-            [businessId]
-        );
-
-        await connection.commit();
-        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY', `Cleared ${result.affectedRows} closed shifts.`);
-        res.status(200).json({ message: 'Semua riwayat shift telah berhasil dihapus.' });
-
+        const [result] = await db.query('DELETE FROM cashier_shifts WHERE id = ? AND business_id = ?', [id, businessId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Riwayat shift tidak ditemukan.' });
+        }
+        await logActivity(businessId, userId, 'DELETE_SHIFT_HISTORY', `Deleted shift ID ${id}.`);
+        res.json({ message: 'Riwayat shift berhasil dihapus.' });
     } catch (error) {
-        await connection.rollback();
-        console.error("Error clearing shift history:", error);
-        await logActivity(businessId, userId, 'CLEAR_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
-        res.status(500).json({ message: 'Gagal menghapus riwayat shift.', error: error.message });
-    } finally {
-        if (connection) connection.release();
+        console.error("Error deleting shift history:", error);
+        await logActivity(businessId, userId, 'DELETE_SHIFT_HISTORY_FAILED', `Error: ${error.message}`);
+        res.status(500).json({ message: 'Gagal menghapus riwayat shift.' });
     }
 });
 
@@ -10079,7 +10103,6 @@ router.post('/adjust', protect, isAdmin, stockAdjustmentValidationRules, async (
 });
 
 module.exports = router;
-
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\supplierRoutes.js =====
 
@@ -20405,92 +20428,56 @@ export default defineConfig([
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\vite.config.js =====
 
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
+// C:\Users\Ibnu\Project\smart-pos\frontend\vite.config.js
 
-// https://vite.dev/config/
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
+import path from 'path'
+
 export default defineConfig({
-    plugins: [
-        react(),
-        VitePWA({
-            registerType: 'autoUpdate',
-            injectRegister: 'auto',
-            workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-                runtimeCaching: [
-                    {
-                        urlPattern: ({ url }) => url.pathname.startsWith('/api/products'),
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'api-products-cache',
-                            cacheableResponse: {
-                                statuses: [0, 200],
-                            },
-                            expiration: {
-                                maxEntries: 50,
-                                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 Hari
-                            },
-                        },
-                    },
-                ]
-            },
-            manifest: {
-                name: 'Smart POS',
-                short_name: 'SmartPOS',
-                description: 'Aplikasi Point of Sale Modern',
-                theme_color: '#9D4EDD',
-                background_color: '#ffffff',
-                display: 'standalone',
-                scope: '/',
-                start_url: '/',
-                icons: [
-                    {
-                        src: 'pwa-192x192.png',
-                        sizes: '192x192',
-                        type: 'image/png'
-                    },
-                    {
-                        src: 'pwa-512x512.png',
-                        sizes: '512x512',
-                        type: 'image/png'
-                    }
-                ]
-            }
-        })
-    ],
-    // --- PERUBAHAN DI SINI ---
-    test: {
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: './src/setupTests.js', // Baris ini ditambahkan kembali
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      manifest: {
+        name: 'Smart POS',
+        short_name: 'SmartPOS',
+        description: 'Aplikasi Point of Sale Modern',
+        theme_color: '#ffffff',
+        icons: [
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      }
+    })
+  ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
     },
-    // --- AKHIR PERUBAHAN ---
-    server: {
-        hmr: {
-            overlay: true,
-        },
-    },
-    build: {
-        sourcemap: false,
-    },
-    optimizeDeps: {
-        esbuildOptions: {
-            sourcemap: false,
-        },
-    },
-});
+  },
+  server: {
+    port: 5173,
+    hmr: {
+      overlay: true
+    }
+  }
+})
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx =====
 
-import React, { useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx
+
+import React, { useContext, useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
 import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-loading-skeleton/dist/skeleton.css';
-
+import styled from 'styled-components';
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -20594,11 +20581,6 @@ const GlobalStyle = createGlobalStyle`
         background-color: var(--bg-main);
         color: var(--text-primary);
         transition: background-color 0.3s ease, color 0.3s ease;
-        /*
-        The overflow: hidden; rule might prevent scrolling on pages that need it.
-        Consider moving this to a specific component or a more targeted selector if needed.
-        overflow: hidden; 
-        */
     }
 
     /* Smooth Transitions for All Interactive Elements */
@@ -20608,21 +20590,122 @@ const GlobalStyle = createGlobalStyle`
 `;
 // --- End of Global Styles ---
 
+// --- Mobile Redirect Component ---
+const MobileRedirectContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    padding: 20px;
+    box-sizing: border-box;
+`;
+
+const RedirectTitle = styled.h1`
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+`;
+
+const RedirectMessage = styled.p`
+    font-size: 1rem;
+    color: var(--text-secondary);
+    max-width: 400px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+`;
+
+const DownloadButton = styled.a`
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 10px;
+    transition: background-color 0.2s ease;
+    
+    &:hover {
+        background-color: var(--primary-hover);
+    }
+`;
+
+const ContinueLink = styled.button`
+    margin-top: 20px;
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    text-decoration: underline;
+    font-size: 0.9rem;
+    cursor: pointer;
+`;
+
+function MobileRedirectPage() {
+    const navigate = useNavigate();
+    return (
+        <MobileRedirectContainer>
+            <RedirectTitle>Gunakan Aplikasi Smart POS</RedirectTitle>
+            <RedirectMessage>
+                Mohon maaf, untuk sementara aplikasi POS ini tidak tersedia di perangkat seluler.
+                Silakan gunakan peramban web di desktop atau laptop Anda untuk pengalaman terbaik.
+            </RedirectMessage>
+            <div>
+                <DownloadButton href="#">Unduh di App Store</DownloadButton>
+                <DownloadButton href="#">Dapatkan di Google Play</DownloadButton>
+            </div>
+            <ContinueLink onClick={() => navigate(-1)}>Lanjutkan di Web Browser</ContinueLink>
+        </MobileRedirectContainer>
+    );
+}
+
+// --- Component to handle mobile redirect logic conditionally
+function MobileRedirectHandler() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        // Only redirect if on mobile and not already on the redirect page
+        if (isMobile && location.pathname !== '/mobile-redirect') {
+            navigate('/mobile-redirect');
+        }
+    }, [isMobile, location.pathname, navigate]);
+
+    // Render nothing, as its sole purpose is to handle navigation
+    return null;
+}
+
+// --- Main App Content Component
 function AppContent() {
     const { theme } = useContext(ThemeContext);
     
-    // The SkeletonTheme base and highlight colors are updated to match the new dark theme colors.
     return (
         <SkeletonTheme baseColor={theme === 'dark' ? '#232834' : '#EAECEF'} highlightColor={theme === 'dark' ? '#3A4151' : '#ffffff'}>
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
             <BrowserRouter>
+                {/* A component that conditionally redirects mobile users */}
+                <MobileRedirectHandler />
+
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/tutorial/app-password" element={<AppPasswordTutorialPage />} />
+                    <Route path="/mobile-redirect" element={<MobileRedirectPage />} />
                     
                     {/* The root path redirects to /pos if a token exists, otherwise to /login */}
                     <Route path="/" element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />} />
@@ -20664,7 +20747,7 @@ function AppContent() {
                         </Route>
                     </Route>
                     
-                    {/* Catch-all route for any undefined paths */}
+                    {/* Catch-all route for any undefined paths, redirect to login unless already on a auth route */}
                     <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
             </BrowserRouter>
@@ -20720,10 +20803,8 @@ const AdminRoute = () => {
     if (token) {
         try {
             const decoded = jwtDecode(token);
-            // --- PERBAIKAN DIMULAI ---
             // Menggunakan optional chaining (?.) untuk mencegah error jika decoded.role tidak ada
             if (decoded?.role?.toLowerCase() === 'admin') {
-            // --- PERBAIKAN SELESAI ---
                 isAdmin = true;
             }
         } catch (error) {
@@ -21009,7 +21090,7 @@ CheckoutModal.propTypes = {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CloseShiftModal.jsx =====
 
-// frontend/src/components/CloseShiftModal.jsx
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\CloseShiftModal.jsx
 
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
@@ -21018,69 +21099,31 @@ import { motion } from 'framer-motion';
 import { FiLogOut } from 'react-icons/fi';
 import { closeShift } from '../services/api';
 import { toast } from 'react-toastify';
-import { formatRupiah, parseRupiah } from '../utils/formatters';
 
-const ModalBackdrop = styled(motion.div)`
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); display: flex;
-  justify-content: center; align-items: center; z-index: 1001;
-  backdrop-filter: blur(5px);
-`;
-const ModalContainer = styled(motion.div)`
-  background-color: var(--bg-surface); border-radius: 16px;
-  width: 100%; max-width: 400px; padding: 30px; text-align: center;
-`;
+// ... (Styled components biarkan seperti semula) ...
+const ModalBackdrop = styled(motion.div)` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1001; backdrop-filter: blur(5px); `;
+const ModalContainer = styled(motion.div)` background-color: var(--bg-surface); border-radius: 16px; width: 100%; max-width: 400px; padding: 30px; text-align: center; `;
 const ModalTitle = styled.h2` font-size: 1.5rem; margin-bottom: 20px; color: var(--text-primary); `;
+const Button = styled.button` padding: 12px 20px; border-radius: 8px; border: none; background-color: var(--red-color); color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; &:hover:not(:disabled) { background-color: #CC2222; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); } &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; } `;
 
-// --- PERBAIKAN DIMULAI: Menambahkan Form, Label, dan Input ---
-const Form = styled.form``;
-const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-secondary); text-align: left; `;
-const Input = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1.2rem; text-align: right; margin-bottom: 25px; `;
-// --- PERBAIKAN SELESAI ---
-
-const Button = styled.button`
-  padding: 12px 20px; border-radius: 8px; border: none; background-color: var(--red-color);
-  color: white; font-weight: 600; cursor: pointer; display: flex;
-  align-items: center; justify-content: center; gap: 8px; width: 100%;
-  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background-color: #CC2222;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  }
-  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-`;
 
 function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
-    // --- PERBAIKAN DIMULAI: State untuk kas akhir fisik ---
-    const [endingCash, setEndingCash] = useState('');
-    // --- PERBAIKAN SELESAI ---
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            // --- PERBAIKAN DIMULAI: Mengirim data kas akhir fisik ke backend ---
-            const physicalCash = parseRupiah(endingCash);
-            if (physicalCash === '' || isNaN(parseFloat(physicalCash))) {
-                toast.warn("Harap masukkan jumlah kas fisik yang valid.");
-                setIsSubmitting(false);
-                return;
-            }
-            await toast.promise(
-                closeShift(shiftId, { ending_cash: physicalCash }),
-            // --- PERBAIKAN SELESAI ---
-                {
-                    pending: 'Menutup shift...',
-                    success: 'Shift berhasil ditutup & direkap!',
-                    error: (err) => err.response?.data?.message || 'Gagal menutup shift.'
-                }
-            );
+            // =================================================================
+            // PERBAIKAN DI SINI: Hapus toast.promise dan jalankan API langsung
+            // =================================================================
+            await closeShift(shiftId);
+            // Langsung panggil fungsi dari parent (Sidebar) untuk menangani notifikasi dan navigasi
             onShiftClosed();
         } catch (error) {
             console.error(error);
+            // Tampilkan notifikasi error jika API gagal
+            toast.error(error.response?.data?.message || 'Gagal menutup shift.');
         } finally {
             setIsSubmitting(false);
         }
@@ -21089,32 +21132,15 @@ function CloseShiftModal({ shiftId, onShiftClosed, onClose }) {
     return (
        <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={onClose}>
             <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} onClick={e => e.stopPropagation()}>
-                {/* --- KODE YANG DIGANTI DI SINI --- */}
                 <ModalTitle>Konfirmasi Tutup Shift</ModalTitle>
-                <p style={{color: 'var(--text-secondary)', marginBottom: '15px', textAlign: 'left', lineHeight: '1.6'}}>
-                    Setelah shift ditutup, Anda akan otomatis keluar (logout). Pastikan semua transaksi sudah selesai sebelum melanjutkan.
-                </p>
                 <p style={{color: 'var(--text-secondary)', marginBottom: '30px', textAlign: 'left', lineHeight: '1.6'}}>
-                    Hitung total uang tunai fisik di laci Anda dan masukkan jumlahnya di bawah.
+                    Setelah shift ditutup, Anda akan otomatis keluar (logout). Sistem akan menghitung kas akhir secara otomatis.
                 </p>
-                {/* --- AKHIR KODE YANG DIGANTI --- */}
-                {/* --- PERBAIKAN DIMULAI: Menambahkan form input --- */}
-                <Form onSubmit={handleSubmit}>
-                    <Label htmlFor="ending_cash">Jumlah Kas Fisik (Rp)</Label>
-                    <Input
-                        id="ending_cash"
-                        type="text"
-                        value={formatRupiah(endingCash)}
-                        onChange={(e) => setEndingCash(e.target.value)}
-                        placeholder="0"
-                        required
-                        autoFocus
-                    />
+                <form onSubmit={handleSubmit}>
                     <Button type="submit" disabled={isSubmitting}>
                         <FiLogOut /> {isSubmitting ? 'Memproses...' : 'Konfirmasi & Tutup Shift'}
                     </Button>
-                </Form>
-                {/* --- PERBAIKAN SELESAI --- */}
+                </form>
             </ModalContainer>
         </ModalBackdrop>
     );
@@ -21160,23 +21186,40 @@ const Button = styled.button`
 `;
 
 function ConfirmationModal({ isOpen, onClose, onConfirm, title, message }) {
-  if (!isOpen) return null;
-
+  // =================================================================
+  // PERBAIKAN DI SINI: Logika AnimatePresence diperbaiki
+  // =================================================================
   return (
     <AnimatePresence>
-      <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-        <ModalContainer initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}>
-          <IconWrapper><FiAlertTriangle size={48} /></IconWrapper>
-          <ModalTitle>{title}</ModalTitle>
-          <ModalMessage>{message}</ModalMessage>
-          <ButtonGroup>
-            <Button onClick={onClose}>Batal</Button>
-            <Button $danger onClick={onConfirm}>Konfirmasi</Button>
-          </ButtonGroup>
-        </ModalContainer>
-      </ModalBackdrop>
+      {isOpen && (
+        <ModalBackdrop
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <ModalContainer
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <IconWrapper><FiAlertTriangle size={48} /></IconWrapper>
+            <ModalTitle>{title}</ModalTitle>
+            <ModalMessage>{message}</ModalMessage>
+            <ButtonGroup>
+              <Button onClick={onClose}>Batal</Button>
+              <Button $danger onClick={onConfirm}>Konfirmasi</Button>
+            </ButtonGroup>
+          </ModalContainer>
+        </ModalBackdrop>
+      )}
     </AnimatePresence>
   );
+  // =================================================================
+  // AKHIR PERBAAIKAN
+  // =================================================================
 }
 
 ConfirmationModal.propTypes = {
@@ -21202,13 +21245,13 @@ import { createCustomer } from '../services/api';
 import { toast } from 'react-toastify';
 
 const ModalBackdrop = styled(motion.div)`
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); display: flex;
-  justify-content: center; align-items: center; z-index: 1002;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); display: flex;
+    justify-content: center; align-items: center; z-index: 1002;
 `;
 const ModalContainer = styled(motion.div)`
-  background-color: var(--bg-surface); border-radius: 16px;
-  width: 100%; max-width: 450px; padding: 30px;
+    background-color: var(--bg-surface); border-radius: 16px;
+    width: 100%; max-width: 450px; padding: 30px;
 `;
 const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; `;
 const ModalTitle = styled.h2` font-size: 1.5rem; margin: 0; color: var(--text-primary);`;
@@ -21243,15 +21286,12 @@ function CustomerFormModal({ isOpen, onClose, onCustomerCreated }) {
         }
         setIsSubmitting(true);
         try {
-            // --- PERBAIKAN DIMULAI ---
-            // Mengirim 'phone' sesuai dengan yang diharapkan backend, bukan 'phone_number'
             const res = await toast.promise(
                 createCustomer({
                     name: formData.name,
                     phone: formData.phone,
                     email: formData.email
                 }),
-            // --- PERBAIKAN SELESAI ---
                 {
                     pending: 'Menyimpan pelanggan...',
                     success: 'Pelanggan baru berhasil dibuat!',
@@ -21869,6 +21909,8 @@ export default HeldCartsModal;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Layout.jsx
+
 import React from 'react';
 import styled from 'styled-components';
 import { Outlet } from 'react-router-dom';
@@ -21879,11 +21921,14 @@ const AppContainer = styled.div`
   height: 100vh;
   width: 100vw;
   background-color: var(--bg-main);
+
+  @media (max-width: 1024px) {
+    flex-direction: column-reverse; /* Pindahkan Sidebar ke bawah */
+  }
 `;
 
 const ContentWrapper = styled.main`
   flex: 1;
-  /* Ini adalah kunci utama: wrapper ini yang menangani scroll */
   overflow-y: auto;
 `;
 
@@ -21892,7 +21937,6 @@ function Layout() {
     <AppContainer>
       <Sidebar />
       <ContentWrapper>
-        {/* Outlet akan merender halaman (misal: ProductsPage) di sini */}
         <Outlet />
       </ContentWrapper>
     </AppContainer>
@@ -23089,22 +23133,12 @@ export default RoleFormModal;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Sidebar.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Sidebar.jsx
-
 import React, { useState, useEffect, useContext } from 'react';
 import styled from 'styled-components';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-    FiGrid,
-    FiShoppingCart,
-    FiPackage,
-    FiLogOut,
-    FiList,
-    FiSettings,
-    FiZap,
-    FiPower,
-    FiClock,
-    FiFileText,
+    FiGrid, FiShoppingCart, FiPackage, FiLogOut, FiList,
+    FiSettings, FiZap, FiPower, FiClock, FiFileText
 } from 'react-icons/fi';
 import { jwtDecode } from 'jwt-decode';
 import { useShift } from '../context/ShiftContext';
@@ -23121,7 +23155,21 @@ const SidebarContainer = styled.div`
     padding: 25px 15px;
     height: 100vh;
     box-sizing: border-box;
-    gap: 30px;
+
+    @media (max-width: 1024px) {
+        width: 100%;
+        height: auto;
+        padding: 8px;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+    }
 `;
 
 const Logo = styled.h1`
@@ -23130,6 +23178,10 @@ const Logo = styled.h1`
     color: var(--primary-color);
     text-align: center;
     margin-bottom: 30px;
+
+    @media (max-width: 1024px) {
+        display: none;
+    }
 `;
 
 const NavList = styled.ul`
@@ -23141,6 +23193,14 @@ const NavList = styled.ul`
     gap: 8px;
     flex-grow: 1;
     overflow-y: auto;
+
+    @media (max-width: 1024px) {
+        flex-direction: row;
+        flex-grow: 1;
+        overflow-y: visible;
+        gap: 0;
+        justify-content: space-evenly;
+    }
 `;
 
 const NavItem = styled(NavLink)`
@@ -23182,13 +23242,41 @@ const NavItem = styled(NavLink)`
             height: 60%;
         }
     }
+
+    @media (max-width: 1024px) {
+        flex-direction: column;
+        padding: 8px;
+        font-size: 0.7rem;
+        gap: 4px;
+
+        &::before {
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            transition: width 0.2s ease-in-out;
+        }
+
+        &.active::before {
+            width: 50%;
+            height: 3px;
+        }
+    }
 `;
 
 const ActionButtonsContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-top: auto; /* Pushes the buttons to the bottom */
+    margin-top: auto;
+
+    @media (max-width: 1024px) {
+        flex-direction: row;
+        margin-top: 0;
+        flex-grow: 0;
+        gap: 8px;
+    }
 `;
 
 const CloseShiftButton = styled.button`
@@ -23220,6 +23308,14 @@ const CloseShiftButton = styled.button`
         box-shadow: none;
         transform: none;
     }
+
+    @media (max-width: 1024px) {
+        flex-direction: column;
+        padding: 8px;
+        font-size: 0.7rem;
+        gap: 4px;
+        width: auto;
+    }
 `;
 
 const LogoutButton = styled.button`
@@ -23242,6 +23338,14 @@ const LogoutButton = styled.button`
         background-color: var(--bg-main);
         color: var(--red-color);
     }
+
+    @media (max-width: 1024px) {
+        flex-direction: column;
+        padding: 8px;
+        font-size: 0.7rem;
+        gap: 4px;
+        width: auto;
+    }
 `;
 
 function Sidebar() {
@@ -23256,7 +23360,7 @@ function Sidebar() {
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                setLocalUserRole(decoded.role);
+                setLocalUserRole(decoded.role?.toLowerCase());
             } catch (error) {
                 console.error('Invalid token:', error);
             }
@@ -23264,23 +23368,21 @@ function Sidebar() {
     }, []);
 
     const handleLogout = () => {
-        if (localUserRole && localUserRole.toLowerCase() === 'kasir' && activeShift) {
+        if (localUserRole === 'kasir' && activeShift) {
             toast.warn('Anda harus menutup shift terlebih dahulu sebelum logout.');
             return;
         }
         localStorage.removeItem('token');
+        refreshShiftStatus();
         navigate('/login');
     };
 
     const handleShiftClosed = () => {
         setCloseShiftModalOpen(false);
+        toast.success('Shift berhasil ditutup. Anda akan segera logout.');
+        localStorage.removeItem('token');
         refreshShiftStatus();
-        toast.success('Shift berhasil ditutup. Anda akan logout secara otomatis.');
-
-        setTimeout(() => {
-            localStorage.removeItem('token');
-            navigate('/login');
-        }, 2000);
+        navigate('/login', { replace: true });
     };
 
     const businessName = settings?.business_name || 'Smart POS';
@@ -23392,7 +23494,7 @@ function StartShiftModal({ onShiftStarted }) {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            // PERBAIKAN: Tidak perlu mengirim data apa pun
+            // Tidak perlu mengirim data apa pun, backend akan otomatis menggunakan nilai default
             await toast.promise(startShift(), {
                 pending: 'Memulai shift...',
                 success: 'Shift berhasil dimulai!',
@@ -23804,8 +23906,6 @@ export default UserFormModal;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\VariantSelectModal.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\VariantSelectModal.jsx
-
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -23829,12 +23929,12 @@ const VariantButton = styled.button`
   width: 100%; text-align: left; padding: 15px; border-radius: 8px;
   border: 1px solid var(--border-color); background: transparent; cursor: pointer;
   display: flex; justify-content: space-between; align-items: center;
-  color: var(--text-primary); // PERBAIKAN: Gunakan variabel warna
+  color: var(--text-primary);
   &:hover { background-color: var(--bg-main); }
 `;
 const VariantPrice = styled.span`
   font-weight: 600;
-  color: var(--primary-color); // PERBAIKAN: Gunakan variabel warna
+  color: var(--primary-color);
 `;
 
 function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {
@@ -23903,26 +24003,25 @@ export const BusinessProvider = ({ children }) => {
                 const res = await getBusinessSettings();
                 
                 if (res.data) {
-                    // --- FIXED CODE ---
-                    // Check if payment_methods is a string before parsing
+                    // Cek apakah payment_methods adalah string sebelum parsing
                     let paymentMethods = res.data.payment_methods;
                     if (typeof paymentMethods === 'string') {
                         try {
                             paymentMethods = JSON.parse(paymentMethods);
                         } catch (e) {
                             console.error("Failed to parse payment_methods:", e);
-                            paymentMethods = ['Tunai', 'Kartu', 'QRIS']; // Default fallback
+                            paymentMethods = ['Tunai', 'Kartu', 'QRIS']; // Fallback default
                         }
                     }
                     
                     const parsedSettings = {
                         ...res.data,
+                        // Pastikan hasilnya selalu array yang valid
                         payment_methods: Array.isArray(paymentMethods) ? paymentMethods : ['Tunai', 'Kartu', 'QRIS'],
                         tax_rate: parseFloat(res.data.tax_rate) || 0,
                         receipt_footer_text: res.data.receipt_footer_text || 'Terima Kasih!',
                     };
                     setSettings(parsedSettings);
-                    // --- END OF FIX ---
                 }
             }
         } catch (error) {
@@ -26458,7 +26557,7 @@ describe('LoginPage', () => {
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { getProducts, createOrder, getOrderById, validateCoupon } from '../services/api';
-import { FiPlus, FiMinus, FiSearch, FiTrash2, FiUser, FiPause, FiGrid, FiTag } from 'react-icons/fi';
+import { FiPlus, FiMinus, FiSearch, FiTrash2, FiUser, FiPause, FiGrid, FiTag, FiShoppingCart } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
@@ -26473,30 +26572,190 @@ import Receipt from '../components/Receipt';
 import StartShiftModal from '../components/StartShiftModal';
 import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
-import PageWrapper from '../components/PageWrapper'; // <-- Import PageWrapper
+import PageWrapper from '../components/PageWrapper';
+import { jwtDecode } from 'jwt-decode';
 
-// --- Styled Components ---
+// --- Styled Components dengan Perombakan Total untuk Mobile ---
 const PageGrid = styled.div`
-    display: grid; grid-template-columns: 1fr 420px; gap: 30px;
-    width: 100%; height: 100%; padding: 30px; overflow: hidden;
-    @media (max-width: 1024px) { grid-template-columns: 1fr; height: auto; }
+    display: grid;
+    grid-template-columns: 1fr 420px; /* Layout PC */
+    gap: 30px;
+    width: 100%;
+    height: 100%;
+    padding: 30px;
+    overflow: hidden;
+
+    @media (max-width: 1024px) {
+        grid-template-columns: 1fr;
+        height: auto;
+        padding: 0; /* Hapus padding di container utama mobile */
+        padding-bottom: 100px; /* Ruang untuk tombol mengambang */
+        gap: 0;
+        overflow-y: auto;
+    }
 `;
-const ProductsPanel = styled(motion.div)` // <-- Tambahkan motion
-    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden;
+
+const ProductsPanel = styled(motion.div)`
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    
+    @media (max-width: 1024px) {
+        background-color: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 0 15px; /* Beri padding horizontal di sini */
+        overflow: visible;
+        box-shadow: none;
+    }
 `;
-const PanelHeader = styled.header` padding: 20px 25px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; `;
+
+const PanelHeader = styled.header`
+    padding: 20px 25px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    
+    @media (max-width: 1024px) {
+        padding: 15px 0;
+        border-bottom: none;
+    }
+`;
+
 const SearchContainer = styled.div` position: relative; width: 100%; max-width: 450px; `;
 const SearchIcon = styled(FiSearch)` position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-placeholder); `;
 const SearchInput = styled.input` width: 100%; padding: 12px 20px 12px 45px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-primary); &:focus { outline: none; border-color: var(--primary-color); } `;
-const ProductGrid = styled(motion.div)` flex-grow: 1; padding: 25px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 22px; overflow-y: auto; `;
-const ProductCard = styled(motion.div)` background-color: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; display: flex; flex-direction: column; position: relative; cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')}; opacity: ${(props) => (props.$disabled ? 0.5 : 1)}; transition: all 0.2s ease-in-out; &:hover:not([disabled]) { border-color: var(--primary-color); transform: translateY(-4px); } `;
-const ProductImage = styled.div` width: 100%; padding-top: 100%; background-image: url(${(props) => props.src}); background-size: cover; background-position: center; `;
-const ProductInfo = styled.div` padding: 5px 15px 10px; text-align: left; flex-grow: 1; display: flex; flex-direction: column; border-top: 1px solid var(--border-color); `;
-const ProductName = styled.h4` margin: 0 0 2px 0; font-size: 0.9rem; font-weight: 500; color: var(--text-primary); line-height: 1.2em; max-height: 2.4em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; `;
-const ProductPrice = styled.p` margin: 0; padding-top: 2px; color: var(--primary-color); font-weight: 600; font-size: 1rem; `;
-const CartPanel = styled(motion.aside)` // <-- Tambahkan motion
-    background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 0; overflow: hidden;
+
+const ProductGrid = styled(motion.div)`
+    flex-grow: 1;
+    padding: 25px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 18px;
+    overflow-y: auto;
+
+    @media (max-width: 1024px) {
+        padding: 0;
+        grid-template-columns: 1fr; /* 1 kolom di mobile */
+        gap: 12px;
+    }
 `;
+
+const ProductCard = styled(motion.div)`
+    background-color: var(--bg-surface);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    position: relative;
+    cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')};
+    opacity: ${(props) => (props.$disabled ? 0.5 : 1)};
+    transition: all 0.2s ease-in-out;
+    
+    flex-direction: column; /* Default untuk PC */
+
+    @media (max-width: 1024px) {
+        flex-direction: row; /* Baris di mobile */
+    }
+
+    &:hover:not([disabled]) {
+        border-color: var(--primary-color);
+        transform: translateY(-4px);
+    }
+`;
+
+const ProductImage = styled.div`
+    width: 100%;
+    padding-top: 100%;
+    background-image: url(${(props) => props.src});
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+    
+    @media (max-width: 1024px) {
+        width: 90px;
+        height: 90px;
+        padding-top: 0;
+    }
+`;
+
+const ProductInfo = styled.div`
+    padding: 12px;
+    text-align: left;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-top: 1px solid var(--border-color);
+
+    @media (max-width: 1024px) {
+        border-top: none;
+        border-left: 1px solid var(--border-color);
+    }
+`;
+
+const ProductName = styled.h4`
+    margin: 0 0 4px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3em;
+    height: 2.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    white-space: normal;
+`;
+
+const ProductPrice = styled.p`
+    margin: 0;
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1rem;
+`;
+
+const CartPanel = styled(motion.aside)`
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    @media (max-width: 1024px) {
+        display: none;
+    }
+`;
+
+const MobileCartButton = styled(motion.div)`
+    display: none;
+    @media (max-width: 1024px) {
+        display: flex;
+        position: fixed;
+        bottom: 80px; /* Di atas navbar mobile */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 500px;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        justify-content: space-between;
+        align-items: center;
+        z-index: 99;
+        cursor: pointer;
+    }
+`;
+
+const MobileCartInfo = styled.div` display: flex; align-items: center; gap: 12px; `;
+const MobileCartText = styled.div` font-weight: 600; `;
+const MobileCartTotal = styled.div` font-size: 1.2rem; font-weight: 700; `;
 const CartHeader = styled.div` padding: 20px 25px; flex-shrink: 0; border-bottom: 1px solid var(--border-color); `;
 const PanelTitle = styled.h1` font-size: 1.5rem; font-weight: 600; color: var(--text-primary); `;
 const CartItemsList = styled.ul` list-style: none; padding: 0 25px; margin: 0; flex-grow: 1; overflow-y: auto; `;
@@ -26535,271 +26794,43 @@ function PosPage() {
     const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
     const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
     const { settings } = useContext(BusinessContext);
-    const { activeShift, isLoadingShift, refreshShiftStatus, userRole } = useContext(ShiftContext);
-    const [heldCarts, setHeldCarts] = useState(() => {
-        const saved = localStorage.getItem('heldCarts');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const { activeShift, isLoadingShift, refreshShiftStatus } = useContext(ShiftContext);
+    const [heldCarts, setHeldCarts] = useState(() => { const saved = localStorage.getItem('heldCarts'); return saved ? JSON.parse(saved) : []; });
     const [couponCode, setCouponCode] = useState('');
     const [appliedDiscount, setAppliedDiscount] = useState(null);
-
+    const [userRole, setUserRole] = useState(null);
+    useEffect(() => { const token = localStorage.getItem('token'); if (token) { try { const decoded = jwtDecode(token); setUserRole(decoded.role?.toLowerCase()); } catch (e) { console.error("Token tidak valid"); setUserRole(''); } } else { setUserRole(''); } }, []);
     const [orderToPrint, setOrderToPrint] = useState(null);
     const receiptRef = useRef();
-    const handlePrint = useReactToPrint({
-        content: () => receiptRef.current,
-        documentTitle: `Struk-Pesanan-${orderToPrint?.id || ''}`,
-        onAfterPrint: () => setOrderToPrint(null),
-    });
-
-    const handlePrintReceipt = useCallback(async (orderId) => {
-        try {
-            const res = await getOrderById(orderId);
-            setOrderToPrint(res.data);
-        } catch (error) {
-            toast.error("Gagal memuat data struk untuk dicetak.");
-        }
-    }, []);
-    
-    useEffect(() => {
-        if (orderToPrint) {
-            const timer = setTimeout(() => {
-                if (receiptRef.current) { handlePrint(); } 
-                else { toast.error("Gagal mencetak: Komponen struk tidak siap."); }
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [orderToPrint, handlePrint]);
-    
+    const handlePrint = useReactToPrint({ content: () => receiptRef.current, documentTitle: `Struk-Pesanan-${orderToPrint?.id || ''}`, onAfterPrint: () => setOrderToPrint(null) });
+    const handlePrintReceipt = useCallback(async (orderId) => { try { const res = await getOrderById(orderId); setOrderToPrint(res.data); } catch (error) { toast.error("Gagal memuat data struk untuk dicetak."); } }, []);
+    useEffect(() => { if (orderToPrint) { const timer = setTimeout(() => { if (receiptRef.current) { handlePrint(); } else { toast.error("Gagal mencetak: Komponen struk tidak siap."); } }, 500); return () => clearTimeout(timer); } }, [orderToPrint, handlePrint]);
     useEffect(() => { localStorage.setItem('heldCarts', JSON.stringify(heldCarts)); }, [heldCarts]);
-
-    useEffect(() => {
-        const fetchProductData = async () => {
-            setLoading(true);
-            try {
-                const productsRes = await getProducts();
-                setProducts(productsRes.data);
-            } catch (error) {
-                toast.error("Gagal memuat data produk.");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProductData();
-    }, []);
-
-    const addToCart = useCallback((product, variant) => {
-        const cartItemId = `${product.id}-${variant.id}`;
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        
-        if (existingItem) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-        } else {
-            const newItem = { cartItemId, productId: product.id, variantId: variant.id, name: `${product.name} (${variant.name})`, price: variant.price, image_url: product.image_url, quantity: 1 };
-            setCart(prevCart => [...prevCart, newItem]);
-        }
-    }, [cart]);
-
-    const handleProductClick = useCallback((product) => {
-        if (product.variants && product.variants.length > 1) { setSelectedProductForVariant(product); setIsVariantModalOpen(true); }
-        else if (product.variants && product.variants.length === 1) { addToCart(product, product.variants[0]); }
-        else { toast.warn('Produk ini tidak memiliki varian yang tersedia.'); }
-    }, [addToCart]);
-    
-    const handleSelectVariant = (product, variant) => {
-        if (!product || !variant) { toast.error('Gagal memilih varian.'); return; }
-        addToCart(product, variant);
-        setIsVariantModalOpen(false);
-    };
-
-    const decreaseQuantity = (cartItemId) => {
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        if (existingItem && existingItem.quantity > 1) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item)));
-        } else {
-            removeFromCart(cartItemId);
-        }
-    };
-    const increaseQuantity = (cartItemId) => {
-        setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-    };
+    useEffect(() => { const fetchProductData = async () => { setLoading(true); try { const productsRes = await getProducts(); setProducts(productsRes.data); } catch (error) { toast.error("Gagal memuat data produk."); } finally { setLoading(false); } }; fetchProductData(); }, []);
+    const addToCart = useCallback((product, variant) => { const cartItemId = `${product.id}-${variant.id}`; const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); } else { const newItem = { cartItemId, productId: product.id, variantId: variant.id, name: `${product.name} (${variant.name})`, price: variant.price, image_url: product.image_url, quantity: 1 }; setCart(prevCart => [...prevCart, newItem]); } }, [cart]);
+    const handleProductClick = useCallback((product) => { if (product.variants && product.variants.length > 1) { setSelectedProductForVariant(product); setIsVariantModalOpen(true); } else if (product.variants && product.variants.length === 1) { addToCart(product, product.variants[0]); } else { toast.warn('Produk ini tidak memiliki varian yang tersedia.'); } }, [addToCart]);
+    const handleSelectVariant = (product, variant) => { if (!product || !variant) { toast.error('Gagal memilih varian.'); return; } addToCart(product, variant); setIsVariantModalOpen(false); };
+    const decreaseQuantity = (cartItemId) => { const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem && existingItem.quantity > 1) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item))); } else { removeFromCart(cartItemId); } };
+    const increaseQuantity = (cartItemId) => { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); };
     const removeFromCart = (cartItemId) => { setCart(cart.filter((item) => item.cartItemId !== cartItemId)); };
-    
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) return toast.warn("Masukkan kode promo.");
-        try {
-            const res = await validateCoupon(couponCode);
-            setAppliedDiscount(res.data);
-            toast.success(`Promo "${res.data.name}" berhasil diterapkan!`);
-        } catch (error) {
-            setAppliedDiscount(null);
-            toast.error(error.response?.data?.message || "Gagal menerapkan promo.");
-        }
-    };
-    
+    const handleApplyCoupon = async () => { if (!couponCode.trim()) return toast.warn("Masukkan kode promo."); try { const res = await validateCoupon(couponCode); setAppliedDiscount(res.data); toast.success(`Promo "${res.data.name}" berhasil diterapkan!`); } catch (error) { setAppliedDiscount(null); toast.error(error.response?.data?.message || "Gagal menerapkan promo."); } };
     const removeDiscount = () => { setAppliedDiscount(null); setCouponCode(''); toast.info("Promo dibatalkan."); };
-    
-    const cartTotal = cart.reduce((total, item) => {
-        const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100;
-        return total + itemTotal;
-    }, 0);
-    
-    let discountAmount = 0;
-    if (appliedDiscount) {
-        if (appliedDiscount.type === 'percentage') {
-            discountAmount = cartTotal * (parseFloat(appliedDiscount.value) / 100);
-        } else {
-            discountAmount = parseFloat(appliedDiscount.value);
-        }
-    }
+    const cartTotal = cart.reduce((total, item) => { const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100; return total + itemTotal; }, 0);
+    let discountAmount = 0; if (appliedDiscount) { if (appliedDiscount.type === 'percentage') { discountAmount = cartTotal * (parseFloat(appliedDiscount.value) / 100); } else { discountAmount = parseFloat(appliedDiscount.value); } }
     const finalTotal = cartTotal - discountAmount;
-
-    const handleCheckout = async (checkoutData) => {
-        if (cart.length === 0) return;
-        const orderData = {
-            items: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
-            customer_id: selectedCustomer ? selectedCustomer.id : null,
-            payment_method: checkoutData.paymentMethod,
-            amount_paid: checkoutData.amountPaid,
-            subtotal_amount: cartTotal,
-            tax_amount: checkoutData.taxAmount,
-            total_amount: checkoutData.finalTotal,
-            promotion_id: appliedDiscount ? appliedDiscount.id : null,
-            discount_amount: discountAmount,
-        };
-
-        try {
-            const res = await toast.promise(createOrder(orderData), {
-                pending: 'Memproses transaksi...',
-                success: 'Transaksi berhasil!',
-                error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
-            });
-            setLastOrderId(res.data.orderId);
-            setIsPostCheckoutOpen(true);
-            setIsCheckoutModalOpen(false);
-            setAppliedDiscount(null);
-            setCouponCode('');
-        } catch (err) {
-            console.error('Checkout error:', err);
-        }
-    };
-
+    const handleCheckout = async (checkoutData) => { if (cart.length === 0) return; const orderData = { items: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), customer_id: selectedCustomer ? selectedCustomer.id : null, payment_method: checkoutData.paymentMethod, amount_paid: checkoutData.amountPaid, subtotal_amount: cartTotal, tax_amount: checkoutData.taxAmount, total_amount: checkoutData.finalTotal, promotion_id: appliedDiscount ? appliedDiscount.id : null, discount_amount: discountAmount, }; try { const res = await toast.promise(createOrder(orderData), { pending: 'Memproses transaksi...', success: 'Transaksi berhasil!', error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`, }); setLastOrderId(res.data.orderId); setIsPostCheckoutOpen(true); setIsCheckoutModalOpen(false); setAppliedDiscount(null); setCouponCode(''); } catch (err) { console.error('Checkout error:', err); } };
     const handleClosePostCheckoutModal = () => { setIsPostCheckoutOpen(false); setCart([]); setSelectedCustomer(null); };
     const handleSelectCustomer = (customer) => { setSelectedCustomer(customer); setIsCustomerModalOpen(false); };
     const handleHoldCart = () => { if (cart.length === 0) return; const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer }; setHeldCarts((prev) => [...prev, newHeldCart]); setCart([]); setSelectedCustomer(null); toast.info('Keranjang berhasil ditahan.'); };
     const handleResumeCart = (cartId) => { const cartToResume = heldCarts.find((c) => c.id === cartId); if (cartToResume) { setCart(cartToResume.items); setSelectedCustomer(cartToResume.customer); setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); setIsHeldCartsModalOpen(false); toast.success('Keranjang berhasil dilanjutkan.'); } };
     const handleDeleteHeldCart = (cartId) => { setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); toast.warn('Keranjang yang ditahan telah dihapus.'); };
+    const filteredProducts = products.filter((p) => { const term = searchTerm.toLowerCase(); if (!term) return true; const nameMatch = p.name.toLowerCase().includes(term); const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term)); return nameMatch || barcodeMatch; });
 
-    const filteredProducts = products.filter((p) => {
-        const term = searchTerm.toLowerCase();
-        if (!term) return true;
-        const nameMatch = p.name.toLowerCase().includes(term);
-        const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term));
-        return nameMatch || barcodeMatch;
-    });
-
-    const productsContent = (
-        <ProductsPanel
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <PanelHeader>
-                <SearchContainer>
-                    <SearchIcon size={18} />
-                    <SearchInput placeholder="Cari nama produk atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </SearchContainer>
-            </PanelHeader>
-            <ProductGrid
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-            >
-                {filteredProducts.map((product) => (
-                    <ProductCard
-                        key={product.id}
-                        $disabled={product.stock <= 0}
-                        onClick={() => handleProductClick(product)}
-                        whileHover={product.stock > 0 ? { scale: 1.05 } : {}}
-                        whileTap={product.stock > 0 ? { scale: 0.95 } : {}}
-                    >
-                        <ProductImage src={product.image_url || `https://placehold.co/200`} />
-                        <ProductInfo>
-                            <ProductName>{product.name}</ProductName>
-                            <ProductPrice>
-                                {product.variants && product.variants.length > 0
-                                    ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}`
-                                    : 'Tidak tersedia'}
-                            </ProductPrice>
-                        </ProductInfo>
-                    </ProductCard>
-                ))}
-            </ProductGrid>
-        </ProductsPanel>
-    );
-
-    const cartContent = (
-        <CartPanel
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-        >
-            <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader>
-            <CustomerInfo>
-                {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )}
-                <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton>
-            </CustomerInfo>
-            <CartItemsList>
-                <AnimatePresence>
-                    {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )}
-                    {cart.map((item) => (
-                        <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <CartItemDetails>
-                                <CartItemName>{item.name}</CartItemName>
-                                <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
-                            </CartItemDetails>
-                            <CartItemControls>
-                                <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton>
-                                <QuantityDisplay>{item.quantity}</QuantityDisplay>
-                                <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton>
-                            </CartItemControls>
-                            <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton>
-                        </CartItem>
-                    ))}
-                </AnimatePresence>
-            </CartItemsList>
-            <CheckoutSection>
-                <CartActions>
-                    <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton>
-                    <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton>
-                </CartActions>
-                <PromoSection>
-                    <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} />
-                    {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)}
-                </PromoSection>
-                {cart.length > 0 && (
-                    <>
-                        <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow>
-                        {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)}
-                        <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow>
-                        <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton>
-                    </>
-                )}
-            </CheckoutSection>
-        </CartPanel>
-    );
-
-    if (isLoadingShift) {
-        return (
-            <PageWrapper loading={true}>
-                 <PageGrid>
-                     <ProductsPanel>
-                        <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader>
-                        <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid>
-                     </ProductsPanel>
-                     <CartPanel><Skeleton height="100%" /></CartPanel>
-                 </PageGrid>
-            </PageWrapper>
-        );
+    const productsContent = ( <ProductsPanel> <PanelHeader> <SearchContainer> <SearchIcon size={18} /> <SearchInput placeholder="Cari nama atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /> </SearchContainer> </PanelHeader> <ProductGrid> {filteredProducts.map((product) => ( <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)} whileHover={product.stock > 0 ? { scale: 1.05 } : {}} whileTap={product.stock > 0 ? { scale: 0.95 } : {}} > <ProductImage src={product.image_url || `https://placehold.co/200`} /> <ProductInfo> <ProductName>{product.name}</ProductName> <ProductPrice> {product.variants && product.variants.length > 0 ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}` : 'Tidak tersedia'} </ProductPrice> </ProductInfo> </ProductCard> ))} </ProductGrid> </ProductsPanel> );
+    const cartContent = ( <CartPanel> <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader> <CustomerInfo> {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )} <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton> </CustomerInfo> <CartItemsList> <AnimatePresence> {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )} {cart.map((item) => ( <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <CartItemDetails> <CartItemName>{item.name}</CartItemName> <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice> </CartItemDetails> <CartItemControls> <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton> <QuantityDisplay>{item.quantity}</QuantityDisplay> <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton> </CartItemControls> <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton> </CartItem> ))} </AnimatePresence> </CartItemsList> <CheckoutSection> <CartActions> <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton> <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton> </CartActions> <PromoSection> <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} /> {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)} </PromoSection> {cart.length > 0 && ( <> <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow> {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)} <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow> <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton> </> )} </CheckoutSection> </CartPanel> );
+    
+    if (isLoadingShift || userRole === null) {
+        return ( <PageWrapper loading={true}> <PageGrid> <ProductsPanel> <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader> <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid> </ProductsPanel> <CartPanel><Skeleton height="100%" /></CartPanel> </PageGrid> </PageWrapper> );
     }
     
     if (userRole === 'kasir' && !activeShift) {
@@ -26815,7 +26846,23 @@ function PosPage() {
                 </PageGrid>
             </PageWrapper>
 
-            <CheckoutModal isOpen={isCheckoutModalOpen} onClose={() => setIsCheckoutModalOpen(false)} cartTotal={finalTotal} onConfirmCheckout={handleCheckout} paymentMethods={settings.payment_methods} taxRate={settings.tax_rate} />
+            <AnimatePresence>
+                {cart.length > 0 && (
+                    <MobileCartButton
+                        onClick={() => setIsCheckoutModalOpen(true)}
+                        initial={{ y: 150 }} animate={{ y: 0 }} exit={{ y: 150 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 40 }}
+                    >
+                        <MobileCartInfo>
+                            <FiShoppingCart size={24} />
+                            <MobileCartText>{cart.reduce((acc, item) => acc + item.quantity, 0)} Item</MobileCartText>
+                        </MobileCartInfo>
+                        <MobileCartTotal>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</MobileCartTotal>
+                    </MobileCartButton>
+                )}
+            </AnimatePresence>
+
+            <CheckoutModal isOpen={isCheckoutModalOpen} onClose={() => setIsCheckoutModalOpen(false)} cart={cart} cartTotal={finalTotal} onConfirmCheckout={handleCheckout} paymentMethods={settings.payment_methods} taxRate={settings.tax_rate} selectedCustomer={selectedCustomer} coupon={appliedDiscount} onRemoveDiscount={removeDiscount} />
             <PostCheckoutModal isOpen={isPostCheckoutOpen} onClose={handleClosePostCheckoutModal} orderId={lastOrderId} onPrint={handlePrintReceipt} />
             <CustomerSelectModal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} onSelectCustomer={handleSelectCustomer} />
             <VariantSelectModal isOpen={isVariantModalOpen} onClose={() => setIsVariantModalOpen(false)} product={selectedProductForVariant} onSelectVariant={handleSelectVariant} />
@@ -27243,35 +27290,38 @@ export default ProductProfitabilityReport;
 
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import { getProducts, deleteProduct } from '../services/api';
 import { toast } from 'react-toastify';
-import { FiPlus, FiEdit, FiTrash2, FiBox } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiPackage, FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
-// --- PERBAIKAN DI SINI ---
-// Buat sebuah container baru untuk konten internal halaman
-const PageContent = styled.div`
+// --- Styled Components dengan Perbaikan UI dan Responsif ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    width: 100%;
+    
+    @media (max-width: 768px) {
+        padding: 15px;
+    }
 `;
-// --- AKHIR PERBAIKAN ---
 
-// --- Styled Components ---
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-    flex-shrink: 0; /* Mencegah header mengecil */
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 15px;
 `;
 
 const Title = styled.h1`
@@ -27281,7 +27331,7 @@ const Title = styled.h1`
     gap: 12px;
 `;
 
-const AddButton = styled.button`
+const AddButton = styled(Link)`
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -27292,42 +27342,41 @@ const AddButton = styled.button`
     align-items: center;
     gap: 8px;
     cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+
     &:hover {
         background-color: var(--primary-hover);
     }
 `;
 
-const TableContainer = styled.div`
+const ContentContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-surface);
     border-radius: 16px;
     border: 1px solid var(--border-color);
     overflow: hidden;
-    flex-grow: 1; /* Mengisi sisa ruang vertikal */
-    display: flex;
-    flex-direction: column;
 `;
 
-// --- PERBAIKAN DI SINI: Menyembunyikan scrollbar pada TableWrapper ---
+// --- DESKTOP TABLE STYLES ---
 const TableWrapper = styled.div`
-    overflow-x: auto;
-    flex-grow: 1;
-    
-    /* Menghilangkan scrollbar di Chrome, Safari, dan Opera */
-    &::-webkit-scrollbar {
-        display: none;
+    display: none;
+    @media (min-width: 769px) {
+        display: block;
+        overflow-x: auto;
+        flex-grow: 1;
+        &::-webkit-scrollbar { display: none; }
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }
-    /* Menghilangkan scrollbar di Firefox */
-    scrollbar-width: none;
-    /* Menghilangkan scrollbar di IE dan Edge */
-    -ms-overflow-style: none;
 `;
-// --- AKHIR PERBAIKAN ---
-
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
+    min-width: 900px;
 `;
-
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -27336,33 +27385,21 @@ const Th = styled.th`
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 0.9rem;
+    white-space: nowrap;
     text-transform: uppercase;
 `;
-
 const Td = styled.td`
+    text-align: left;
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
-
 const Tr = styled(motion.tr)`
     &:last-child > td {
         border-bottom: none;
     }
 `;
-
-const ActionButton = styled.button`
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-    margin: 0 5px;
-    &:hover {
-        color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'};
-    }
-`;
-
 const ProductImage = styled.img`
     width: 50px;
     height: 50px;
@@ -27370,10 +27407,92 @@ const ProductImage = styled.img`
     object-fit: cover;
     border: 1px solid var(--border-color);
 `;
-
 const StockStatus = styled.span`
     font-weight: 600;
-    color: ${props => props.$lowStock ? 'var(--orange-color)' : 'inherit'};
+    color: ${props => props.$lowStock ? 'var(--red-color)' : 'inherit'};
+`;
+const ActionButtons = styled.div`
+    display: flex;
+    gap: 5px;
+    align-items: center;
+`;
+const ActionButton = styled(Link)`
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--primary-color);
+    }
+`;
+const DeleteButton = styled.button`
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease;
+
+    &:hover {
+        color: var(--red-color);
+    }
+`;
+
+// --- MOBILE CARD STYLES ---
+const CardList = styled(motion.div)`
+    display: none;
+    @media (max-width: 768px) {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+`;
+const ProductCard = styled(motion.div)`
+    background-color: var(--bg-main);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+`;
+const CardImage = styled.img`
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+`;
+const CardContent = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+`;
+const CardTitle = styled.h3`
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    color: var(--text-primary);
+`;
+const CardDetail = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+`;
+const CardStock = styled.span`
+    font-weight: 500;
+    color: ${props => props.$lowStock ? 'var(--red-color)' : 'var(--green-color)'};
 `;
 
 const EmptyStateContainer = styled.div`
@@ -27397,8 +27516,9 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
+// --- ANIMATION VARIANTS ---
 const tableRowVariants = {
-    hidden: { opacity: 0, y: 10 },
+    hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
         opacity: 1,
         y: 0,
@@ -27407,7 +27527,9 @@ const tableRowVariants = {
         },
     }),
 };
-// --- Akhir Styled Components ---
+
+// --- HELPER FUNCTION ---
+const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 
 function ProductsPage() {
     const [products, setProducts] = useState([]);
@@ -27416,7 +27538,7 @@ function ProductsPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
 
-    const fetchProducts = async () => {
+    const fetchProducts = useCallback(async () => {
         setLoading(true);
         try {
             const res = await getProducts();
@@ -27426,11 +27548,11 @@ function ProductsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchProducts();
-    }, []);
+    }, [fetchProducts]);
 
     const openDeleteConfirmation = (product) => {
         setProductToDelete(product);
@@ -27457,72 +27579,111 @@ function ProductsPage() {
             setProductToDelete(null);
         }
     };
+    
+    const getPriceRange = (variants) => {
+        if (!variants || variants.length === 0) return 'Tidak tersedia';
+        const prices = variants.map(v => parseFloat(v.price));
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        if (minPrice === maxPrice) return formatCurrency(minPrice);
+        return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
+    };
+
+
+    const renderTable = () => (
+        <TableWrapper>
+            <Table>
+                <thead>
+                    <tr>
+                        <Th>Gambar</Th>
+                        <Th>Nama Produk</Th>
+                        <Th>Kategori</Th>
+                        <Th>Pemasok</Th>
+                        <Th>Stok</Th>
+                        <Th>Harga</Th>
+                        <Th>Aksi</Th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <AnimatePresence>
+                        {products.map((product, i) => (
+                            <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                <Td><ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} /></Td>
+                                <Td>{product.name}</Td>
+                                <Td>{product.category_name || '-'}</Td>
+                                <Td>{product.supplier_name || '-'}</Td>
+                                <Td><StockStatus $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</StockStatus></Td>
+                                <Td>{getPriceRange(product.variants)}</Td>
+                                <Td>
+                                    <ActionButtons>
+                                        <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={18} /></ActionButton>
+                                        <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={18} /></DeleteButton>
+                                    </ActionButtons>
+                                </Td>
+                            </Tr>
+                        ))}
+                    </AnimatePresence>
+                </tbody>
+            </Table>
+        </TableWrapper>
+    );
+
+    const renderCards = () => (
+        <CardList>
+            <AnimatePresence>
+                {products.map((product, i) => (
+                    <ProductCard key={product.id} custom={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                        <CardImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
+                        <CardContent>
+                            <CardTitle>{product.name}</CardTitle>
+                            <CardDetail>
+                                <span>Kategori: {product.category_name || '-'}</span>
+                                <ActionButtons>
+                                    <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={16} /></ActionButton>
+                                    <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={16} /></DeleteButton>
+                                </ActionButtons>
+                            </CardDetail>
+                            <CardDetail>
+                                <span>Harga: {getPriceRange(product.variants)}</span>
+                                <span>Stok: <CardStock $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</CardStock></span>
+                            </CardDetail>
+                        </CardContent>
+                    </ProductCard>
+                ))}
+            </AnimatePresence>
+        </CardList>
+    );
 
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageContent>
+                <PageContainer>
                     <PageHeader>
-                        <Title><FiBox/> Daftar Produk</Title>
-                        <AddButton onClick={() => navigate('/products/new')}>
+                        <Title><FiPackage /> Produk</Title>
+                        <AddButton to="/products/new">
                             <FiPlus size={18} /> Tambah Produk
                         </AddButton>
                     </PageHeader>
                     
-                    {products.length > 0 ? (
-                        <TableContainer>
-                            <TableWrapper>
-                                <Table>
-                                    <thead>
-                                        <tr>
-                                            <Th>Gambar</Th>
-                                            <Th>Nama Produk</Th>
-                                            <Th>Kategori</Th>
-                                            <Th>Stok</Th>
-                                            <Th>Harga</Th>
-                                            <Th style={{ textAlign: 'center' }}>Aksi</Th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {products.map((product, i) => (
-                                            <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                                <Td>
-                                                    <ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
-                                                </Td>
-                                                <Td>{product.name}</Td>
-                                                <Td>{product.category_name || '-'}</Td>
-                                                <Td>
-                                                    <StockStatus $lowStock={product.stock <= product.low_stock_threshold}>
-                                                        {product.stock}
-                                                    </StockStatus>
-                                                </Td>
-                                                <Td>
-                                                    {product.variants.length > 1
-                                                        ? `${new Intl.NumberFormat('id-ID').format(product.variants[0].price)} (Varian)`
-                                                        : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.variants[0]?.price || 0)}
-                                                </Td>
-                                                <Td style={{ textAlign: 'center' }}>
-                                                    <ActionButton onClick={() => navigate(`/products/edit/${product.id}`)}>
-                                                        <FiEdit size={18} />
-                                                    </ActionButton>
-                                                    <ActionButton $danger onClick={() => openDeleteConfirmation(product)}>
-                                                        <FiTrash2 size={18} />
-                                                    </ActionButton>
-                                                </Td>
-                                            </Tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </TableWrapper>
-                        </TableContainer>
+                    {loading ? (
+                        <ContentContainer>
+                            <div style={{ padding: '20px' }}>
+                                <Skeleton height={50} count={5} style={{ marginBottom: '10px' }} />
+                            </div>
+                        </ContentContainer>
+                    ) : products.length > 0 ? (
+                        <ContentContainer>
+                            {renderTable()}
+                            {renderCards()}
+                        </ContentContainer>
                     ) : (
                         <EmptyStateContainer>
-                            <FiBox size={48} />
+                            <FiPackage size={48} />
                             <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
                             <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
                         </EmptyStateContainer>
                     )}
-                </PageContent>
+                </PageContainer>
             </PageWrapper>
 
             <ConfirmationModal
@@ -28043,15 +28204,13 @@ export default PromotionsPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PurchaseOrderDetailPage.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PurchaseOrderDetailPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { getPurchaseOrderById } from '../services/api';
 import { toast } from 'react-toastify';
 import Skeleton from 'react-loading-skeleton';
-import { FiArrowLeft, FiPlusCircle } from 'react-icons/fi'; // <-- FiEdit sudah dihapus
+import { FiArrowLeft, FiPlusCircle } from 'react-icons/fi';
 
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
@@ -30399,16 +30558,34 @@ import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
-// --- Styled Components dengan Animasi ---
+// --- Styled Components dengan Perbaikan Mobile ---
+const PageContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    padding: 30px;
+
+    @media (max-width: 768px) {
+        padding: 15px;
+    }
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
     flex-shrink: 0;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
 `;
 const HeaderActions = styled.div`
     display: flex;
@@ -30421,200 +30598,114 @@ const Title = styled.h1`
     gap: 12px;
 `;
 const TableContainer = styled.div`
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
     flex-grow: 1;
+    overflow: hidden; /* Sembunyikan overflow di sini */
+`;
+
+// --- DESKTOP TABLE STYLES ---
+const TableWrapper = styled.div`
+    display: none; /* Sembunyikan di mobile */
+    @media (min-width: 769px) {
+        display: block; /* Tampilkan di PC */
+        background-color: var(--bg-surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        overflow-x: auto;
+    }
+`;
+const Table = styled.table` width: 100%; border-collapse: collapse; min-width: 800px; `;
+const Th = styled.th` text-align: center; padding: 15px 20px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap; text-transform: uppercase; `;
+const Td = styled.td` text-align: center; padding: 15px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; &.nowrap { white-space: nowrap; } &.text-left { text-align: left; } `;
+const Tr = styled(motion.tr)` &:last-child > td { border-bottom: none; } `;
+
+// --- MOBILE CARD STYLES ---
+const CardList = styled.div`
+    display: none; /* Sembunyikan di PC */
+    @media (max-width: 768px) {
+        display: grid; /* Tampilkan sebagai grid di mobile */
+        gap: 15px;
+    }
+`;
+const ShiftCard = styled(motion.div)`
+    background-color: var(--bg-surface);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    padding: 15px;
     display: flex;
     flex-direction: column;
+    gap: 12px;
 `;
-
-// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
-const TableWrapper = styled.div`
-    overflow-x: auto;
-    flex-grow: 1;
-
-    &::-webkit-scrollbar {
-        display: none;
-    }
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-`;
-
-const Table = styled.table`
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 800px;
-`;
-const Th = styled.th`
-    text-align: center; 
-    padding: 15px 20px;
-    background-color: var(--bg-main);
+const CardHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+`;
+const CardTitle = styled.div`
     font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    white-space: nowrap; 
-    text-transform: uppercase;
-`;
-const Td = styled.td`
-    text-align: center; 
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
-    vertical-align: middle;
-    
-    &.nowrap { white-space: nowrap; }
-    &.text-left { text-align: left; }
 `;
-const Tr = styled(motion.tr)`
-    &:last-child > td { border-bottom: none; }
-`;
-const ActionButton = styled.button`
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-    margin: 0 5px;
-    &:hover { color: var(--red-color); }
-`;
-const TimePeriodCell = styled.div`
-    font-size: 0.85rem;
-    line-height: 1.3; 
-    .start-time { font-weight: 600; }
-    .end-time { color: var(--text-secondary); }
-`;
-const SalesDetail = styled.div`
+const CardDate = styled.div`
     font-size: 0.8rem;
     color: var(--text-secondary);
-    margin-top: 4px;
 `;
-const ExportButton = styled.button`
-    background-color: var(--green-color);
-    color: white; border: none; border-radius: 8px; padding: 10px 20px;
-    font-weight: 600; display: flex; align-items: center; gap: 8px;
-    cursor: pointer; &:hover { opacity: 0.9; }
+const CardBody = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
 `;
-const ClearHistoryButton = styled.button`
-    background-color: var(--red-color);
-    color: white; border: none; border-radius: 8px; padding: 10px 20px;
-    font-weight: 600; display: flex; align-items: center; gap: 8px;
-    cursor: pointer; &:hover { opacity: 0.9; }
-`;
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
+const InfoItem = styled.div`
+    font-size: 0.9rem;
+    & > strong {
+        display: block;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    & > span {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
 `;
 
-// --- Varian Animasi ---
-const tableRowVariants = {
-    hidden: { opacity: 0, y: -10 },
-    visible: (i) => ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: i * 0.05 },
-    }),
-};
 
-// --- Helper Functions ---
+// --- SHARED STYLES ---
+const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); margin: 0 5px; &:hover { color: var(--red-color); } `;
+const TimePeriodCell = styled.div` font-size: 0.85rem; line-height: 1.3; .start-time { font-weight: 600; } .end-time { color: var(--text-secondary); } `;
+const SalesDetail = styled.div` font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; `;
+const ExportButton = styled.button` background-color: var(--green-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
+const ClearHistoryButton = styled.button` background-color: var(--red-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
+const EmptyStateContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-secondary); `;
+const tableRowVariants = { hidden: { opacity: 0, y: -10 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 }, }), };
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
-const formatDateTimeCombined = (start, end) => {
-    if (!start || !end) return null;
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    return (
-        <TimePeriodCell>
-            <div className="start-time">{dateStr}</div>
-            <div className="end-time">{startTime} - {endTime}</div>
-        </TimePeriodCell>
-    );
-};
+const formatDateTimeCombined = (start, end) => { if (!start || !end) return null; const startDate = new Date(start); const endDate = new Date(end); const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); return ( <TimePeriodCell> <div className="start-time">{dateStr}</div> <div className="end-time">{startTime} - {endTime}</div> </TimePeriodCell> ); };
 
-// --- Komponen Utama ---
 function ShiftHistoryPage() {
+    // ... (State dan fungsi lainnya biarkan sama persis) ...
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-    const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
-    const [modalContent, setModalContent] = useState({ title: '', message: '' });
-
-    const fetchHistory = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await getShiftHistory();
-            setHistory(res.data);
-        } catch (error) { toast.error("Gagal memuat riwayat shift."); }
-        finally { setLoading(false); }
-    }, []);
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                const decoded = jwtDecode(token);
-                setUserRole(decoded.role ? decoded.role.toLowerCase() : null);
-            } catch (error) {
-                console.error("Invalid token:", error);
-                setUserRole(null);
-            }
-        }
-        fetchHistory();
-    }, [fetchHistory]);
-
-    const openConfirmation = (action, id = null) => {
-        setConfirmAction({ action, id });
-        if (action === 'delete') {
-            setModalContent({ title: 'Hapus Shift', message: `Yakin ingin menghapus riwayat shift #${id}?` });
-        } else if (action === 'clearAll') {
-            setModalContent({ title: 'Hapus Semua Riwayat', message: 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.' });
-        }
-        setIsConfirmOpen(true);
-    };
+    const [modalState, setModalState] = useState({ isOpen: false, action: null, id: null, title: '', message: '' });
+    const fetchHistory = useCallback(async () => { setLoading(true); try { const res = await getShiftHistory(); setHistory(res.data); } catch (error) { toast.error("Gagal memuat riwayat shift."); } finally { setLoading(false); } }, []);
+    useEffect(() => { const token = localStorage.getItem('token'); if (token) { try { const decoded = jwtDecode(token); setUserRole(decoded.role ? decoded.role.toLowerCase() : null); } catch (error) { console.error("Invalid token:", error); setUserRole(null); } } fetchHistory(); }, [fetchHistory]);
+    const openConfirmation = (action, id = null) => { let title = ''; let message = ''; if (action === 'delete') { title = 'Hapus Shift'; message = `Yakin ingin menghapus riwayat shift #${id}?`; } else if (action === 'clearAll') { title = 'Hapus Semua Riwayat'; message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.'; } setModalState({ isOpen: true, action, id, title, message }); };
+    const handleExport = async () => { toast.info("Mempersiapkan data untuk diunduh..."); try { const response = await exportShiftHistory(); const url = window.URL.createObjectURL(new Blob([response.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`); document.body.appendChild(link); link.click(); link.remove(); } catch (error) { toast.error(error.response?.data?.message || "Gagal mengekspor data."); } };
+    const handleConfirm = async () => { const { action, id } = modalState; setModalState({ isOpen: false, action: null, id: null, title: '', message: '' }); let promise; if (action === 'delete') { promise = deleteShift(id); } else if (action === 'clearAll') { promise = clearShiftHistory(); } if (promise) { await toast.promise(promise, { pending: 'Memproses...', success: 'Aksi berhasil dijalankan!', error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.' }); fetchHistory(); } };
     
-    const handleExport = async () => {
-        toast.info("Mempersiapkan data untuk diunduh...");
-        try {
-            const response = await exportShiftHistory();
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
-            document.body.appendChild(link);
-            link.remove();
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Gagal mengekspor data.");
+    const renderContent = () => {
+        if (loading) {
+            return <Skeleton height={300} />;
         }
-    };
-
-    const handleConfirm = async () => {
-        const { action, id } = confirmAction;
-        setIsConfirmOpen(false);
-        let promise;
-        if (action === 'delete') promise = deleteShift(id);
-        else if (action === 'clearAll') promise = clearShiftHistory();
-        if (promise) {
-            await toast.promise(promise, {
-                pending: 'Memproses...',
-                success: 'Aksi berhasil dijalankan!',
-                error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.'
-            });
-            fetchHistory();
-        }
-    };
-
-    const renderTableContent = () => {
-        if (history.length > 0) {
+        if (history.length === 0) {
             return (
+                <EmptyStateContainer>
+                    <FiClock size={48} />
+                    <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
+                </EmptyStateContainer>
+            );
+        }
+        return (
+            <>
                 <TableWrapper>
                     <Table>
                         <thead>
@@ -30629,7 +30720,7 @@ function ShiftHistoryPage() {
                         </thead>
                         <tbody>
                             {history.map((shift, i) => {
-                                const nonCashSales = (shift.card_sales || 0) + (shift.qris_sales || 0) + (shift.other_sales || 0);
+                                const nonCashSales = (parseFloat(shift.card_sales) || 0) + (parseFloat(shift.qris_sales) || 0) + (parseFloat(shift.other_sales) || 0);
                                 return (
                                     <Tr key={shift.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
                                         <Td className="text-left">{shift.user_name}</Td> 
@@ -30642,7 +30733,7 @@ function ShiftHistoryPage() {
                                                 Non-Tunai: {formatCurrency(nonCashSales)}
                                             </SalesDetail>
                                         </Td>
-                                        <Td className="nowrap">{formatCurrency(shift.ending_cash)}</Td>
+                                        <Td className="nowrap">{formatCurrency(shift.expected_cash)}</Td>
                                         {userRole === 'admin' && (
                                             <Td>
                                                 <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
@@ -30656,43 +30747,70 @@ function ShiftHistoryPage() {
                         </tbody>
                     </Table>
                 </TableWrapper>
-            );
-        }
 
-        return (
-            <EmptyStateContainer>
-                <FiClock size={48} />
-                <p style={{marginTop: '15px'}}>Belum ada riwayat shift yang ditutup.</p>
-            </EmptyStateContainer>
+                <CardList>
+                    {history.map((shift, i) => {
+                        const nonCashSales = (parseFloat(shift.card_sales) || 0) + (parseFloat(shift.qris_sales) || 0) + (parseFloat(shift.other_sales) || 0);
+                        return (
+                            <ShiftCard key={shift.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                <CardHeader>
+                                    <div>
+                                        <CardTitle>{shift.user_name}</CardTitle>
+                                        <CardDate>{new Date(shift.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</CardDate>
+                                    </div>
+                                    {userRole === 'admin' && (
+                                        <ActionButton onClick={() => openConfirmation('delete', shift.id)}>
+                                            <FiTrash2 size={18} />
+                                        </ActionButton>
+                                    )}
+                                </CardHeader>
+                                <CardBody>
+                                    <InfoItem><strong>{formatCurrency(shift.starting_cash)}</strong><span>Kas Awal</span></InfoItem>
+                                    <InfoItem><strong>{formatCurrency(shift.total_sales)}</strong><span>Total Penjualan</span></InfoItem>
+                                    <InfoItem><strong>{formatCurrency(shift.expected_cash)}</strong><span>Kas Akhir Sistem</span></InfoItem>
+                                    <InfoItem>
+                                        <strong>{formatCurrency(shift.cash_sales)}</strong>
+                                        <span>Penjualan Tunai</span>
+                                    </InfoItem>
+                                    <InfoItem>
+                                        <strong>{formatCurrency(nonCashSales)}</strong>
+                                        <span>Penjualan Non-Tunai</span>
+                                    </InfoItem>
+                                </CardBody>
+                            </ShiftCard>
+                        );
+                    })}
+                </CardList>
+            </>
         );
     };
 
     return (
         <>
-            <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiClock /> Riwayat Shift</Title>
-                    {userRole === 'admin' && (
-                        <HeaderActions>
-                            <ExportButton onClick={handleExport}><FiDownload/> Ekspor CSV</ExportButton>
-                            <ClearHistoryButton onClick={() => openConfirmation('clearAll')}>
-                                <FiAlertTriangle /> Hapus Semua Riwayat
-                            </ClearHistoryButton>
-                        </HeaderActions>
-                    )}
-                </PageHeader>
-                
-                <TableContainer>
-                    {renderTableContent()}
-                </TableContainer>
+            <PageWrapper>
+                <PageContent>
+                    <PageHeader>
+                        <Title><FiClock /> Riwayat Shift</Title>
+                        {userRole === 'admin' && (
+                            <HeaderActions>
+                                <ExportButton onClick={handleExport}><FiDownload/> Ekspor CSV</ExportButton>
+                                <ClearHistoryButton onClick={() => openConfirmation('clearAll')}>
+                                    <FiAlertTriangle /> Hapus Semua Riwayat
+                                </ClearHistoryButton>
+                            </HeaderActions>
+                        )}
+                    </PageHeader>
+                    <TableContainer>
+                        {renderContent()}
+                    </TableContainer>
+                </PageContent>
             </PageWrapper>
-
             <ConfirmationModal
-                isOpen={isConfirmOpen}
-                onClose={() => setIsConfirmOpen(false)}
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ ...modalState, isOpen: false })}
                 onConfirm={handleConfirm}
-                title={modalContent.title}
-                message={modalContent.message}
+                title={modalState.title}
+                message={modalState.message}
             />
         </>
     );
@@ -31049,8 +31167,8 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 
+// Menghapus overflow-x: auto untuk menghilangkan scrollbar
 const TableWrapper = styled.div`
-    overflow-x: auto;
     flex-grow: 1;
 `;
 
@@ -31592,8 +31710,8 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+// Menghapus scrollbar dengan menghapus overflow-x: auto
 const TableWrapper = styled.div`
-    overflow-x: auto;
     flex-grow: 1;
 `;
 const Table = styled.table`
@@ -33611,102 +33729,55 @@ export default StaleProductsList;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StatCardGrid.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StatCardGrid.jsx
+
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
-import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList, FiArrowUp, FiArrowDown, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+// =================================================================
+// PERBAIKAN DI SINI: Tambahkan FiArchive
+// =================================================================
+import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList, FiArrowUp, FiArrowDown, FiChevronDown, FiChevronUp, FiArchive } from 'react-icons/fi';
+// =================================================================
 
-// --- PERBAIKAN DI SINI ---
-// 1. Buat sebuah container baru untuk Grid
 const GridContainer = styled.div`
     display: grid;
-    grid-template-columns: repeat(12, 1fr); /* Sama seperti di DashboardPage */
+    grid-template-columns: repeat(12, 1fr);
     gap: 24px;
     width: 100%;
-    /* Pastikan GridContainer berperilaku seperti sebuah grid agar Card di dalamnya bisa menggunakan 'grid-column' */
 `;
-// --- AKHIR PERBAIKAN ---
-
 const ComparisonChip = styled.div`
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-top: 6px;
+    display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600;
+    padding: 2px 8px; border-radius: 20px; margin-top: 6px;
     color: ${props => props.color};
     background-color: ${props => props.color}20;
 `;
-
 const StatIcon = styled.div`
-    width: 64px;
-    height: 64px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
     background-color: ${props => props.color}15;
     color: ${props => props.color};
     flex-shrink: 0;
 `;
-
 const Card = styled.div`
-    background: var(--bg-surface);
-    padding: 28px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    grid-column: span 3; /* Ini akan membuat kartu mengisi 3 dari 12 kolom */
+    background: var(--bg-surface); padding: 28px; border-radius: 24px; border: 1px solid var(--border-color);
+    display: flex; align-items: center; gap: 24px; grid-column: span 3;
     transition: all 0.3s ease-in-out;
-    &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-    }
+    &:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); }
     @media (max-width: 1600px) { grid-column: span 4; }
     @media (max-width: 1200px) { grid-column: span 6; }
     @media (max-width: 768px) { grid-column: 1 / -1; }
 `;
-const StatInfo = styled.div`
-    flex-grow: 1;
-`;
-const StatValue = styled.h2`
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
-`;
-const StatLabel = styled.p`
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    margin: 0;
-`;
-
+const StatInfo = styled.div` flex-grow: 1; `;
+const StatValue = styled.h2` font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; `;
+const StatLabel = styled.p` font-size: 0.95rem; color: var(--text-secondary); margin: 0; `;
 const ExpandButton = styled.button`
-    grid-column: 1 / -1;
-    background: var(--bg-surface);
-    color: var(--primary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 12px 20px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    &:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
+    grid-column: 1 / -1; background: var(--bg-surface); color: var(--primary-color);
+    border: 1px solid var(--border-color); border-radius: 16px; padding: 12px 20px; cursor: pointer;
+    font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: all 0.3s ease;
+    &:hover { background-color: var(--primary-color); color: white; }
 `;
-
 const calculatePercentageChange = (current, previous) => {
     if (previous === null || previous === undefined || previous === 0) return current > 0 ? Infinity : 0;
     return ((current - previous) / previous) * 100;
@@ -33722,7 +33793,6 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         const chipIcon = isPositive ? <FiArrowUp size={12}/> : <FiArrowDown size={12}/>;
         chip = <ComparisonChip color={chipColor}>{chipIcon}{displayValue}</ComparisonChip>;
     }
-
     return (
         <Card>
             <StatIcon color={color}>{icon}</StatIcon>
@@ -33734,38 +33804,15 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         </Card>
     );
 };
-
-StatCard.propTypes = {
-    icon: PropTypes.node.isRequired,
-    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    label: PropTypes.string.isRequired,
-    color: PropTypes.string.isRequired,
-    comparisonChange: PropTypes.number,
-    positiveIsGood: PropTypes.bool
-};
-
-const StatCardSkeleton = () => (
-    <Card as="div">
-        <Skeleton circle width={60} height={60} />
-        <div>
-            <Skeleton height={30} width={150} style={{marginBottom: '5px'}} />
-            <Skeleton height={20} width="60%" />
-        </div>
-    </Card>
-);
+StatCard.propTypes = { icon: PropTypes.node.isRequired, value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired, label: PropTypes.string.isRequired, color: PropTypes.string.isRequired, comparisonChange: PropTypes.number, positiveIsGood: PropTypes.bool };
+const StatCardSkeleton = () => ( <Card as="div"> <Skeleton circle width={60} height={60} /> <div> <Skeleton height={30} width={150} style={{marginBottom: '5px'}} /> <Skeleton height={20} width="60%" /> </div> </Card> );
 
 function StatCardGrid({ loading, stats, previousStats, userName }) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const handleToggleExpand = () => {
-        setIsExpanded(!isExpanded);
-    };
+    const handleToggleExpand = () => setIsExpanded(!isExpanded);
 
     if (loading || !stats) {
-        return (
-            <GridContainer>
-                {Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} />)}
-            </GridContainer>
-        );
+        return ( <GridContainer> {Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} />)} </GridContainer> );
     }
     
     const revenueChange = calculatePercentageChange(stats.totalRevenue, previousStats?.totalRevenue);
@@ -33774,39 +33821,35 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
     const expensesChange = calculatePercentageChange(stats.totalExpenses, previousStats?.totalExpenses);
     const formatCurrency = (val) => `Rp ${new Intl.NumberFormat('id-ID').format(val || 0)}`;
 
-    // --- PERBAIKAN DI SINI ---
-    // 2. Bungkus semua StatCard dengan GridContainer
     return (
         <GridContainer>
             <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalRevenue)} label="Pendapatan" color="var(--primary-color)" comparisonChange={revenueChange} />
             <StatCard icon={<FiShoppingBag size={28} />} value={stats.totalTransactions || 0} label="Total Transaksi" color="var(--green-color)" comparisonChange={transactionsChange} />
             <StatCard icon={<FiTrendingUp size={28} />} value={formatCurrency(stats.totalProfit)} label="Total Laba" color="#FFA500" comparisonChange={profitChange} />
-            <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalExpenses)} label="Total Pengeluaran" color="#dc3545" comparisonChange={expensesChange} positiveIsGood={false} />
+            {/* ================================================================= */}
+            {/* PERBAIKAN DI SINI: Menambahkan Kartu Kas Akhir */}
+            {/* ================================================================= */}
+            <StatCard icon={<FiArchive size={28} />} value={formatCurrency(stats.cashInDrawer)} label="Total Kas di Laci" color="#17a2b8" />
+            {/* ================================================================= */}
             
             <StatCard icon={<FiTag size={28} />} value={stats.totalSoldUnits || 0} label="Produk Terjual" color="#007bff" />
             <StatCard icon={<FiUsers size={28} />} value={stats.newCustomers || 0} label="Pelanggan Baru" color="#6f42c4" />
             
             {isExpanded && (
                 <>
+                    <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalExpenses)} label="Total Pengeluaran" color="#dc3545" comparisonChange={expensesChange} positiveIsGood={false} />
                     <StatCard icon={<FiList size={28} />} value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`} label="Rata-rata Transaksi" color="#6c757d" />
                     <StatCard icon={<FiUserCheck size={28} />} value={userName} label="Kasir Aktif" color="#20c997" />
                 </>
             )}
-
             <ExpandButton onClick={handleToggleExpand}>
                 {isExpanded ? <><FiChevronUp size={20} /> Sembunyikan Detail</> : <><FiChevronDown size={20} /> Lihat Detail Lainnya</>}
             </ExpandButton>
         </GridContainer>
     );
-    // --- AKHIR PERBAIKAN ---
 }
 
-StatCardGrid.propTypes = {
-    loading: PropTypes.bool.isRequired,
-    stats: PropTypes.object,
-    previousStats: PropTypes.object,
-    userName: PropTypes.string,
-};
+StatCardGrid.propTypes = { loading: PropTypes.bool.isRequired, stats: PropTypes.object, previousStats: PropTypes.object, userName: PropTypes.string, };
 
 export default StatCardGrid;
 
@@ -34273,6 +34316,8 @@ TopProductsChart.propTypes = {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
+
 import axios from 'axios';
 
 const API = axios.create({
@@ -34442,7 +34487,7 @@ export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`);
 
 // Shifts
 export const getCurrentShift = () => API.get('/shifts/current');
-export const startShift = (data) => API.post('/shifts/start', data);
+export const startShift = (data = {}) => API.post('/shifts/start', data);
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);

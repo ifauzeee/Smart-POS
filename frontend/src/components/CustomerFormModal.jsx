@@ -9,13 +9,13 @@ import { createCustomer } from '../services/api';
 import { toast } from 'react-toastify';
 
 const ModalBackdrop = styled(motion.div)`
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.7); display: flex;
-  justify-content: center; align-items: center; z-index: 1002;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); display: flex;
+    justify-content: center; align-items: center; z-index: 1002;
 `;
 const ModalContainer = styled(motion.div)`
-  background-color: var(--bg-surface); border-radius: 16px;
-  width: 100%; max-width: 450px; padding: 30px;
+    background-color: var(--bg-surface); border-radius: 16px;
+    width: 100%; max-width: 450px; padding: 30px;
 `;
 const ModalHeader = styled.div` display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; `;
 const ModalTitle = styled.h2` font-size: 1.5rem; margin: 0; color: var(--text-primary);`;
@@ -50,15 +50,12 @@ function CustomerFormModal({ isOpen, onClose, onCustomerCreated }) {
         }
         setIsSubmitting(true);
         try {
-            // --- PERBAIKAN DIMULAI ---
-            // Mengirim 'phone' sesuai dengan yang diharapkan backend, bukan 'phone_number'
             const res = await toast.promise(
                 createCustomer({
                     name: formData.name,
                     phone: formData.phone,
                     email: formData.email
                 }),
-            // --- PERBAIKAN SELESAI ---
                 {
                     pending: 'Menyimpan pelanggan...',
                     success: 'Pelanggan baru berhasil dibuat!',

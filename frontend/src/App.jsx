@@ -7,7 +7,7 @@ import { SkeletonTheme } from 'react-loading-skeleton';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import 'react-loading-skeleton/dist/skeleton.css';
-import styled from 'styled-components'; // Added styled-components import
+import styled from 'styled-components';
 
 // Context
 import { ThemeProvider, ThemeContext } from './context/ThemeContext';
@@ -135,12 +135,6 @@ const MobileRedirectContainer = styled.div`
     box-sizing: border-box;
 `;
 
-const AppIcon = styled.img`
-    width: 120px;
-    height: 120px;
-    margin-bottom: 24px;
-`;
-
 const RedirectTitle = styled.h1`
     font-size: 1.8rem;
     font-weight: 700;
@@ -186,10 +180,10 @@ function MobileRedirectPage() {
     const navigate = useNavigate();
     return (
         <MobileRedirectContainer>
-            <AppIcon src="/pwa-192x192.png" alt="Smart POS Logo" />
             <RedirectTitle>Gunakan Aplikasi Smart POS</RedirectTitle>
             <RedirectMessage>
-                Untuk pengalaman terbaik di perangkat mobile, silakan unduh dan gunakan aplikasi kami.
+                Mohon maaf, untuk sementara aplikasi POS ini tidak tersedia di perangkat seluler.
+                Silakan gunakan peramban web di desktop atau laptop Anda untuk pengalaman terbaik.
             </RedirectMessage>
             <div>
                 <DownloadButton href="#">Unduh di App Store</DownloadButton>

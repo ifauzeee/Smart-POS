@@ -1,12 +1,10 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PurchaseOrderDetailPage.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { getPurchaseOrderById } from '../services/api';
 import { toast } from 'react-toastify';
 import Skeleton from 'react-loading-skeleton';
-import { FiArrowLeft, FiPlusCircle } from 'react-icons/fi'; // <-- FiEdit sudah dihapus
+import { FiArrowLeft, FiPlusCircle } from 'react-icons/fi';
 
 const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;

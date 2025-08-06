@@ -10,21 +10,21 @@ const router = express.Router();
 
 const customerValidationRules = [
     body('name').trim().notEmpty().withMessage('Nama pelanggan tidak boleh kosong.'),
-    body('phone').optional({ checkFalsy: true }).trim(), // Menggunakan 'phone'
+    body('phone').optional({ checkFalsy: true }).trim(),
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Email tidak valid.').normalizeEmail(),
     body('address').optional({ checkFalsy: true }).trim()
 ];
 
-// PERBAIKAN: Mengganti semua 'phone_number' dengan 'phone'
+// MENGGANTI SEMUA 'phone_number' dengan 'phone'
 router.get('/', protect, async (req, res) => {
     const { search } = req.query;
     const businessId = req.user.business_id;
     try {
-        let query = 'SELECT id, name, phone, email FROM customers WHERE business_id = ?'; // Diubah di sini
+        let query = 'SELECT id, name, phone, email FROM customers WHERE business_id = ?';
         const params = [businessId];
         
         if (search && search.trim() !== '') {
-            query += ' AND (name LIKE ? OR phone LIKE ?)'; // Diubah di sini
+            query += ' AND (name LIKE ? OR phone LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
         
@@ -71,11 +71,11 @@ router.post('/', protect, isAdmin, customerValidationRules, async (req, res) => 
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { name, phone, email, address } = req.body; // Menggunakan 'phone'
+    const { name, phone, email, address } = req.body;
     const { business_id: businessId, id: userId } = req.user;
     try {
         const [result] = await db.query(
-            'INSERT INTO customers (business_id, name, phone, email, address) VALUES (?, ?, ?, ?, ?)', // Diubah di sini
+            'INSERT INTO customers (business_id, name, phone, email, address) VALUES (?, ?, ?, ?, ?)',
             [businessId, name, phone || null, email || null, address || null]
         );
         await logActivity(businessId, userId, 'CREATE_CUSTOMER', `Membuat pelanggan baru: ${name}`);
@@ -90,11 +90,11 @@ router.put('/:id', protect, isAdmin, customerValidationRules, async (req, res) =
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const customerId = req.params.id;
-    const { name, phone, email, address } = req.body; // Menggunakan 'phone'
+    const { name, phone, email, address } = req.body;
     const { business_id: businessId, id: userId } = req.user;
     try {
         const [result] = await db.query(
-            'UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE id = ? AND business_id = ?', // Diubah di sini
+            'UPDATE customers SET name = ?, phone = ?, email = ?, address = ? WHERE id = ? AND business_id = ?',
             [name, phone || null, email || null, address || null, customerId, businessId]
         );
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Pelanggan tidak ditemukan.' });

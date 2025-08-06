@@ -30,26 +30,25 @@ export const BusinessProvider = ({ children }) => {
                 const res = await getBusinessSettings();
                 
                 if (res.data) {
-                    // --- FIXED CODE ---
-                    // Check if payment_methods is a string before parsing
+                    // Cek apakah payment_methods adalah string sebelum parsing
                     let paymentMethods = res.data.payment_methods;
                     if (typeof paymentMethods === 'string') {
                         try {
                             paymentMethods = JSON.parse(paymentMethods);
                         } catch (e) {
                             console.error("Failed to parse payment_methods:", e);
-                            paymentMethods = ['Tunai', 'Kartu', 'QRIS']; // Default fallback
+                            paymentMethods = ['Tunai', 'Kartu', 'QRIS']; // Fallback default
                         }
                     }
                     
                     const parsedSettings = {
                         ...res.data,
+                        // Pastikan hasilnya selalu array yang valid
                         payment_methods: Array.isArray(paymentMethods) ? paymentMethods : ['Tunai', 'Kartu', 'QRIS'],
                         tax_rate: parseFloat(res.data.tax_rate) || 0,
                         receipt_footer_text: res.data.receipt_footer_text || 'Terima Kasih!',
                     };
                     setSettings(parsedSettings);
-                    // --- END OF FIX ---
                 }
             }
         } catch (error) {

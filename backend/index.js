@@ -38,7 +38,7 @@ const customerRoutes = require('./routes/customerRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const shiftRoutes = require('./routes/shiftRoutes'); // Variabel yang benar
+const shiftRoutes = require('./routes/shiftRoutes');
 const promotionRoutes = require('./routes/promotionRoutes');
 const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
@@ -66,11 +66,7 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
-
-// =================================================================
-// PERBAIKAN DI SINI: Menggunakan variabel 'shiftRoutes' yang benar
-// =================================================================
-app.use('/api/shifts', shiftRoutes);
+app.use('/api/shifts', shiftRoutes); // Menggunakan variabel yang benar
 
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 

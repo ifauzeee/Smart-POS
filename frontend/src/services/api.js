@@ -169,11 +169,7 @@ export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`);
 
 // Shifts
 export const getCurrentShift = () => API.get('/shifts/current');
-// =================================================================
-// PERBAIKAN DI SINI: Memberikan nilai default {} untuk data
-// =================================================================
 export const startShift = (data = {}) => API.post('/shifts/start', data);
-// =================================================================
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
 export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);

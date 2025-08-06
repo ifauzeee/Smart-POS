@@ -37,10 +37,8 @@ const protect = async (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    // --- PERBAIKAN DIMULAI ---
     // Menggunakan optional chaining (?.) untuk mencegah error jika req.user atau req.user.role tidak ada
     if (req.user?.role?.toLowerCase() === 'admin') {
-    // --- PERBAIKAN SELESAI ---
         next();
     } else {
         return res.status(403).json({ 

@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\VariantSelectModal.jsx
-
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -23,12 +21,12 @@ const VariantButton = styled.button`
   width: 100%; text-align: left; padding: 15px; border-radius: 8px;
   border: 1px solid var(--border-color); background: transparent; cursor: pointer;
   display: flex; justify-content: space-between; align-items: center;
-  color: var(--text-primary); // PERBAIKAN: Gunakan variabel warna
+  color: var(--text-primary);
   &:hover { background-color: var(--bg-main); }
 `;
 const VariantPrice = styled.span`
   font-weight: 600;
-  color: var(--primary-color); // PERBAIKAN: Gunakan variabel warna
+  color: var(--primary-color);
 `;
 
 function VariantSelectModal({ isOpen, onClose, product, onSelectVariant }) {

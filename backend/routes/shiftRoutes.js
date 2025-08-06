@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\backend\routes\shiftRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');

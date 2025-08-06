@@ -13,10 +13,8 @@ const AdminRoute = () => {
     if (token) {
         try {
             const decoded = jwtDecode(token);
-            // --- PERBAIKAN DIMULAI ---
             // Menggunakan optional chaining (?.) untuk mencegah error jika decoded.role tidak ada
             if (decoded?.role?.toLowerCase() === 'admin') {
-            // --- PERBAIKAN SELESAI ---
                 isAdmin = true;
             }
         } catch (error) {
