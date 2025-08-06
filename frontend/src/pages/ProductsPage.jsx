@@ -244,7 +244,6 @@ const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(va
 function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
 
@@ -277,7 +276,7 @@ function ProductsPage() {
                 deleteProduct(productToDelete.id),
                 {
                     pending: 'Menghapus produk...',
-                    success: 'Produk berhasil dihapus!',
+                    success: 'Produk berhasil diarsipkan!',
                     error: (err) => err.response?.data?.message || 'Gagal menghapus produk.'
                 }
             );
@@ -298,7 +297,6 @@ function ProductsPage() {
         if (minPrice === maxPrice) return formatCurrency(minPrice);
         return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
     };
-
 
     const renderTable = () => (
         <TableWrapper>
@@ -375,13 +373,7 @@ function ProductsPage() {
                         </AddButton>
                     </PageHeader>
                     
-                    {loading ? (
-                        <ContentContainer>
-                            <div style={{ padding: '20px' }}>
-                                <Skeleton height={50} count={5} style={{ marginBottom: '10px' }} />
-                            </div>
-                        </ContentContainer>
-                    ) : products.length > 0 ? (
+                    {products.length > 0 ? (
                         <ContentContainer>
                             {renderTable()}
                             {renderCards()}
@@ -400,8 +392,8 @@ function ProductsPage() {
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus produk "${productToDelete?.name}"? Aksi ini akan mengarsipkan produk.`}
+                title="Konfirmasi Pengarsipan"
+                message={`Apakah Anda yakin ingin mengarsipkan produk "${productToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
             />
         </>
     );

@@ -9,10 +9,15 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiTruck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -52,7 +57,6 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 
-// Menghapus overflow-x: auto untuk menghilangkan scrollbar
 const TableWrapper = styled.div`
     flex-grow: 1;
 `;
@@ -190,7 +194,7 @@ function SupplierPage() {
         try {
             await toast.promise(deleteSupplier(supplierToDelete.id), {
                 pending: 'Menghapus data...',
-                success: 'Pemasok berhasil dihapus!',
+                success: 'Pemasok berhasil diarsipkan!',
                 error: (err) => err.response?.data?.message || 'Gagal menghapus data.'
             });
             fetchSuppliers();
@@ -249,14 +253,16 @@ function SupplierPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiTruck /> Manajemen Pemasok</Title>
-                    <AddButton onClick={() => handleOpenModal()}>
-                        <FiPlus /> Tambah Pemasok
-                    </AddButton>
-                </PageHeader>
-                
-                {renderTableContent()}
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiTruck /> Manajemen Pemasok</Title>
+                        <AddButton onClick={() => handleOpenModal()}>
+                            <FiPlus /> Tambah Pemasok
+                        </AddButton>
+                    </PageHeader>
+                    
+                    {renderTableContent()}
+                </PageContainer>
             </PageWrapper>
 
             <SupplierFormModal 
@@ -271,8 +277,8 @@ function SupplierPage() {
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus pemasok "${supplierToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+                title="Konfirmasi Pengarsipan"
+                message={`Apakah Anda yakin ingin mengarsipkan pemasok "${supplierToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
             />
         </>
     );

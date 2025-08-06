@@ -2,18 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import { getUsers, deleteUser, getRoles, createUserByAdmin, updateUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiUserPlus, FiEdit, FiTrash2, FiUsers } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import ConfirmationModal from '../components/ConfirmationModal';
 import UserFormModal from '../components/UserFormModal';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -21,12 +25,14 @@ const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
 `;
+
 const Title = styled.h1`
     font-size: 1.8rem;
     display: flex;
     align-items: center;
     gap: 12px;
 `;
+
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
@@ -42,6 +48,7 @@ const AddButton = styled.button`
         background-color: var(--primary-hover);
     }
 `;
+
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
@@ -51,14 +58,16 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-// Menghapus scrollbar dengan menghapus overflow-x: auto
+
 const TableWrapper = styled.div`
     flex-grow: 1;
 `;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
+
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -69,17 +78,20 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
+
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
+
 const Tr = styled(motion.tr)`
     &:last-child > td {
         border-bottom: none;
     }
 `;
+
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -91,6 +103,28 @@ const ActionButton = styled.button`
     }
 `;
 
+const EmptyStateContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+`;
+
+const EmptyStateTitle = styled.h3`
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
+`;
+
+// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -99,15 +133,12 @@ const tableRowVariants = {
         transition: { delay: i * 0.05 },
     }),
 };
-// --- End Styled Components ---
 
 function UsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
-
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [roles, setRoles] = useState([]);
@@ -167,45 +198,34 @@ function UsersPage() {
 
     const confirmDelete = async () => {
         if (!userToDelete) return;
-        
-        // Buat promise di sini untuk dikelola oleh toast
         const deletePromise = deleteUser(userToDelete.id);
-
         try {
-            // Gunakan toast.promise untuk menampilkan notifikasi
             await toast.promise(deletePromise, {
-                pending: 'Menghapus pengguna...',
-                success: 'Pengguna berhasil dihapus!',
+                pending: 'Menonaktifkan pengguna...',
+                success: 'Pengguna berhasil dinonaktifkan!',
                 error: {
                     render({ data }) {
-                        // Menampilkan pesan spesifik dari backend
-                        return data.response?.data?.message || 'Gagal menghapus pengguna.';
+                        return data.response?.data?.message || 'Gagal menonaktifkan pengguna.';
                     }
                 }
             });
-
-            // Hanya memuat ulang data jika penghapusan berhasil
             fetchUsersAndRoles();
         } catch (error) {
-            // Log error, tapi tidak perlu toast.error lagi karena sudah ditangani
-            console.error("Delete user error:", error);
+            console.error("Deactivate user error:", error);
         } finally {
-            // Tutup modal dan reset state terlepas dari berhasil atau tidaknya operasi
             setIsConfirmOpen(false);
             setUserToDelete(null);
         }
     };
 
     const renderTableContent = () => {
-        if (loading) {
-            return <div style={{ padding: '20px' }}><Skeleton count={5} height={50} /></div>;
-        }
-
         if (users.length === 0) {
             return (
-                <div style={{ textAlign: 'center', padding: '50px' }}>
-                    <p>Tidak ada pengguna yang terdaftar.</p>
-                </div>
+                <EmptyStateContainer>
+                    <FiUsers size={48} />
+                    <EmptyStateTitle>Tidak Ada Pengguna</EmptyStateTitle>
+                    <p>Klik tombol di pojok kanan atas untuk menambahkan pengguna pertama Anda.</p>
+                </EmptyStateContainer>
             );
         }
 
@@ -245,23 +265,25 @@ function UsersPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiUsers /> Manajemen Pengguna</Title>
-                    <AddButton onClick={() => handleOpenModal()}>
-                        <FiUserPlus size={18} /> Tambah Pengguna
-                    </AddButton>
-                </PageHeader>
-                <TableContainer>
-                    {renderTableContent()}
-                </TableContainer>
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiUsers /> Manajemen Pengguna</Title>
+                        <AddButton onClick={() => handleOpenModal()}>
+                            <FiUserPlus size={18} /> Tambah Pengguna
+                        </AddButton>
+                    </PageHeader>
+                    <TableContainer>
+                        {renderTableContent()}
+                    </TableContainer>
+                </PageContainer>
             </PageWrapper>
             
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus pengguna "${userToDelete?.name}"?`}
+                title="Konfirmasi Penonaktifan"
+                message={`Apakah Anda yakin ingin menonaktifkan pengguna "${userToDelete?.name}"?`}
             />
 
             <UserFormModal

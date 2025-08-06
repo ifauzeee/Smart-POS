@@ -12,12 +12,8 @@ import {
     getRevenueTarget, getStockInfo, getStaleProducts, getExpiredProducts,
     getTopCustomers
 } from '../../services/api';
-
-// Imports for the new layout and animations
 import { motion } from 'framer-motion';
 import PageWrapper from '../../components/PageWrapper';
-
-// Dashboard Components
 import DashboardHeader from './components/DashboardHeader';
 import StatCardGrid from './components/StatCardGrid';
 import DailyReport from '../../components/DailyReport';
@@ -34,8 +30,6 @@ import { useShift } from '../../context/ShiftContext';
 import StartShiftModal from '../../components/StartShiftModal';
 import CloseShiftModal from '../../components/CloseShiftModal';
 
-
-// --- Styled Components with Animations ---
 const DashboardGrid = styled(motion.div)`
     display: grid;
     grid-template-columns: repeat(12, 1fr);

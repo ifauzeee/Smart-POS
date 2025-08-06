@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
-
 import axios from 'axios';
 
 const API = axios.create({
@@ -68,8 +66,8 @@ const createQueryParams = (params = {}) => {
 // --- API Services ---
 
 // User & Auth
-export const loginUser = (userData) => API.post('/users/login', userData);
-export const createUser = (userData) => API.post('/users/register', userData);
+export const login = (userData) => API.post('/users/login', userData); // GANTI: loginUser -> login
+export const registerAdmin = (userData) => API.post('/users/register', userData); // GANTI: createUser -> registerAdmin
 export const createUserByAdmin = (userData) => API.post('/users', userData);
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);

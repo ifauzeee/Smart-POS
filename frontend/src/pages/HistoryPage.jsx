@@ -6,7 +6,6 @@ import { getOrders, getOrderById, deleteOrder, exportOrders, clearOrderHistory }
 import { toast } from 'react-toastify';
 import { useReactToPrint } from 'react-to-print';
 import { FiEye, FiTrash2, FiDownload, FiAlertTriangle } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import OrderDetailModal from '../components/OrderDetailModal';
 import Receipt from '../components/Receipt';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -16,6 +15,12 @@ import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -57,8 +62,6 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-
-// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
@@ -69,7 +72,6 @@ const TableWrapper = styled.div`
     scrollbar-width: none;
     -ms-overflow-style: none;
 `;
-
 const Table = styled.table`
     width: 100%;
     min-width: 800px;
@@ -129,8 +131,8 @@ const DatePickerWrapper = styled.div`
         font-weight: 500; width: 130px; cursor: pointer; text-align: center;
     }
 `;
+// --- End of Styled Components ---
 
-// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -265,68 +267,70 @@ function HistoryPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title>Riwayat Transaksi</Title>
-                </PageHeader>
-                
-                <FilterContainer>
-                    <span style={{fontWeight: 500}}>Filter Tanggal:</span>
-                    <DatePickerWrapper>
-                        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
-                    </DatePickerWrapper>
-                    <span>sampai</span>
-                    <DatePickerWrapper>
-                        <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
-                    </DatePickerWrapper>
-                    <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
-                    <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
-                </FilterContainer>
+                <PageContainer>
+                    <PageHeader>
+                        <Title>Riwayat Transaksi</Title>
+                    </PageHeader>
+                    
+                    <FilterContainer>
+                        <span style={{fontWeight: 500}}>Filter Tanggal:</span>
+                        <DatePickerWrapper>
+                            <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
+                        </DatePickerWrapper>
+                        <span>sampai</span>
+                        <DatePickerWrapper>
+                            <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
+                        </DatePickerWrapper>
+                        <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
+                        <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
+                    </FilterContainer>
 
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th style={{width: '10%'}}>ID Pesanan</Th>
-                                    <Th style={{width: '25%'}}>Tanggal</Th>
-                                    <Th style={{width: '15%'}}>Kasir</Th>
-                                    <Th style={{width: '15%'}}>Pelanggan</Th>
-                                    <Th style={{width: '10%', textAlign: 'center'}}>Metode</Th>
-                                    <Th style={{width: '15%', textAlign: 'right'}}>Total</Th>
-                                    <Th style={{width: '10%', textAlign: 'center'}}>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.length > 0 ? (
-                                    orders.map((order, i) => (
-                                        <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                            <Td>#{order.id}</Td>
-                                            <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
-                                            <Td>{order.cashier_name}</Td>
-                                            <Td>{order.customer_name || '-'}</Td>
-                                            <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
-                                            <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
-                                            <Td style={{textAlign: 'center'}}>
-                                                <ActionButton onClick={() => handleViewDetail(order.id)}>
-                                                    <FiEye size={18} />
-                                                </ActionButton>
-                                                <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
-                                                    <FiTrash2 size={18} />
-                                                </ActionButton>
+                    <TableContainer>
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th style={{width: '10%'}}>ID Pesanan</Th>
+                                        <Th style={{width: '25%'}}>Tanggal</Th>
+                                        <Th style={{width: '15%'}}>Kasir</Th>
+                                        <Th style={{width: '15%'}}>Pelanggan</Th>
+                                        <Th style={{width: '10%', textAlign: 'center'}}>Metode</Th>
+                                        <Th style={{width: '15%', textAlign: 'right'}}>Total</Th>
+                                        <Th style={{width: '10%', textAlign: 'center'}}>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {orders.length > 0 ? (
+                                        orders.map((order, i) => (
+                                            <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                                <Td>#{order.id}</Td>
+                                                <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
+                                                <Td>{order.cashier_name}</Td>
+                                                <Td>{order.customer_name || '-'}</Td>
+                                                <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
+                                                <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
+                                                <Td style={{textAlign: 'center'}}>
+                                                    <ActionButton onClick={() => handleViewDetail(order.id)}>
+                                                        <FiEye size={18} />
+                                                    </ActionButton>
+                                                    <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
+                                                        <FiTrash2 size={18} />
+                                                    </ActionButton>
+                                                </Td>
+                                            </Tr>
+                                        ))
+                                    ) : (
+                                        <Tr>
+                                            <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
+                                                Tidak ada riwayat transaksi pada rentang tanggal ini.
                                             </Td>
                                         </Tr>
-                                    ))
-                                ) : (
-                                    <Tr>
-                                        <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
-                                            Tidak ada riwayat transaksi pada rentang tanggal ini.
-                                        </Td>
-                                    </Tr>
-                                )}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
+                                    )}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    </TableContainer>
+                </PageContainer>
             </PageWrapper>
             
             {isModalOpen && selectedOrder && (

@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 import { useReactToPrint } from 'react-to-print';
 import PostCheckoutModal from '../components/PostCheckoutModal';
 import CheckoutModal from '../components/CheckoutModal';
-import CustomerSelectModal from '../components/CustomerSelectModal'; 
+import CustomerSelectModal from '../components/CustomerSelectModal';
 import VariantSelectModal from '../components/VariantSelectModal';
 import HeldCartsModal from '../components/HeldCartsModal';
 import Receipt from '../components/Receipt';
@@ -225,6 +225,7 @@ const Badge = styled.span` position: absolute; top: -5px; right: -5px; backgroun
 const SkeletonCard = () => ( <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}> <Skeleton height={136} /> <div style={{ padding: '15px' }}> <Skeleton height={20} style={{ marginBottom: '8px' }} count={2} /> <Skeleton height={24} width="60%" style={{ marginTop: '8px' }} /> </div> </div> );
 const PromoInput = styled.input` flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); `;
 const PromoSection = styled.div` display: flex; gap: 10px; margin-bottom: 20px; `;
+// --- End of Styled Components ---
 
 function PosPage() {
     const [products, setProducts] = useState([]);
@@ -276,7 +277,28 @@ function PosPage() {
     const cartContent = ( <CartPanel> <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader> <CustomerInfo> {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )} <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton> </CustomerInfo> <CartItemsList> <AnimatePresence> {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )} {cart.map((item) => ( <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <CartItemDetails> <CartItemName>{item.name}</CartItemName> <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice> </CartItemDetails> <CartItemControls> <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton> <QuantityDisplay>{item.quantity}</QuantityDisplay> <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton> </CartItemControls> <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton> </CartItem> ))} </AnimatePresence> </CartItemsList> <CheckoutSection> <CartActions> <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton> <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton> </CartActions> <PromoSection> <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} /> {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)} </PromoSection> {cart.length > 0 && ( <> <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow> {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)} <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow> <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton> </> )} </CheckoutSection> </CartPanel> );
     
     if (isLoadingShift || userRole === null) {
-        return ( <PageWrapper loading={true}> <PageGrid> <ProductsPanel> <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader> <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid> </ProductsPanel> <CartPanel><Skeleton height="100%" /></CartPanel> </PageGrid> </PageWrapper> );
+        return (
+            <PageWrapper loading={true}>
+                <PageGrid>
+                    <ProductsPanel>
+                        <PanelHeader>
+                            <SearchContainer>
+                                <SearchIcon size={18} />
+                                <SearchInput placeholder="Cari nama produk atau barcode..." />
+                            </SearchContainer>
+                        </PanelHeader>
+                        <ProductGrid>
+                            {Array.from({ length: 12 }).map((_, index) => (
+                                <SkeletonCard key={index} />
+                            ))}
+                        </ProductGrid>
+                    </ProductsPanel>
+                    <CartPanel>
+                        <Skeleton height="100%" />
+                    </CartPanel>
+                </PageGrid>
+            </PageWrapper>
+        );
     }
     
     if (userRole === 'kasir' && !activeShift) {
@@ -308,11 +330,42 @@ function PosPage() {
                 )}
             </AnimatePresence>
 
-            <CheckoutModal isOpen={isCheckoutModalOpen} onClose={() => setIsCheckoutModalOpen(false)} cart={cart} cartTotal={finalTotal} onConfirmCheckout={handleCheckout} paymentMethods={settings.payment_methods} taxRate={settings.tax_rate} selectedCustomer={selectedCustomer} coupon={appliedDiscount} onRemoveDiscount={removeDiscount} />
-            <PostCheckoutModal isOpen={isPostCheckoutOpen} onClose={handleClosePostCheckoutModal} orderId={lastOrderId} onPrint={handlePrintReceipt} />
-            <CustomerSelectModal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} onSelectCustomer={handleSelectCustomer} />
-            <VariantSelectModal isOpen={isVariantModalOpen} onClose={() => setIsVariantModalOpen(false)} product={selectedProductForVariant} onSelectVariant={handleSelectVariant} />
-            <HeldCartsModal isOpen={isHeldCartsModalOpen} onClose={() => setIsHeldCartsModalOpen(false)} heldCarts={heldCarts} onResume={handleResumeCart} onDelete={handleDeleteHeldCart} />
+            <CheckoutModal 
+                isOpen={isCheckoutModalOpen} 
+                onClose={() => setIsCheckoutModalOpen(false)} 
+                cart={cart}
+                cartTotal={finalTotal} 
+                onConfirmCheckout={handleCheckout} 
+                paymentMethods={settings.payment_methods} 
+                taxRate={settings.tax_rate}
+                selectedCustomer={selectedCustomer}
+                coupon={appliedDiscount}
+                onRemoveDiscount={removeDiscount}
+            />
+            <PostCheckoutModal 
+                isOpen={isPostCheckoutOpen} 
+                onClose={handleClosePostCheckoutModal} 
+                orderId={lastOrderId} 
+                onPrint={handlePrintReceipt} 
+            />
+            <CustomerSelectModal 
+                isOpen={isCustomerModalOpen} 
+                onClose={() => setIsCustomerModalOpen(false)} 
+                onSelectCustomer={handleSelectCustomer} 
+            />
+            <VariantSelectModal 
+                isOpen={isVariantModalOpen} 
+                onClose={() => setIsVariantModalOpen(false)} 
+                product={selectedProductForVariant} 
+                onSelectVariant={handleSelectVariant} 
+            />
+            <HeldCartsModal 
+                isOpen={isHeldCartsModalOpen} 
+                onClose={() => setIsHeldCartsModalOpen(false)} 
+                heldCarts={heldCarts} 
+                onResume={handleResumeCart} 
+                onDelete={handleDeleteHeldCart} 
+            />
             
             <div style={{ display: 'none' }}><Receipt ref={receiptRef} order={orderToPrint} /></div>
         </>

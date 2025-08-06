@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ReportsPage.jsx
+
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +10,17 @@ import "react-datepicker/dist/react-datepicker.css";
 import { exportSalesSummaryPDF as exportReport } from '../services/api';
 import PageWrapper from '../components/PageWrapper';
 
+// --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        padding: 15px;
+    }
+`;
 const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
@@ -18,12 +31,17 @@ const Title = styled.h1`
     display: flex;
     align-items: center;
     gap: 12px;
+    color: var(--text-primary); /* Ensure consistent text color */
 `;
 
 const ReportGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 25px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr; /* Stack cards on small screens */
+    }
 `;
 
 const ReportCard = styled.div`
@@ -50,6 +68,7 @@ const CardTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 10px;
+    color: var(--text-primary); /* Ensure consistent text color */
 `;
 
 const CardDescription = styled.p`
@@ -80,6 +99,10 @@ const ActionButton = styled.button`
         opacity: 0.5;
         cursor: not-allowed;
     }
+
+    @media (max-width: 768px) {
+        width: 100%; /* Full width button on small screens */
+    }
 `;
 
 const DateFilterContainer = styled.div`
@@ -89,6 +112,8 @@ const DateFilterContainer = styled.div`
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid var(--border-color);
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: center; /* Center items on smaller screens */
 `;
 const DatePickerWrapper = styled.div`
     .react-datepicker-wrapper input {
@@ -102,6 +127,7 @@ const DatePickerWrapper = styled.div`
         text-align: center;
     }
 `;
+// --- End of Styled Components ---
 
 function ReportsPage() {
     const navigate = useNavigate();
@@ -144,40 +170,42 @@ function ReportsPage() {
 
     return (
         <PageWrapper loading={false}>
-            <PageHeader>
-                <Title><FiFileText /> Pusat Laporan</Title>
-            </PageHeader>
-            <ReportGrid>
-                <ReportCard>
-                    <CardTitle><FiTrendingUp /> Laporan Profitabilitas Produk</CardTitle>
-                    <CardDescription>
-                        Analisis mendalam tentang produk mana yang paling menguntungkan. Lihat total pendapatan, modal, laba kotor, dan marjin profit untuk setiap item.
-                    </CardDescription>
-                    <ActionButton onClick={() => navigate('/reports/product-profitability')}>
-                        Lihat Laporan
-                    </ActionButton>
-                </ReportCard>
+            <PageContainer>
+                <PageHeader>
+                    <Title><FiFileText /> Pusat Laporan</Title>
+                </PageHeader>
+                <ReportGrid>
+                    <ReportCard>
+                        <CardTitle><FiTrendingUp /> Laporan Profitabilitas Produk</CardTitle>
+                        <CardDescription>
+                            Analisis mendalam tentang produk mana yang paling menguntungkan. Lihat total pendapatan, modal, laba kotor, dan marjin profit untuk setiap item.
+                        </CardDescription>
+                        <ActionButton onClick={() => navigate('/reports/product-profitability')}>
+                            Lihat Laporan
+                        </ActionButton>
+                    </ReportCard>
 
-                <ReportCard>
-                    <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
-                    <CardDescription>
-                        Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
-                    </CardDescription>
-                    <DateFilterContainer>
-                        <FiCalendar size={18} />
-                        <DatePickerWrapper>
-                            <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
-                        </DatePickerWrapper>
-                        <span>-</span>
-                        <DatePickerWrapper>
-                            <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
-                        </DatePickerWrapper>
-                    </DateFilterContainer>
-                    <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
-                        {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
-                    </ActionButton>
-                </ReportCard>
-            </ReportGrid>
+                    <ReportCard>
+                        <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
+                        <CardDescription>
+                            Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
+                        </CardDescription>
+                        <DateFilterContainer>
+                            <FiCalendar size={18} />
+                            <DatePickerWrapper>
+                                <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
+                            </DatePickerWrapper>
+                            <span>-</span>
+                            <DatePickerWrapper>
+                                <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
+                            </DatePickerWrapper>
+                        </DateFilterContainer>
+                        <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
+                            {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
+                        </ActionButton>
+                    </ReportCard>
+                </ReportGrid>
+            </PageContainer>
         </PageWrapper>
     );
 }

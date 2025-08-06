@@ -5,10 +5,9 @@ import styled from 'styled-components';
 import { getShiftHistory, deleteShift, clearShiftHistory, exportShiftHistory } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components dengan Perbaikan Mobile ---
@@ -49,14 +48,14 @@ const Title = styled.h1`
 `;
 const TableContainer = styled.div`
     flex-grow: 1;
-    overflow: hidden; /* Sembunyikan overflow di sini */
+    overflow: hidden;
 `;
 
 // --- DESKTOP TABLE STYLES ---
 const TableWrapper = styled.div`
-    display: none; /* Sembunyikan di mobile */
+    display: none;
     @media (min-width: 769px) {
-        display: block; /* Tampilkan di PC */
+        display: block;
         background-color: var(--bg-surface);
         border-radius: 16px;
         border: 1px solid var(--border-color);
@@ -70,9 +69,9 @@ const Tr = styled(motion.tr)` &:last-child > td { border-bottom: none; } `;
 
 // --- MOBILE CARD STYLES ---
 const CardList = styled.div`
-    display: none; /* Sembunyikan di PC */
+    display: none;
     @media (max-width: 768px) {
-        display: grid; /* Tampilkan sebagai grid di mobile */
+        display: grid;
         gap: 15px;
     }
 `;
@@ -126,26 +125,112 @@ const SalesDetail = styled.div` font-size: 0.8rem; color: var(--text-secondary);
 const ExportButton = styled.button` background-color: var(--green-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
 const ClearHistoryButton = styled.button` background-color: var(--red-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
 const EmptyStateContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-secondary); `;
-const tableRowVariants = { hidden: { opacity: 0, y: -10 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 }, }), };
+
+const tableRowVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 }, }),
+};
+
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
-const formatDateTimeCombined = (start, end) => { if (!start || !end) return null; const startDate = new Date(start); const endDate = new Date(end); const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); return ( <TimePeriodCell> <div className="start-time">{dateStr}</div> <div className="end-time">{startTime} - {endTime}</div> </TimePeriodCell> ); };
+
+const formatDateTimeCombined = (start, end) => {
+    if (!start || !end) return null;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return (
+        <TimePeriodCell>
+            <div className="start-time">{dateStr}</div>
+            <div className="end-time">{startTime} - {endTime}</div>
+        </TimePeriodCell>
+    );
+};
 
 function ShiftHistoryPage() {
-    // ... (State dan fungsi lainnya biarkan sama persis) ...
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
     const [modalState, setModalState] = useState({ isOpen: false, action: null, id: null, title: '', message: '' });
-    const fetchHistory = useCallback(async () => { setLoading(true); try { const res = await getShiftHistory(); setHistory(res.data); } catch (error) { toast.error("Gagal memuat riwayat shift."); } finally { setLoading(false); } }, []);
-    useEffect(() => { const token = localStorage.getItem('token'); if (token) { try { const decoded = jwtDecode(token); setUserRole(decoded.role ? decoded.role.toLowerCase() : null); } catch (error) { console.error("Invalid token:", error); setUserRole(null); } } fetchHistory(); }, [fetchHistory]);
-    const openConfirmation = (action, id = null) => { let title = ''; let message = ''; if (action === 'delete') { title = 'Hapus Shift'; message = `Yakin ingin menghapus riwayat shift #${id}?`; } else if (action === 'clearAll') { title = 'Hapus Semua Riwayat'; message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.'; } setModalState({ isOpen: true, action, id, title, message }); };
-    const handleExport = async () => { toast.info("Mempersiapkan data untuk diunduh..."); try { const response = await exportShiftHistory(); const url = window.URL.createObjectURL(new Blob([response.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`); document.body.appendChild(link); link.click(); link.remove(); } catch (error) { toast.error(error.response?.data?.message || "Gagal mengekspor data."); } };
-    const handleConfirm = async () => { const { action, id } = modalState; setModalState({ isOpen: false, action: null, id: null, title: '', message: '' }); let promise; if (action === 'delete') { promise = deleteShift(id); } else if (action === 'clearAll') { promise = clearShiftHistory(); } if (promise) { await toast.promise(promise, { pending: 'Memproses...', success: 'Aksi berhasil dijalankan!', error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.' }); fetchHistory(); } };
-    
-    const renderContent = () => {
-        if (loading) {
-            return <Skeleton height={300} />;
+
+    const fetchHistory = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await getShiftHistory();
+            setHistory(res.data);
+        } catch (error) {
+            toast.error("Gagal memuat riwayat shift.");
+        } finally {
+            setLoading(false);
         }
+    }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUserRole(decoded.role ? decoded.role.toLowerCase() : null);
+            } catch (error) {
+                console.error("Invalid token:", error);
+                setUserRole(null);
+            }
+        }
+        fetchHistory();
+    }, [fetchHistory]);
+
+    const openConfirmation = (action, id = null) => {
+        let title = '';
+        let message = '';
+        if (action === 'delete') {
+            title = 'Hapus Shift';
+            message = `Yakin ingin menghapus riwayat shift #${id}?`;
+        } else if (action === 'clearAll') {
+            title = 'Hapus Semua Riwayat';
+            message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.';
+        }
+        setModalState({ isOpen: true, action, id, title, message });
+    };
+
+    const handleExport = async () => {
+        toast.info("Mempersiapkan data untuk diunduh...");
+        try {
+            const response = await exportShiftHistory();
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success("Laporan berhasil diunduh!");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gagal mengekspor data.");
+        }
+    };
+
+    const handleConfirm = async () => {
+        const { action, id } = modalState;
+        setModalState({ isOpen: false, action: null, id: null, title: '', message: '' });
+        let promise;
+        if (action === 'delete') {
+            promise = deleteShift(id);
+        } else if (action === 'clearAll') {
+            promise = clearShiftHistory();
+        }
+        if (promise) {
+            await toast.promise(promise, {
+                pending: 'Memproses...',
+                success: 'Aksi berhasil dijalankan!',
+                error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.'
+            });
+            fetchHistory();
+        }
+    };
+    
+    // Perbaikan: Hapus logika loading dari sini, serahkan ke PageWrapper
+    const renderContent = () => {
         if (history.length === 0) {
             return (
                 <EmptyStateContainer>
@@ -237,7 +322,7 @@ function ShiftHistoryPage() {
 
     return (
         <>
-            <PageWrapper>
+            <PageWrapper loading={loading}>
                 <PageContent>
                     <PageHeader>
                         <Title><FiClock /> Riwayat Shift</Title>

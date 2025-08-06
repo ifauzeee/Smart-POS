@@ -1,6 +1,6 @@
 // frontend/src/pages/PromotionsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { getPromotions, deletePromotion } from '../services/api';
@@ -8,10 +8,16 @@ import { toast } from 'react-toastify';
 import { FiPlus, FiTrash2, FiTag, FiEdit } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -103,6 +109,10 @@ const EmptyStateContainer = styled.div`
     align-items: center;
     text-align: center;
     color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+    margin: 30px;
 `;
 
 const EmptyStateTitle = styled.h3`
@@ -128,8 +138,10 @@ function PromotionsPage() {
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [promotionToDelete, setPromotionToDelete] = useState(null);
 
-    const fetchPromotions = async () => {
+    const fetchPromotions = useCallback(async () => {
         setLoading(true);
         try {
             const res = await getPromotions();
@@ -139,20 +151,32 @@ function PromotionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchPromotions();
-    }, []);
+    }, [fetchPromotions]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Yakin ingin menghapus promosi ini?')) {
-            await toast.promise(deletePromotion(id), {
-                pending: 'Menghapus...',
+    const openDeleteConfirmation = (promotion) => {
+        setPromotionToDelete(promotion);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!promotionToDelete) return;
+
+        try {
+            await toast.promise(deletePromotion(promotionToDelete.id), {
+                pending: 'Menghapus promosi...',
                 success: 'Promosi berhasil dihapus!',
                 error: (err) => err.response?.data?.message || 'Gagal menghapus promosi.'
             });
             fetchPromotions();
+        } catch (error) {
+            console.error("Delete promotion error:", error);
+        } finally {
+            setIsConfirmOpen(false);
+            setPromotionToDelete(null);
         }
     };
 
@@ -179,15 +203,15 @@ function PromotionsPage() {
                                         <Td>{promo.code || '-'}</Td>
                                         <Td>{promo.type === 'percentage' ? 'Persentase' : 'Potongan Tetap'}</Td>
                                         <Td>
-                                            {promo.type === 'percentage' 
-                                                ? `${promo.value}%` 
+                                            {promo.type === 'percentage'
+                                                ? `${promo.value}%`
                                                 : `Rp ${new Intl.NumberFormat('id-ID').format(promo.value)}`
                                             }
                                         </Td>
                                         <Td>{promo.is_active ? 'Aktif' : 'Tidak Aktif'}</Td>
                                         <Td>
                                             <ActionButton onClick={() => navigate(`/promotions/edit/${promo.id}`)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDelete(promo.id)}><FiTrash2 size={18} /></ActionButton>
+                                            <ActionButton $danger onClick={() => openDeleteConfirmation(promo)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
                                 ))}
@@ -208,16 +232,27 @@ function PromotionsPage() {
     };
 
     return (
-        <PageWrapper loading={loading}>
-            <PageHeader>
-                <Title><FiTag /> Manajemen Promosi</Title>
-                <AddButton onClick={() => navigate('/promotions/new')}>
-                    <FiPlus /> Tambah Promosi
-                </AddButton>
-            </PageHeader>
-            
-            {renderTableContent()}
-        </PageWrapper>
+        <>
+            <PageWrapper loading={loading}>
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiTag /> Manajemen Promosi</Title>
+                        <AddButton onClick={() => navigate('/promotions/new')}>
+                            <FiPlus /> Tambah Promosi
+                        </AddButton>
+                    </PageHeader>
+                    {renderTableContent()}
+                </PageContainer>
+            </PageWrapper>
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Penghapusan"
+                message={`Apakah Anda yakin ingin menghapus promosi "${promotionToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+            />
+        </>
     );
 }
 
