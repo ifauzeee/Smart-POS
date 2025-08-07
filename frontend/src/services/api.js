@@ -66,8 +66,8 @@ const createQueryParams = (params = {}) => {
 // --- API Services ---
 
 // User & Auth
-export const login = (userData) => API.post('/users/login', userData); // GANTI: loginUser -> login
-export const registerAdmin = (userData) => API.post('/users/register', userData); // GANTI: createUser -> registerAdmin
+export const login = (userData) => API.post('/users/login', userData);
+export const registerAdmin = (userData) => API.post('/users/register', userData);
 export const createUserByAdmin = (userData) => API.post('/users', userData);
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
@@ -146,6 +146,7 @@ export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
 export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`);
 export const getCustomerById = (id) => API.get(`/customers/${id}`);
 export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`);
+export const getCustomerStats = (id) => API.get(`/customers/${id}/stats`); // PERBAIKAN: Menambahkan fungsi yang hilang
 export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/redeem`, data);
 export const createCustomer = (customerData) => API.post('/customers', customerData);
 export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData);

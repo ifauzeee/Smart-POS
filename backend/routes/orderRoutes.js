@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\backend\routes\orderRoutes.js
-
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -12,87 +10,68 @@ const fs = require('fs');
 
 const router = express.Router();
 
-/**
- * Memproses perubahan stok untuk produk dan bahan baku.
- * @param {object} connection - Koneksi database.
- * @param {Array} items - Item dari keranjang (cart).
- * @param {number} factor - (-1) untuk mengurangi stok, (1) untuk mengembalikan stok.
- * @param {boolean} validateOnly - Jika true, hanya validasi tanpa mengubah data.
- */
-async function handleStockUpdate(connection, items, factor = -1, validateOnly = false) {
+async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
     for (const item of items) {
         const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId || item.variant_id]);
         if (!variant) throw new Error(`Varian produk dengan ID ${item.variantId || item.variant_id} tidak ditemukan.`);
-
         const productId = variant.product_id;
         const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
         const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
-
-        if (recipeItems.length > 0) { // Produk berbasis resep
+        if (recipeItems.length > 0) {
             for (const recipeItem of recipeItems) {
                 const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
                 const requiredQuantity = recipeItem.quantity_used * item.quantity;
-
-                if (factor === -1 && material.stock_quantity < requiredQuantity) {
+                if (factor > 0 && material.stock_quantity < requiredQuantity) {
                     throw new Error(`Stok "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
                 }
                 if (!validateOnly) {
-                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity + ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
+                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity - ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
                 }
             }
-        } else { // Produk jadi
-            if (factor === -1 && product.stock < item.quantity) {
+        } else {
+            if (factor > 0 && product.stock < item.quantity) {
                 throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
             }
             if (!validateOnly) {
-                await connection.execute('UPDATE products SET stock = stock + ? WHERE id = ?', [item.quantity * factor, productId]);
+                await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity * factor, productId]);
             }
         }
     }
 }
 
-// POST /api/orders - Membuat pesanan baru
 router.post('/', protect, async (req, res) => {
     const { items, customer_id, payment_method, amount_paid, subtotal_amount, tax_amount, total_amount, promotion_id, discount_amount } = req.body;
     const userId = req.user.id;
     const businessId = req.user.business_id;
-
     if (!items || items.length === 0) {
         return res.status(400).json({ message: 'Keranjang belanja tidak boleh kosong.' });
     }
-
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
-
-        // TAHAP 1: VALIDASI STOK (Menggunakan helper function)
-        await handleStockUpdate(connection, items, -1, true);
-
-        // TAHAP 2: BUAT PESANAN & ITEM PESANAN
+        await handleStockUpdate(connection, items, 1, true);
         const pointsEarned = Math.floor(total_amount / 10000);
         const orderSql = 'INSERT INTO orders (business_id, user_id, customer_id, subtotal_amount, tax_amount, total_amount, payment_method, amount_paid, promotion_id, discount_amount, points_earned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const [orderResult] = await connection.execute(orderSql, [businessId, userId, customer_id || null, subtotal_amount, tax_amount || 0, total_amount, payment_method || 'Tunai', amount_paid, promotion_id || null, discount_amount || 0, pointsEarned]);
         const orderId = orderResult.insertId;
-
         for (const item of items) {
             const [[variant]] = await connection.query('SELECT product_id, price, cost_price FROM product_variants WHERE id = ?', [item.variantId]);
             const orderItemSql = 'INSERT INTO order_items (order_id, product_id, variant_id, quantity, price, cost_price) VALUES (?, ?, ?, ?, ?, ?)';
             await connection.execute(orderItemSql, [orderId, variant.product_id, item.variantId, item.quantity, variant.price, variant.cost_price]);
         }
-
-        // TAHAP 3: PENGURANGAN STOK (Menggunakan helper function)
-        await handleStockUpdate(connection, items, -1, false);
-
-        // TAHAP 4: UPDATE POIN PELANGGAN
-        if (customer_id && pointsEarned > 0) {
-            await connection.execute('UPDATE customers SET points = points + ? WHERE id = ? AND business_id = ?', [pointsEarned, customer_id, businessId]);
-            await connection.execute('INSERT INTO customer_points_log (customer_id, order_id, points_change, description) VALUES (?, ?, ?, ?)', [customer_id, orderId, pointsEarned, `Poin dari Transaksi #${orderId}`]);
+        await handleStockUpdate(connection, items, 1, false);
+        
+        if (customer_id) {
+            if (pointsEarned > 0) {
+                await connection.execute('INSERT INTO customer_points_log (customer_id, order_id, points_change, description, user_id) VALUES (?, ?, ?, ?, ?)', [customer_id, orderId, pointsEarned, `Poin dari Transaksi #${orderId}`, userId]);
+            }
+            const [[newTotalPoints]] = await connection.query('SELECT SUM(points_change) as total FROM customer_points_log WHERE customer_id = ?', [customer_id]);
+            await connection.execute('UPDATE customers SET points = ? WHERE id = ?', [newTotalPoints.total || 0, customer_id]);
         }
 
         await connection.commit();
         await logActivity(businessId, userId, 'CREATE_ORDER', `Membuat order ID ${orderId} dengan total ${total_amount}.`);
         res.status(201).json({ message: 'Transaksi berhasil dibuat!', orderId: orderId });
-
     } catch (error) {
         await connection.rollback();
         console.error("Create Order Error:", error);
@@ -103,7 +82,6 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// GET /api/orders - Mendapatkan semua riwayat transaksi
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -124,7 +102,6 @@ router.get('/', protect, isAdmin, async (req, res) => {
     }
 });
 
-// GET /api/orders/:id - Mendapatkan detail pesanan tunggal
 router.get('/:id', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -148,38 +125,34 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// DELETE /api/orders/clear-history - Menghapus seluruh riwayat transaksi
+// PERBAIKAN DEFINITIF: Fungsi ini sekarang melakukan hard reset
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
     const userId = req.user.id;
-
     try {
         await connection.beginTransaction();
 
-        const [ordersInBusiness] = await connection.query('SELECT id FROM orders WHERE business_id = ?', [businessId]);
+        // 1. Hapus SEMUA log poin untuk bisnis ini (bukan hanya yang terkait order)
+        await connection.query('DELETE cpl FROM customer_points_log cpl JOIN customers c ON cpl.customer_id = c.id WHERE c.business_id = ?', [businessId]);
+        
+        // 2. Hapus semua item pesanan
+        await connection.query('DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.business_id = ?', [businessId]);
+        
+        // 3. Hapus semua pesanan
+        const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE business_id = ?', [businessId]);
 
-        if (ordersInBusiness.length > 0) {
-            const orderIdsToDelete = ordersInBusiness.map(order => order.id);
+        // 4. Reset poin SEMUA pelanggan di bisnis ini menjadi 0
+        await connection.query('UPDATE customers SET points = 0 WHERE business_id = ?', [businessId]);
 
-            // Hapus data terkait terlebih dahulu
-            await connection.query('DELETE FROM customer_points_log WHERE order_id IN (?)', [orderIdsToDelete]);
-            await connection.query('DELETE FROM order_items WHERE order_id IN (?)', [orderIdsToDelete]);
+        // 5. Reset auto-increment ID
+        await connection.query('ALTER TABLE orders AUTO_INCREMENT = 1');
+        await connection.query('ALTER TABLE customer_points_log AUTO_INCREMENT = 1');
 
-            // Hapus pesanan utama
-            const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE id IN (?)', [orderIdsToDelete]);
+        await connection.commit();
+        await logActivity(businessId, userId, 'HARD_RESET_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders and ALL customer points.`);
+        res.status(200).json({ message: 'Semua riwayat transaksi dan poin pelanggan telah di-reset sepenuhnya.' });
 
-            // Perintah untuk me-reset ID Pesanan kembali ke 1
-            await connection.query('ALTER TABLE orders AUTO_INCREMENT = 1');
-
-            await connection.commit();
-            await logActivity(businessId, userId, 'CLEAR_ORDER_HISTORY', `Cleared ${ordersDeleteResult.affectedRows} orders and reset ID.`);
-            res.status(200).json({ message: 'Semua riwayat transaksi telah dihapus dan ID Pesanan telah di-reset.' });
-
-        } else {
-            await connection.commit();
-            res.status(200).json({ message: 'Tidak ada riwayat transaksi untuk dihapus.' });
-        }
     } catch (error) {
         await connection.rollback();
         console.error("Error clearing history:", error);
@@ -190,42 +163,31 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     }
 });
 
-// DELETE /api/orders/:id - Menghapus pesanan tunggal dan mengembalikan stok
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
     const userId = req.user.id;
     const orderId = req.params.id;
-
     try {
         await connection.beginTransaction();
-
         const [[order]] = await connection.query('SELECT * FROM orders WHERE id = ? AND business_id = ?', [orderId, businessId]);
-
         if (!order) {
             await connection.rollback();
             return res.status(404).json({ message: 'Pesanan tidak ditemukan atau Anda tidak memiliki akses.' });
         }
-        
         const [itemsToRevert] = await connection.query('SELECT * FROM order_items WHERE order_id = ?', [orderId]);
-
-        // Panggil helper function untuk MENGEMBALIKAN stok
         if (itemsToRevert.length > 0) {
-            await handleStockUpdate(connection, itemsToRevert, 1, false);
+            await handleStockUpdate(connection, itemsToRevert, -1, false);
         }
-        
-        // Kembalikan poin jika ada
-        if (order.customer_id && order.points_earned > 0) {
-            await connection.execute('UPDATE customers SET points = points - ? WHERE id = ? AND business_id = ?', [order.points_earned, order.customer_id, businessId]);
-            
-            // Hapus log poin (ini sudah benar)
-            await connection.execute('DELETE FROM customer_points_log WHERE order_id = ?', [orderId]);
+        if (order.customer_id) {
+            if (order.points_earned > 0) {
+                 await connection.execute('INSERT INTO customer_points_log (customer_id, order_id, points_change, description, user_id) VALUES (?, ?, ?, ?, ?)', [order.customer_id, order.id, -Math.abs(order.points_earned), `Pembatalan Poin dari Order #${order.id}`, userId]);
+            }
+            const [[newTotalPoints]] = await connection.query('SELECT SUM(points_change) as total FROM customer_points_log WHERE customer_id = ?', [order.customer_id]);
+            await connection.execute('UPDATE customers SET points = ? WHERE id = ?', [newTotalPoints.total || 0, order.customer_id]);
         }
-        
-        // Hapus data pesanan
         await connection.query('DELETE FROM order_items WHERE order_id = ?', [orderId]);
         await connection.query('DELETE FROM orders WHERE id = ?', [orderId]);
-
         await connection.commit();
         await logActivity(businessId, userId, 'DELETE_ORDER', `Deleted order ID ${orderId}. Stock and points reverted.`);
         res.json({ message: 'Pesanan berhasil dihapus dan stok serta poin telah dikembalikan.' });
@@ -239,7 +201,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
     }
 });
 
-// Rute untuk ekspor data transaksi
 router.get('/export', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -285,7 +246,6 @@ router.get('/export', protect, isAdmin, async (req, res) => {
     }
 });
 
-// Rute untuk mengirim struk via email
 router.post('/:id/send-receipt', protect, async (req, res) => {
     const orderId = req.params.id;
     const { email: recipientEmail } = req.body;
