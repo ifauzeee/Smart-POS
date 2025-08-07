@@ -33861,22 +33861,17 @@ const EmptyStateContainer = styled.div`
     min-height: 250px;
 `;
 
-// Fungsi untuk menghasilkan warna secara dinamis
 const getColor = (index) => {
     const colors = ['#007bff', '#28a745', '#FFA500', '#dc3545', '#6f42c4'];
     return colors[index % colors.length];
 };
 
 const formatDate = (dateString) => {
-    const cache = new Map();
-    if (cache.has(dateString)) return cache.get(dateString);
-    const formatted = new Date(dateString).toLocaleDateString('id-ID');
-    cache.set(dateString, formatted);
-    return formatted;
+    return new Date(dateString).toLocaleDateString('id-ID');
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length && label) {
         return (
             <div style={{
                 backgroundColor: 'var(--bg-surface)',
@@ -33907,7 +33902,7 @@ CustomTooltip.propTypes = {
     label: PropTypes.string,
 };
 
-function SalesChart({ loading, data }) {
+function SalesChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
@@ -33920,7 +33915,7 @@ function SalesChart({ loading, data }) {
     return (
         <ChartContainer>
             <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
-            {data?.length > 0 ? (
+            {data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -33964,6 +33959,10 @@ SalesChart.propTypes = {
             profit: PropTypes.number.isRequired
         })
     )
+};
+
+SalesChart.defaultProps = {
+    data: []
 };
 
 export default SalesChart;
@@ -34020,18 +34019,21 @@ const GridContainer = styled.div`
     gap: 24px;
     width: 100%;
 `;
+
 const ComparisonChip = styled.div`
     display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600;
     padding: 2px 8px; border-radius: 20px; margin-top: 6px;
     color: ${props => props.color};
     background-color: ${props => props.color}20;
 `;
+
 const StatIcon = styled.div`
     width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
     background-color: ${props => props.color}15;
     color: ${props => props.color};
     flex-shrink: 0;
 `;
+
 const Card = styled.div`
     background: var(--bg-surface); padding: 28px; border-radius: 24px; border: 1px solid var(--border-color);
     display: flex; align-items: center; gap: 24px; grid-column: span 3;
@@ -34041,6 +34043,7 @@ const Card = styled.div`
     @media (max-width: 1200px) { grid-column: span 6; }
     @media (max-width: 768px) { grid-column: 1 / -1; }
 `;
+
 const StatInfo = styled.div` flex-grow: 1; `;
 const StatValue = styled.h2` font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; `;
 const StatLabel = styled.p` font-size: 0.95rem; color: var(--text-secondary); margin: 0; `;
@@ -34052,15 +34055,8 @@ const ExpandButton = styled.button`
     &:hover { background-color: var(--primary-color); color: white; }
 `;
 
-/**
- * Calculates percentage change between current and previous values.
- * Returns null if previous value is zero or undefined to avoid invalid results.
- * @param {number} current Current value
- * @param {number} previous Previous value
- * @returns {number|null} Percentage change or null if invalid
- */
 const calculatePercentageChange = (current, previous) => {
-    if (previous === null || previous === undefined || previous === 0) return null;
+    if (typeof current !== 'number' || typeof previous !== 'number' || previous === 0) return null;
     return ((current - previous) / previous) * 100;
 };
 
@@ -34225,6 +34221,12 @@ StatCardGrid.propTypes = {
     userName: PropTypes.string
 };
 
+StatCardGrid.defaultProps = {
+    stats: {},
+    previousStats: {},
+    userName: ''
+};
+
 export default StatCardGrid;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StockInfoList.jsx =====
@@ -34269,6 +34271,10 @@ StockInfoList.propTypes = {
     )
 };
 
+StockInfoList.defaultProps = {
+    stockInfo: []
+};
+
 export default StockInfoList;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopCustomersList.jsx =====
@@ -34304,6 +34310,10 @@ TopCustomersList.propTypes = {
             totalOrders: PropTypes.number.isRequired
         })
     )
+};
+
+TopCustomersList.defaultProps = {
+    topCustomers: []
 };
 
 export default React.memo(TopCustomersList);
@@ -34357,7 +34367,7 @@ const getColor = (index) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length && label) {
         return (
             <div style={{
                 backgroundColor: 'var(--bg-surface)',
@@ -34384,7 +34394,7 @@ CustomTooltip.propTypes = {
     label: PropTypes.string,
 };
 
-function TopProductsChart({ loading, data }) {
+function TopProductsChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
@@ -34395,10 +34405,10 @@ function TopProductsChart({ loading, data }) {
     }
 
     const formattedData = React.useMemo(() => {
-        return data?.map(item => ({
+        return data.map(item => ({
             ...item,
-            shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
-        })) || [];
+            shortName: item.name.length > 25 ? `${item.name.substring(0, Math.floor(window.innerWidth / 100))}...` : item.name,
+        }));
     }, [data]);
 
     const top10Data = formattedData.slice(0, 10);
@@ -34447,6 +34457,10 @@ TopProductsChart.propTypes = {
     )
 };
 
+TopProductsChart.defaultProps = {
+    data: []
+};
+
 export default React.memo(TopProductsChart);
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
@@ -34476,7 +34490,7 @@ API.interceptors.request.use(
         if (import.meta.env.DEV) {
             console.error(`Request error: ${error.config?.method.toUpperCase()} ${error.config?.url} - ${error.message}`);
         }
-        return Promise.reject({ message: error.message, config: error.config });
+        return Promise.reject({ message: error.message, code: 'REQUEST_ERROR', status: null });
     }
 );
 
@@ -34492,27 +34506,29 @@ API.interceptors.response.use(
         if (import.meta.env.DEV) {
             console.error(`Response error: ${error.response?.config?.method.toUpperCase()} ${error.response?.config?.url} - ${error.response?.status || 'No status'} - ${error.message}`);
         }
+        const errorResponse = {
+            message: 'An unexpected error occurred.',
+            code: 'UNKNOWN',
+            status: null
+        };
         if (axios.isCancel(error)) {
-            return Promise.reject({ message: 'Request was canceled.', code: 'CANCELLED' });
+            errorResponse.message = 'Request was canceled.';
+            errorResponse.code = 'CANCELLED';
+        } else if (error.code === 'ECONNABORTED') {
+            errorResponse.message = 'Connection timeout. Please ensure the backend is running and connected.';
+            errorResponse.code = 'TIMEOUT';
+        } else if (error.response) {
+            errorResponse.message = error.response.data?.message || 'Server error occurred.';
+            errorResponse.code = 'SERVER_ERROR';
+            errorResponse.status = error.response.status;
+        } else if (error.request) {
+            errorResponse.message = 'No response from server. The server may not be running.';
+            errorResponse.code = 'NO_RESPONSE';
         }
-        if (error.code === 'ECONNABORTED') {
-            return Promise.reject({ message: 'Connection timeout. Please ensure the backend is running and connected.', code: 'TIMEOUT' });
-        }
-        if (error.response) {
-            return Promise.reject({ message: error.response.data?.message || 'Server error occurred.', status: error.response.status, code: 'SERVER_ERROR' });
-        }
-        if (error.request) {
-            return Promise.reject({ message: 'No response from server. The server may not be running.', code: 'NO_RESPONSE' });
-        }
-        return Promise.reject({ message: 'An unexpected error occurred.', code: 'UNKNOWN' });
+        return Promise.reject(errorResponse);
     }
 );
 
-/**
- * Creates query parameters from an object, ensuring valid types.
- * @param {Object} params Parameters to convert to query string
- * @returns {string} Query string
- */
 const createQueryParams = (params = {}) => {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -34526,8 +34542,6 @@ const createQueryParams = (params = {}) => {
 };
 
 // --- API Services ---
-
-// User & Auth
 export const login = (userData) => API.post('/users/login', userData);
 export const registerAdmin = (userData) => API.post('/users/register', userData);
 export const createUserByAdmin = (userData) => API.post('/users', userData);
@@ -34536,16 +34550,12 @@ export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
 export const deleteUser = (id) => API.delete(`/users/${id}`);
 export const forgotPassword = (data) => API.post('/users/forgot-password', data);
 export const resetPassword = (token, data) => API.post(`/users/reset-password/${token}`, data);
-
-// Roles & Permissions
 export const getRoles = () => API.get('/roles');
 export const getRoleById = (id) => API.get(`/roles/${id}`);
 export const createRole = (roleData) => API.post('/roles', roleData);
 export const updateRole = (id, roleData) => API.put(`/roles/${id}`, roleData);
 export const deleteRole = (id) => API.delete(`/roles/${id}`);
 export const getPermissions = () => API.get('/roles/permissions');
-
-// Products & Inventory
 export const getProducts = (params = {}) => API.get(`/products?${createQueryParams(params)}`);
 export const getProductById = (id) => API.get(`/products/${id}`);
 export const createProduct = (productData) => API.post('/products', productData);
@@ -34553,8 +34563,6 @@ export const updateProduct = (id, productData) => API.put(`/products/${id}`, pro
 export const deleteProduct = (id) => API.delete(`/products/${id}`);
 export const receiveStock = (submissionData) => API.post('/products/receive-stock', submissionData);
 export const adjustStock = (adjustmentData) => API.post('/stock/adjust', adjustmentData);
-
-// Orders
 export const createOrder = (orderData) => API.post('/orders', orderData);
 export const getOrders = (startDate, endDate) => API.get(`/orders?${createQueryParams({ startDate, endDate })}`);
 export const getOrderById = (id) => API.get(`/orders/${id}`);
@@ -34562,8 +34570,6 @@ export const deleteOrder = (id) => API.delete(`/orders/${id}`);
 export const sendReceipt = (orderId, email) => API.post(`/orders/${orderId}/send-receipt`, { email });
 export const clearOrderHistory = () => API.delete('/orders/clear-history');
 export const exportOrders = (startDate, endDate) => API.get(`/orders/export?${createQueryParams({ startDate, endDate })}`, { responseType: 'blob' });
-
-// Analytics & Reports
 export const getStats = (startDate, endDate, compareStartDate, compareEndDate) => API.get(`/analytics/stats?${createQueryParams({ startDate, endDate, compareStartDate, compareEndDate })}`);
 export const getDailySales = (startDate, endDate) => API.get(`/analytics/daily-sales?${createQueryParams({ startDate, endDate })}`);
 export const getTopProducts = (startDate, endDate) => API.get(`/analytics/top-products?${createQueryParams({ startDate, endDate })}`);
@@ -34581,30 +34587,22 @@ export const getProductProfitabilityReport = (params) => API.get('/analytics/pro
 export const exportSalesSummaryPDF = (startDate, endDate) => API.get(`/reports/sales-summary?${createQueryParams({ startDate, endDate })}`, {
     responseType: 'blob',
 });
-
-// Settings
 export const getEmailSettings = () => API.get('/settings/email');
 export const saveEmailSettings = (settingsData) => API.post('/settings/email', settingsData);
 export const getRevenueTarget = () => API.get('/settings/revenue-target');
 export const saveRevenueTarget = (targetData) => API.post('/settings/revenue-target', targetData);
 export const getBusinessSettings = () => API.get('/settings/business');
 export const saveBusinessSettings = (settingsData) => API.post('/settings/business', settingsData);
-
-// Categories
 export const getCategories = () => API.get('/categories');
 export const createCategory = (name) => API.post('/categories', { name });
 export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 export const getSubCategories = (categoryId) => API.get(`/categories/${categoryId}/subcategories`);
 export const createSubCategory = (categoryId, subCategoryData) => API.post(`/categories/${categoryId}/subcategories`, subCategoryData);
 export const deleteSubCategory = (id) => API.delete(`/categories/subcategories/${id}`);
-
-// Suppliers
 export const getSuppliers = () => API.get('/suppliers');
 export const createSupplier = (supplierData) => API.post('/suppliers', supplierData);
 export const updateSupplier = (id, supplierData) => API.put(`/suppliers/${id}`, supplierData);
 export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
-
-// Customers
 export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`);
 export const getCustomerById = (id) => API.get(`/customers/${id}`);
 export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`);
@@ -34613,22 +34611,16 @@ export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/red
 export const createCustomer = (customerData) => API.post('/customers', customerData);
 export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData);
 export const deleteCustomer = (id) => API.delete(`/customers/${id}`);
-
-// Expenses
 export const getExpenses = () => API.get('/expenses');
 export const createExpense = (expenseData) => API.post('/expenses', expenseData);
 export const updateExpense = (id, expenseData) => API.put(`/expenses/${id}`, expenseData);
 export const deleteExpense = (id) => API.delete(`/expenses/${id}`);
-
-// Promotions
 export const getPromotions = () => API.get('/promotions');
 export const getPromotionById = (id) => API.get(`/promotions/${id}`);
 export const createPromotion = (promoData) => API.post('/promotions', promoData);
 export const updatePromotion = (id, promoData) => API.put(`/promotions/${id}`, promoData);
 export const deletePromotion = (id) => API.delete(`/promotions/${id}`);
 export const validateCoupon = (code) => API.get(`/promotions/validate/${code}`);
-
-// Shifts
 export const getCurrentShift = () => API.get('/shifts/current');
 export const startShift = (data = {}) => API.post('/shifts/start', data);
 export const closeShift = (id, data) => API.post(`/shifts/close/${id}`, data);
@@ -34636,20 +34628,14 @@ export const getShiftHistory = () => API.get('/shifts/history');
 export const deleteShift = (id) => API.delete(`/shifts/${id}`);
 export const clearShiftHistory = () => API.delete('/shifts/clear-history');
 export const exportShiftHistory = () => API.get('/shifts/export', { responseType: 'blob' });
-
-// Purchase Orders
 export const getPurchaseOrders = () => API.get('/purchase-orders');
 export const createPurchaseOrder = (poData) => API.post('/purchase-orders', poData);
 export const updatePurchaseOrderStatus = (id, status) => API.patch(`/purchase-orders/${id}/status`, { status });
 export const getPurchaseOrderById = (id) => API.get(`/purchase-orders/${id}`);
-
-// Raw Materials
 export const getRawMaterials = () => API.get('/raw-materials');
 export const createRawMaterial = (materialData) => API.post('/raw-materials', materialData);
 export const updateRawMaterial = (id, materialData) => API.put(`/raw-materials/${id}`, materialData);
 export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
-
-// Utility
 export const uploadImage = (formData) => API.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
 });
@@ -34660,38 +34646,31 @@ export default API;
 
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js
 
-/**
- * Membersihkan nilai apapun (string/number) menjadi string angka murni.
- * Contoh: "Rp 50.000" -> "50000"
- * @param {string | number} value Nilai yang akan dibersihkan.
- * @returns {string} String yang hanya berisi angka.
- */
 export const parseRupiah = (value) => {
     if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
-        return '';
+        throw new Error('Invalid input: value must be a string or number');
     }
     return String(value).replace(/[^0-9]/g, '');
 };
 
-/**
- * Memformat string angka atau angka menjadi format mata uang Rupiah.
- * Contoh: "50000" -> "Rp 50.000"
- * @param {string | number} value Nilai yang akan diformat.
- * @returns {string} String dalam format Rupiah.
- */
 export const formatRupiah = (value) => {
-    const cleanValue = parseRupiah(value);
-    if (cleanValue === '') return '';
+    try {
+        const cleanValue = parseRupiah(value);
+        if (cleanValue === '') return '';
 
-    const number = Number(cleanValue);
-    if (isNaN(number)) return '';
+        const number = Number(cleanValue);
+        if (isNaN(number)) return '';
 
-    return new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(number);
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(number);
+    } catch (error) {
+        console.error('Format Rupiah error:', error.message);
+        return '';
+    }
 };
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.test.js =====
@@ -34744,20 +34723,17 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('SmartPOSDatabase');
 
-// Definisikan skema database
 db.version(1).stores({
-    offlineOrders: '++id, orderData.createdAt', // Tambahkan indeks untuk pencarian berdasarkan createdAt
+    offlineOrders: '++id, orderData.createdAt',
 });
 
-/**
- * Menambahkan order baru ke database offline.
- * @param {Object} orderData Data order yang akan disimpan
- * @returns {Promise<{ success: boolean, id?: number, error?: string }>} Hasil operasi
- */
 export async function addOfflineOrder(orderData) {
     try {
         if (!orderData || typeof orderData !== 'object') {
             return { success: false, error: 'Invalid order data' };
+        }
+        if (!orderData.createdAt) {
+            return { success: false, error: 'Missing required field: createdAt' };
         }
         const id = await db.offlineOrders.add({ orderData });
         return { success: true, id };
@@ -34767,10 +34743,6 @@ export async function addOfflineOrder(orderData) {
     }
 }
 
-/**
- * Mengambil semua order offline.
- * @returns {Promise<{ success: boolean, data?: Array, error?: string }>} Daftar order offline
- */
 export async function getAllOfflineOrders() {
     try {
         const data = await db.offlineOrders.toArray();
@@ -34781,11 +34753,6 @@ export async function getAllOfflineOrders() {
     }
 }
 
-/**
- * Menghapus order dari database offline.
- * @param {number} id ID order yang akan dihapus
- * @returns {Promise<{ success: boolean, error?: string }>} Hasil operasi
- */
 export async function deleteOfflineOrder(id) {
     try {
         if (typeof id !== 'number') {

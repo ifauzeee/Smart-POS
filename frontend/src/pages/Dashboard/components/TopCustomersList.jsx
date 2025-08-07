@@ -31,4 +31,8 @@ TopCustomersList.propTypes = {
     )
 };
 
+TopCustomersList.defaultProps = {
+    topCustomers: []
+};
+
 export default React.memo(TopCustomersList);

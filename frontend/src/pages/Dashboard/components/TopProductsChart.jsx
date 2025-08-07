@@ -45,7 +45,7 @@ const getColor = (index) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length && label) {
         return (
             <div style={{
                 backgroundColor: 'var(--bg-surface)',
@@ -72,7 +72,7 @@ CustomTooltip.propTypes = {
     label: PropTypes.string,
 };
 
-function TopProductsChart({ loading, data }) {
+function TopProductsChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
@@ -83,10 +83,10 @@ function TopProductsChart({ loading, data }) {
     }
 
     const formattedData = React.useMemo(() => {
-        return data?.map(item => ({
+        return data.map(item => ({
             ...item,
-            shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
-        })) || [];
+            shortName: item.name.length > 25 ? `${item.name.substring(0, Math.floor(window.innerWidth / 100))}...` : item.name,
+        }));
     }, [data]);
 
     const top10Data = formattedData.slice(0, 10);
@@ -133,6 +133,10 @@ TopProductsChart.propTypes = {
             totalSold: PropTypes.number.isRequired
         })
     )
+};
+
+TopProductsChart.defaultProps = {
+    data: []
 };
 
 export default React.memo(TopProductsChart);

@@ -11,7 +11,8 @@ const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Mengisi req.user dengan data dari token, ini jauh lebih efisien.
+            // PENJELASAN: Mengisi req.user dengan data dari token, ini jauh lebih efisien
+            // daripada melakukan query `SELECT * FROM users WHERE id = ?` setiap kali.
             req.user = {
                 id: decoded.id,
                 name: decoded.name,

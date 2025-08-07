@@ -118,8 +118,17 @@ router.post('/register', registerValidationRules, async (req, res) => {
         const newUserId = userResult.insertId;
 
         await connection.commit();
+        
+        // Ambil permissions yang baru dibuat untuk admin
+        const [permissionsResult] = await connection.query(
+            `SELECT p.name FROM permissions p
+             JOIN role_permissions rp ON p.id = rp.permission_id
+             WHERE rp.role_id = ?`,
+            [role_id]
+        );
+        const newAdminPermissions = permissionsResult.map(p => p.name);
 
-        const token = jwt.sign({ id: newUserId, name, email, role: 'admin', business_id: businessId, permissions: allPermissions.map(p => p.name) }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ id: newUserId, name, email, role: 'admin', business_id: businessId, permissions: newAdminPermissions }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         await logActivity(businessId, newUserId, 'USER_REGISTER', `New admin user registered: ${name}.`);
         res.status(201).json({ message: 'Registrasi berhasil!', token });
@@ -168,8 +177,7 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(403).json({ message: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
         }
 
-        // --- PERBAIKAN DIMULAI DI SINI ---
-        // 1. Ambil semua izin (permissions) yang dimiliki oleh peran pengguna ini
+        // Ambil semua izin (permissions) yang dimiliki oleh peran pengguna ini
         const [permissions] = await db.query(
             `SELECT p.name FROM permissions p
              JOIN role_permissions rp ON p.id = rp.permission_id
@@ -178,7 +186,7 @@ router.post('/login', loginValidationRules, async (req, res) => {
         );
         const userPermissions = permissions.map(p => p.name);
 
-        // 2. Buat payload token yang lebih lengkap
+        // Buat payload token yang lebih lengkap
         const tokenPayload = {
             id: user.id,
             name: user.name,
@@ -189,7 +197,6 @@ router.post('/login', loginValidationRules, async (req, res) => {
         };
         
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
-        // --- PERBAIKAN SELESAI ---
 
         await logActivity(businessId, user.id, 'USER_LOGIN', `User ${user.name} logged in.`);
         res.json({ message: 'Login berhasil!', token });
@@ -454,13 +461,19 @@ router.put('/:id', protect, isAdmin, userIdValidation, updateUserValidationRules
             hashedPassword = await bcrypt.hash(password, salt);
         }
 
-        const updateFields = [`name = ?`, `email = ?`, `role_id = ?`, `is_active = ?`];
-        const updateValues = [name, email, role_id, is_active];
+        const updateFields = [];
+        const updateValues = [];
 
-        if (hashedPassword) {
-            updateFields.push(`password = ?`);
-            updateValues.push(hashedPassword);
+        if (name !== undefined) { updateFields.push('name = ?'); updateValues.push(name); }
+        if (email !== undefined) { updateFields.push('email = ?'); updateValues.push(email); }
+        if (role_id !== undefined) { updateFields.push('role_id = ?'); updateValues.push(role_id); }
+        if (is_active !== undefined) { updateFields.push('is_active = ?'); updateValues.push(is_active); }
+        if (hashedPassword) { updateFields.push('password = ?'); updateValues.push(hashedPassword); }
+
+        if (updateFields.length === 0) {
+             return res.status(200).json({ message: 'Tidak ada perubahan yang dikirim.' });
         }
+
         updateValues.push(userIdToUpdate, businessId);
 
         const updateSql = `UPDATE users SET ${updateFields.join(', ')} WHERE id = ? AND business_id = ?`;

@@ -38,4 +38,8 @@ StockInfoList.propTypes = {
     )
 };
 
+StockInfoList.defaultProps = {
+    stockInfo: []
+};
+
 export default StockInfoList;

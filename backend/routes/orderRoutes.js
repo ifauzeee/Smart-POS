@@ -94,8 +94,6 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
-// ... sisa kode tidak berubah ...
-// (Kode untuk GET, DELETE, export, dll. tetap sama seperti yang Anda berikan)
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;

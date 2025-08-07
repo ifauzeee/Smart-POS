@@ -4,20 +4,17 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('SmartPOSDatabase');
 
-// Definisikan skema database
 db.version(1).stores({
-    offlineOrders: '++id, orderData.createdAt', // Tambahkan indeks untuk pencarian berdasarkan createdAt
+    offlineOrders: '++id, orderData.createdAt',
 });
 
-/**
- * Menambahkan order baru ke database offline.
- * @param {Object} orderData Data order yang akan disimpan
- * @returns {Promise<{ success: boolean, id?: number, error?: string }>} Hasil operasi
- */
 export async function addOfflineOrder(orderData) {
     try {
         if (!orderData || typeof orderData !== 'object') {
             return { success: false, error: 'Invalid order data' };
+        }
+        if (!orderData.createdAt) {
+            return { success: false, error: 'Missing required field: createdAt' };
         }
         const id = await db.offlineOrders.add({ orderData });
         return { success: true, id };
@@ -27,10 +24,6 @@ export async function addOfflineOrder(orderData) {
     }
 }
 
-/**
- * Mengambil semua order offline.
- * @returns {Promise<{ success: boolean, data?: Array, error?: string }>} Daftar order offline
- */
 export async function getAllOfflineOrders() {
     try {
         const data = await db.offlineOrders.toArray();
@@ -41,11 +34,6 @@ export async function getAllOfflineOrders() {
     }
 }
 
-/**
- * Menghapus order dari database offline.
- * @param {number} id ID order yang akan dihapus
- * @returns {Promise<{ success: boolean, error?: string }>} Hasil operasi
- */
 export async function deleteOfflineOrder(id) {
     try {
         if (typeof id !== 'number') {

@@ -43,22 +43,17 @@ const EmptyStateContainer = styled.div`
     min-height: 250px;
 `;
 
-// Fungsi untuk menghasilkan warna secara dinamis
 const getColor = (index) => {
     const colors = ['#007bff', '#28a745', '#FFA500', '#dc3545', '#6f42c4'];
     return colors[index % colors.length];
 };
 
 const formatDate = (dateString) => {
-    const cache = new Map();
-    if (cache.has(dateString)) return cache.get(dateString);
-    const formatted = new Date(dateString).toLocaleDateString('id-ID');
-    cache.set(dateString, formatted);
-    return formatted;
+    return new Date(dateString).toLocaleDateString('id-ID');
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
+    if (active && payload?.length && label) {
         return (
             <div style={{
                 backgroundColor: 'var(--bg-surface)',
@@ -89,7 +84,7 @@ CustomTooltip.propTypes = {
     label: PropTypes.string,
 };
 
-function SalesChart({ loading, data }) {
+function SalesChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
@@ -102,7 +97,7 @@ function SalesChart({ loading, data }) {
     return (
         <ChartContainer>
             <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
-            {data?.length > 0 ? (
+            {data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
@@ -146,6 +141,10 @@ SalesChart.propTypes = {
             profit: PropTypes.number.isRequired
         })
     )
+};
+
+SalesChart.defaultProps = {
+    data: []
 };
 
 export default SalesChart;

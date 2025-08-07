@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   // ============================= PERBAIKAN DI SINI =============================
-  // Menggunakan nama zona waktu standar internasional
+  // Menggunakan nama zona waktu standar internasional untuk konsistensi data waktu.
   timezone: 'Asia/Jakarta', 
   // ===========================================================================
   dateStrings: true 

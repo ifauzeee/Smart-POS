@@ -235,15 +235,91 @@ function PosPage() {
     const [couponCode, setCouponCode] = useState('');
     const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [userRole, setUserRole] = useState(null);
-    useEffect(() => { const token = localStorage.getItem('token'); if (token) { try { const decoded = jwtDecode(token); setUserRole(decoded.role?.toLowerCase()); } catch (e) { console.error("Token tidak valid"); setUserRole(''); } } else { setUserRole(''); } }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUserRole(decoded.role?.toLowerCase());
+            } catch (e) {
+                console.error("Token tidak valid");
+                setUserRole('');
+            }
+        } else {
+            setUserRole('');
+        }
+    }, []);
+
     const [orderToPrint, setOrderToPrint] = useState(null);
     const receiptRef = useRef();
-    const handlePrint = useReactToPrint({ content: () => receiptRef.current, documentTitle: `Struk-Pesanan-${orderToPrint?.id || ''}`, onAfterPrint: () => setOrderToPrint(null) });
-    const handlePrintReceipt = useCallback(async (orderId) => { try { const res = await getOrderById(orderId); setOrderToPrint(res.data); } catch (error) { toast.error("Gagal memuat data struk untuk dicetak."); } }, []);
-    useEffect(() => { if (orderToPrint) { const timer = setTimeout(() => { if (receiptRef.current) { handlePrint(); } else { toast.error("Gagal mencetak: Komponen struk tidak siap."); } }, 500); return () => clearTimeout(timer); } }, [orderToPrint, handlePrint]);
-    useEffect(() => { localStorage.setItem('heldCarts', JSON.stringify(heldCarts)); }, [heldCarts]);
-    useEffect(() => { const fetchProductData = async () => { setLoading(true); try { const productsRes = await getProducts(); setProducts(productsRes.data); } catch (error) { toast.error("Gagal memuat data produk."); } finally { setLoading(false); } }; fetchProductData(); }, []);
-    const addToCart = useCallback((product, variant) => { const cartItemId = `${product.id}-${variant.id}`; const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); } else { const newItem = { cartItemId, productId: product.id, variantId: variant.id, name: `${product.name} (${variant.name})`, price: variant.price, image_url: product.image_url, quantity: 1 }; setCart(prevCart => [...prevCart, newItem]); } }, [cart]);
+
+    const handlePrint = useReactToPrint({
+        content: () => receiptRef.current,
+        documentTitle: `Struk-Pesanan-${orderToPrint?.id || ''}`,
+        onAfterPrint: () => setOrderToPrint(null),
+    });
+
+    const handlePrintReceipt = useCallback(async (orderId) => {
+        try {
+            const res = await getOrderById(orderId);
+            setOrderToPrint(res.data);
+        } catch (error) {
+            toast.error("Gagal memuat data struk untuk dicetak.");
+        }
+    }, []);
+
+    useEffect(() => {
+        if (orderToPrint) {
+            const timer = setTimeout(() => {
+                if (receiptRef.current) {
+                    handlePrint();
+                } else {
+                    toast.error("Gagal mencetak: Komponen struk tidak siap.");
+                }
+            }, 500); // Penundaan untuk memastikan state terupdate dan komponen siap
+            return () => clearTimeout(timer);
+        }
+    }, [orderToPrint, handlePrint]);
+
+    useEffect(() => {
+        localStorage.setItem('heldCarts', JSON.stringify(heldCarts));
+    }, [heldCarts]);
+
+    useEffect(() => {
+        const fetchProductData = async () => {
+            setLoading(true);
+            try {
+                const productsRes = await getProducts();
+                setProducts(productsRes.data);
+            } catch (error) {
+                toast.error("Gagal memuat data produk.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProductData();
+    }, []);
+
+    const addToCart = useCallback((product, variant) => {
+        const cartItemId = `${product.id}-${variant.id}`;
+        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
+        if (existingItem) {
+            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
+        } else {
+            const newItem = {
+                cartItemId,
+                productId: product.id,
+                variantId: variant.id,
+                name: `${product.name} (${variant.name})`,
+                price: variant.price,
+                image_url: product.image_url,
+                quantity: 1,
+            };
+            setCart(prevCart => [...prevCart, newItem]);
+        }
+    }, [cart]);
+
     const handleProductClick = useCallback((product) => {
         if (!product.variants || product.variants.length === 0) {
             toast.warn('Produk ini tidak memiliki varian yang tersedia.');
@@ -256,21 +332,73 @@ function PosPage() {
             setIsVariantModalOpen(true);
         }
     }, [addToCart]);
-    const handleSelectVariant = (product, variant) => { if (!product || !variant) { toast.error('Gagal memilih varian.'); return; } addToCart(product, variant); setIsVariantModalOpen(false); };
-    const decreaseQuantity = (cartItemId) => { const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem && existingItem.quantity > 1) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item))); } else { removeFromCart(cartItemId); } };
-    const increaseQuantity = (cartItemId) => { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); };
-    const removeFromCart = (cartItemId) => { setCart(cart.filter((item) => item.cartItemId !== cartItemId)); };
-    const handleApplyCoupon = async () => { if (!couponCode.trim()) return toast.warn("Masukkan kode promo."); try { const res = await validateCoupon(couponCode); setAppliedDiscount(res.data); toast.success(`Promo "${res.data.name}" berhasil diterapkan!`); } catch (error) { setAppliedDiscount(null); toast.error(error.response?.data?.message || "Gagal menerapkan promo."); } };
-    const removeDiscount = () => { setAppliedDiscount(null); setCouponCode(''); toast.info("Promo dibatalkan."); };
-    const cartTotal = cart.reduce((total, item) => { const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100; return total + itemTotal; }, 0);
-    let discountAmount = 0; if (appliedDiscount) { if (appliedDiscount.type === 'percentage') { discountAmount = cartTotal * (parseFloat(appliedDiscount.value) / 100); } else { discountAmount = parseFloat(appliedDiscount.value); } }
+
+    const handleSelectVariant = (product, variant) => {
+        if (!product || !variant) {
+            toast.error('Gagal memilih varian.');
+            return;
+        }
+        addToCart(product, variant);
+        setIsVariantModalOpen(false);
+    };
+
+    const decreaseQuantity = (cartItemId) => {
+        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
+        if (existingItem && existingItem.quantity > 1) {
+            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item)));
+        } else {
+            removeFromCart(cartItemId);
+        }
+    };
+
+    const increaseQuantity = (cartItemId) => {
+        setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
+    };
+
+    const removeFromCart = (cartItemId) => {
+        setCart(cart.filter((item) => item.cartItemId !== cartItemId));
+    };
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return toast.warn("Masukkan kode promo.");
+        try {
+            const res = await validateCoupon(couponCode);
+            setAppliedDiscount(res.data);
+            toast.success(`Promo "${res.data.name}" berhasil diterapkan!`);
+        } catch (error) {
+            setAppliedDiscount(null);
+            toast.error(error.response?.data?.message || "Gagal menerapkan promo.");
+        }
+    };
+
+    const removeDiscount = () => {
+        setAppliedDiscount(null);
+        setCouponCode('');
+        toast.info("Promo dibatalkan.");
+    };
+
+    const cartTotal = cart.reduce((total, item) => {
+        const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100;
+        return total + itemTotal;
+    }, 0);
+
+    let discountAmount = 0;
+    if (appliedDiscount) {
+        if (appliedDiscount.type === 'percentage') {
+            discountAmount = cartTotal * (parseFloat(appliedDiscount.value) / 100);
+        } else {
+            discountAmount = parseFloat(appliedDiscount.value);
+        }
+    }
     const finalTotal = cartTotal - discountAmount;
+
     const handleCheckout = async (checkoutData) => {
         if (cart.length === 0) return;
         const originalSubtotal = cart.reduce((total, item) => {
             const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100;
             return total + itemTotal;
         }, 0);
+
         const orderData = {
             items: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
             customer_id: selectedCustomer ? selectedCustomer.id : null,
@@ -281,7 +409,9 @@ function PosPage() {
             total_amount: checkoutData.finalTotal,
             promotion_id: appliedDiscount ? appliedDiscount.id : null,
             discount_amount: discountAmount,
+            shift_id: activeShift?.id || null, // Tambahkan shift_id ke order data
         };
+
         try {
             const res = await toast.promise(createOrder(orderData), {
                 pending: 'Memproses transaksi...',
@@ -297,16 +427,51 @@ function PosPage() {
             console.error('Checkout error:', err);
         }
     };
-    const handleClosePostCheckoutModal = () => { setIsPostCheckoutOpen(false); setCart([]); setSelectedCustomer(null); };
-    const handleSelectCustomer = (customer) => { setSelectedCustomer(customer); setIsCustomerModalOpen(false); };
-    const handleHoldCart = () => { if (cart.length === 0) return; const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer }; setHeldCarts((prev) => [...prev, newHeldCart]); setCart([]); setSelectedCustomer(null); toast.info('Keranjang berhasil ditahan.'); };
-    const handleResumeCart = (cartId) => { const cartToResume = heldCarts.find((c) => c.id === cartId); if (cartToResume) { setCart(cartToResume.items); setSelectedCustomer(cartToResume.customer); setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); setIsHeldCartsModalOpen(false); toast.success('Keranjang berhasil dilanjutkan.'); } };
-    const handleDeleteHeldCart = (cartId) => { setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); toast.warn('Keranjang yang ditahan telah dihapus.'); };
-    const filteredProducts = products.filter((p) => { const term = searchTerm.toLowerCase(); if (!term) return true; const nameMatch = p.name.toLowerCase().includes(term); const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term)); return nameMatch || barcodeMatch; });
 
-    // =================================================================
-    // PERBAIKAN: JSX untuk render kartu produk diubah total
-    // =================================================================
+    const handleClosePostCheckoutModal = () => {
+        setIsPostCheckoutOpen(false);
+        setCart([]);
+        setSelectedCustomer(null);
+    };
+
+    const handleSelectCustomer = (customer) => {
+        setSelectedCustomer(customer);
+        setIsCustomerModalOpen(false);
+    };
+
+    const handleHoldCart = () => {
+        if (cart.length === 0) return;
+        const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer };
+        setHeldCarts((prev) => [...prev, newHeldCart]);
+        setCart([]);
+        setSelectedCustomer(null);
+        toast.info('Keranjang berhasil ditahan.');
+    };
+
+    const handleResumeCart = (cartId) => {
+        const cartToResume = heldCarts.find((c) => c.id === cartId);
+        if (cartToResume) {
+            setCart(cartToResume.items);
+            setSelectedCustomer(cartToResume.customer);
+            setHeldCarts(heldCarts.filter((c) => c.id !== cartId));
+            setIsHeldCartsModalOpen(false);
+            toast.success('Keranjang berhasil dilanjutkan.');
+        }
+    };
+
+    const handleDeleteHeldCart = (cartId) => {
+        setHeldCarts(heldCarts.filter((c) => c.id !== cartId));
+        toast.warn('Keranjang yang ditahan telah dihapus.');
+    };
+
+    const filteredProducts = products.filter((p) => {
+        const term = searchTerm.toLowerCase();
+        if (!term) return true;
+        const nameMatch = p.name.toLowerCase().includes(term);
+        const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term));
+        return nameMatch || barcodeMatch;
+    });
+
     const productsContent = (
         <ProductsPanel>
             <PanelHeader>
@@ -340,7 +505,95 @@ function PosPage() {
         </ProductsPanel>
     );
 
-    const cartContent = ( <CartPanel> <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader> <CustomerInfo> {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )} <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton> </CustomerInfo> <CartItemsList> <AnimatePresence> {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )} {cart.map((item) => ( <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <CartItemDetails> <CartItemName>{item.name}</CartItemName> <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice> </CartItemDetails> <CartItemControls> <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton> <QuantityDisplay>{item.quantity}</QuantityDisplay> <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton> </CartItemControls> <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton> </CartItem> ))} </AnimatePresence> </CartItemsList> <CheckoutSection> <CartActions> <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton> <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton> </CartActions> <PromoSection> <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} /> {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)} </PromoSection> {cart.length > 0 && ( <> <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow> {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)} <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow> <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton> </> )} </CheckoutSection> </CartPanel> );
+    const cartContent = (
+        <CartPanel>
+            <CartHeader>
+                <PanelTitle>Pesanan</PanelTitle>
+            </CartHeader>
+            <CustomerInfo>
+                {selectedCustomer ? (
+                    <div>
+                        <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span>
+                        <RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink>
+                    </div>
+                ) : (
+                    <span>Pelanggan Umum</span>
+                )}
+                <CustomerButton onClick={() => setIsCustomerModalOpen(true)}>
+                    <FiUser size={16} />
+                    {selectedCustomer ? 'Ganti' : 'Pilih'}
+                </CustomerButton>
+            </CustomerInfo>
+            <CartItemsList>
+                <AnimatePresence>
+                    {cart.length === 0 && (
+                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p>
+                    )}
+                    {cart.map((item) => (
+                        <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            <CartItemDetails>
+                                <CartItemName>{item.name}</CartItemName>
+                                <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
+                            </CartItemDetails>
+                            <CartItemControls>
+                                <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}>
+                                    <FiMinus size={16} />
+                                </ControlButton>
+                                <QuantityDisplay>{item.quantity}</QuantityDisplay>
+                                <ControlButton onClick={() => increaseQuantity(item.cartItemId)}>
+                                    <FiPlus size={16} />
+                                </ControlButton>
+                            </CartItemControls>
+                            <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}>
+                                <FiTrash2 size={18} />
+                            </RemoveItemButton>
+                        </CartItem>
+                    ))}
+                </AnimatePresence>
+            </CartItemsList>
+            <CheckoutSection>
+                <CartActions>
+                    <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton>
+                    <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}>
+                        <FiGrid /> Lihat Keranjang
+                        {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}
+                    </ActionButton>
+                </CartActions>
+                <PromoSection>
+                    <PromoInput
+                        placeholder="Kode Promo"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        disabled={!!appliedDiscount}
+                    />
+                    {appliedDiscount ? (
+                        <ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>
+                    ) : (
+                        <ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>
+                    )}
+                </PromoSection>
+                {cart.length > 0 && (
+                    <>
+                        <TotalRow>
+                            <span>Subtotal</span>
+                            <span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span>
+                        </TotalRow>
+                        {appliedDiscount && (
+                            <TotalRow style={{color: 'var(--green-color)'}}>
+                                <span>Diskon ({appliedDiscount.name})</span>
+                                <span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span>
+                            </TotalRow>
+                        )}
+                        <TotalRow>
+                            <span>Total Akhir</span>
+                            <span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span>
+                        </TotalRow>
+                        <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton>
+                    </>
+                )}
+            </CheckoutSection>
+        </CartPanel>
+    );
     
     if (isLoadingShift || userRole === null) {
         return (

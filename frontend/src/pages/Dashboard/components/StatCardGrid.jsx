@@ -12,18 +12,21 @@ const GridContainer = styled.div`
     gap: 24px;
     width: 100%;
 `;
+
 const ComparisonChip = styled.div`
     display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600;
     padding: 2px 8px; border-radius: 20px; margin-top: 6px;
     color: ${props => props.color};
     background-color: ${props => props.color}20;
 `;
+
 const StatIcon = styled.div`
     width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
     background-color: ${props => props.color}15;
     color: ${props => props.color};
     flex-shrink: 0;
 `;
+
 const Card = styled.div`
     background: var(--bg-surface); padding: 28px; border-radius: 24px; border: 1px solid var(--border-color);
     display: flex; align-items: center; gap: 24px; grid-column: span 3;
@@ -33,6 +36,7 @@ const Card = styled.div`
     @media (max-width: 1200px) { grid-column: span 6; }
     @media (max-width: 768px) { grid-column: 1 / -1; }
 `;
+
 const StatInfo = styled.div` flex-grow: 1; `;
 const StatValue = styled.h2` font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; `;
 const StatLabel = styled.p` font-size: 0.95rem; color: var(--text-secondary); margin: 0; `;
@@ -44,15 +48,8 @@ const ExpandButton = styled.button`
     &:hover { background-color: var(--primary-color); color: white; }
 `;
 
-/**
- * Calculates percentage change between current and previous values.
- * Returns null if previous value is zero or undefined to avoid invalid results.
- * @param {number} current Current value
- * @param {number} previous Previous value
- * @returns {number|null} Percentage change or null if invalid
- */
 const calculatePercentageChange = (current, previous) => {
-    if (previous === null || previous === undefined || previous === 0) return null;
+    if (typeof current !== 'number' || typeof previous !== 'number' || previous === 0) return null;
     return ((current - previous) / previous) * 100;
 };
 
@@ -215,6 +212,12 @@ StatCardGrid.propTypes = {
         totalExpenses: PropTypes.number
     }),
     userName: PropTypes.string
+};
+
+StatCardGrid.defaultProps = {
+    stats: {},
+    previousStats: {},
+    userName: ''
 };
 
 export default StatCardGrid;
