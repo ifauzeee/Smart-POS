@@ -25,7 +25,6 @@ const PageContainer = styled.div`
     margin: 0 auto;
     animation: ${fadeIn} 0.6s ease-out;
 `;
-
 const BackLink = styled(Link)`
     display: inline-flex;
     align-items: center;
@@ -396,13 +395,16 @@ const Tr = styled.tr`
     }
 `;
 
+// --- PERBAIKAN 2: Latar belakang badge dinamis ---
 const PointsBadge = styled.span`
-    padding: 3px 6px;
-    border-radius: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
-    background: linear-gradient(135deg, #10b981, #059669);
     color: white;
+    /* Logika kondisional untuk warna latar */
+    background: ${props => props.$positive ? 'linear-gradient(135deg, #10b981, #059669)' : 'var(--grey-bg)'};
+    color: ${props => props.$positive ? 'white' : 'var(--grey-text)'};
 `;
 
 const EmptyState = styled.div`
@@ -509,11 +511,15 @@ function CustomerDetailPage() {
         (order.description && order.description.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const salesHistory = history.filter(order => order.total_amount > 0 && (order.points_earned > 0 || order.type !== 'redemption'));
+
     const stats = history.length > 0 ? {
         totalOrders: history.length,
-        totalSpent: history.reduce((sum, order) => sum + order.total_amount, 0),
-        totalPointsEarned: history.reduce((sum, order) => sum + order.points_earned, 0),
-        avgOrderValue: history.filter(order => order.type !== 'redemption').reduce((sum, order) => sum + order.total_amount, 0) / history.filter(order => order.type !== 'redemption').length
+        totalSpent: history.reduce((sum, order) => sum + (order.total_amount || 0), 0),
+        totalPointsEarned: history.reduce((sum, order) => sum + (order.points_earned || 0), 0),
+        avgOrderValue: salesHistory.length > 0
+            ? salesHistory.reduce((sum, order) => sum + order.total_amount, 0) / salesHistory.length
+            : 0
     } : { totalOrders: 0, totalSpent: 0, totalPointsEarned: 0, avgOrderValue: 0 };
 
     if (loading) {
@@ -686,7 +692,13 @@ function CustomerDetailPage() {
                                         Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}
                                     </Td>
                                     <Td>
-                                        <PointsBadge>{order.points_earned > 0 ? `+${order.points_earned}` : order.points_earned}</PointsBadge>
+                                        {/* --- PERBAIKAN 1 & 2 Diterapkan di sini --- */}
+                                        <PointsBadge $positive={order.points_earned > 0}>
+                                            {order.points_earned > 0
+                                                ? `+${order.points_earned}`
+                                                : order.points_earned
+                                            }
+                                        </PointsBadge>
                                     </Td>
                                     {showDetails && (
                                         <Td>

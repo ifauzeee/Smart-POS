@@ -84,7 +84,7 @@ export const deleteRole = (id) => API.delete(`/roles/${id}`);
 export const getPermissions = () => API.get('/roles/permissions');
 
 // Products & Inventory
-export const getProducts = (params) => API.get(`/products?${createQueryParams(params)}`);
+export const getProducts = (params = {}) => API.get(`/products?${createQueryParams(params)}`);
 export const getProductById = (id) => API.get(`/products/${id}`);
 export const createProduct = (productData) => API.post('/products', productData);
 export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData);

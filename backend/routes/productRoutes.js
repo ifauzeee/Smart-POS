@@ -175,9 +175,10 @@ router.put('/:id', protect, isAdmin, productValidationRules, async (req, res) =>
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const { barcode } = req.query;
+        const { search, barcode } = req.query;
         let productsSql;
         let params = [];
+
         if (barcode) {
             productsSql = `SELECT p.* FROM products p JOIN product_variants pv ON p.id = pv.product_id WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0`;
             params = [barcode, businessId];
@@ -193,12 +194,22 @@ router.get('/', protect, async (req, res) => {
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
                 LEFT JOIN suppliers AS s ON p.supplier_id = s.id
+                LEFT JOIN product_variants pv ON p.id = pv.product_id
                 WHERE p.business_id = ? AND p.is_archived = 0
-                ORDER BY p.created_at DESC
             `;
             params = [businessId];
+
+            if (search && search.trim() !== '') {
+                productsSql += ' AND (p.name LIKE ? OR pv.barcode = ?)';
+                const searchTerm = `%${search.trim()}%`;
+                params.push(searchTerm, search.trim());
+            }
+
+            productsSql += ' GROUP BY p.id ORDER BY p.created_at DESC';
         }
+        
         const [products] = await db.query(productsSql, params);
+
         if (products.length > 0) {
             const productIds = products.map(p => p.id);
             const variantsSql = `SELECT id, product_id, name, price, cost_price, barcode FROM product_variants WHERE product_id IN (?)`;
@@ -253,14 +264,12 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
-    // Langkah 1: Validasi awal sebelum memulai transaksi
     const productIds = items.map(item => item.productId);
     if (productIds.length === 0) {
         return res.status(400).json({ message: 'Daftar item tidak boleh kosong.' });
     }
 
     try {
-        // Langkah 2: Cek semua ID produk dalam satu kueri
         const [validProducts] = await db.query(
             'SELECT id FROM products WHERE business_id = ? AND is_archived = 0 AND id IN (?)',
             [businessId, productIds]
@@ -268,20 +277,17 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
         const validProductIds = new Set(validProducts.map(p => p.id));
         const invalidProductIds = productIds.filter(id => !validProductIds.has(parseInt(id)));
 
-        // Langkah 3: Jika ada ID tidak valid, kembalikan semua dalam satu pesan error
         if (invalidProductIds.length > 0) {
             return res.status(404).json({
                 message: `Beberapa produk tidak ditemukan atau bukan milik bisnis Anda. ID tidak valid: [${invalidProductIds.join(', ')}]`,
             });
         }
 
-        // Langkah 4: Jika semua valid, lanjutkan dengan transaksi
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             for (const item of items) {
-                // Tidak perlu SELECT lagi di sini, langsung UPDATE
                 await connection.query(
                     'UPDATE products SET stock = stock + ? WHERE id = ?',
                     [parseInt(item.quantity, 10), item.productId]
@@ -289,7 +295,6 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
             }
 
             if (purchase_order_id) {
-                // Validasi PO juga bisa dilakukan di sini jika diperlukan, tapi asumsikan sudah benar
                 await connection.query(
                     'UPDATE purchase_orders SET status = "COMPLETED" WHERE id = ? AND business_id = ?',
                     [purchase_order_id, businessId]

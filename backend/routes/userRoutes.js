@@ -96,7 +96,13 @@ router.post('/register', registerValidationRules, async (req, res) => {
             role_id = adminRoleResult.insertId;
             await connection.query(`INSERT INTO roles (business_id, name, description) VALUES (?, 'kasir', 'Akses terbatas untuk operasional kasir.')`, [businessId]);
             await connection.query('INSERT INTO email_settings (business_id) VALUES (?)', [businessId]);
-
+            
+            // Tambahkan semua permissions ke peran 'admin' yang baru dibuat
+            const [allPermissions] = await connection.query('SELECT id FROM permissions');
+            if (allPermissions.length > 0) {
+                const rolePermissionsData = allPermissions.map(p => [role_id, p.id]);
+                await connection.query('INSERT INTO role_permissions (role_id, permission_id) VALUES ?', [rolePermissionsData]);
+            }
         } else {
             await connection.rollback();
             return res.status(403).json({ message: 'Registrasi akun admin hanya dapat dilakukan satu kali. Hubungi admin yang sudah ada untuk membuat akun baru.' });
@@ -113,7 +119,7 @@ router.post('/register', registerValidationRules, async (req, res) => {
 
         await connection.commit();
 
-        const token = jwt.sign({ id: newUserId, name, email, role: 'admin', business_id: businessId }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign({ id: newUserId, name, email, role: 'admin', business_id: businessId, permissions: allPermissions.map(p => p.name) }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         await logActivity(businessId, newUserId, 'USER_REGISTER', `New admin user registered: ${name}.`);
         res.status(201).json({ message: 'Registrasi berhasil!', token });
@@ -162,11 +168,28 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(403).json({ message: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
         }
 
-        const token = jwt.sign(
-            { id: user.id, name: user.name, email: user.email, role: user.role_name, business_id: user.business_id },
-            process.env.JWT_SECRET,
-            { expiresIn: '1d' }
+        // --- PERBAIKAN DIMULAI DI SINI ---
+        // 1. Ambil semua izin (permissions) yang dimiliki oleh peran pengguna ini
+        const [permissions] = await db.query(
+            `SELECT p.name FROM permissions p
+             JOIN role_permissions rp ON p.id = rp.permission_id
+             WHERE rp.role_id = ?`,
+            [user.role_id]
         );
+        const userPermissions = permissions.map(p => p.name);
+
+        // 2. Buat payload token yang lebih lengkap
+        const tokenPayload = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role_name,
+            business_id: user.business_id,
+            permissions: userPermissions // Simpan izin di dalam token
+        };
+        
+        const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
+        // --- PERBAIKAN SELESAI ---
 
         await logActivity(businessId, user.id, 'USER_LOGIN', `User ${user.name} logged in.`);
         res.json({ message: 'Login berhasil!', token });
@@ -289,7 +312,7 @@ router.post('/reset-password/:token', resetPasswordValidationRules, async (req, 
 });
 
 router.get('/profile', protect, (req, res) => {
-    res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, business_id: req.user.business_id });
+    res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, business_id: req.user.business_id, permissions: req.user.permissions });
 });
 
 // --- Admin-managed User Endpoints ---

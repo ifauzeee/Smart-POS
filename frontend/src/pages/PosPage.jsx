@@ -255,7 +255,21 @@ function PosPage() {
     useEffect(() => { localStorage.setItem('heldCarts', JSON.stringify(heldCarts)); }, [heldCarts]);
     useEffect(() => { const fetchProductData = async () => { setLoading(true); try { const productsRes = await getProducts(); setProducts(productsRes.data); } catch (error) { toast.error("Gagal memuat data produk."); } finally { setLoading(false); } }; fetchProductData(); }, []);
     const addToCart = useCallback((product, variant) => { const cartItemId = `${product.id}-${variant.id}`; const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); } else { const newItem = { cartItemId, productId: product.id, variantId: variant.id, name: `${product.name} (${variant.name})`, price: variant.price, image_url: product.image_url, quantity: 1 }; setCart(prevCart => [...prevCart, newItem]); } }, [cart]);
-    const handleProductClick = useCallback((product) => { if (product.variants && product.variants.length > 1) { setSelectedProductForVariant(product); setIsVariantModalOpen(true); } else if (product.variants && product.variants.length === 1) { addToCart(product, product.variants[0]); } else { toast.warn('Produk ini tidak memiliki varian yang tersedia.'); } }, [addToCart]);
+    
+    // PERBAIKAN: Fungsi ini diubah agar cerdas memilih antara langsung menambah ke keranjang atau menampilkan modal
+    const handleProductClick = useCallback((product) => {
+        if (!product.variants || product.variants.length === 0) {
+            toast.warn('Produk ini tidak memiliki varian yang tersedia.');
+            return;
+        }
+        if (product.variants.length === 1) {
+            addToCart(product, product.variants[0]);
+        } else {
+            setSelectedProductForVariant(product);
+            setIsVariantModalOpen(true);
+        }
+    }, [addToCart]);
+
     const handleSelectVariant = (product, variant) => { if (!product || !variant) { toast.error('Gagal memilih varian.'); return; } addToCart(product, variant); setIsVariantModalOpen(false); };
     const decreaseQuantity = (cartItemId) => { const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem && existingItem.quantity > 1) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item))); } else { removeFromCart(cartItemId); } };
     const increaseQuantity = (cartItemId) => { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); };
@@ -265,7 +279,45 @@ function PosPage() {
     const cartTotal = cart.reduce((total, item) => { const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100; return total + itemTotal; }, 0);
     let discountAmount = 0; if (appliedDiscount) { if (appliedDiscount.type === 'percentage') { discountAmount = cartTotal * (parseFloat(appliedDiscount.value) / 100); } else { discountAmount = parseFloat(appliedDiscount.value); } }
     const finalTotal = cartTotal - discountAmount;
-    const handleCheckout = async (checkoutData) => { if (cart.length === 0) return; const orderData = { items: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })), customer_id: selectedCustomer ? selectedCustomer.id : null, payment_method: checkoutData.paymentMethod, amount_paid: checkoutData.amountPaid, subtotal_amount: cartTotal, tax_amount: checkoutData.taxAmount, total_amount: checkoutData.finalTotal, promotion_id: appliedDiscount ? appliedDiscount.id : null, discount_amount: discountAmount, }; try { const res = await toast.promise(createOrder(orderData), { pending: 'Memproses transaksi...', success: 'Transaksi berhasil!', error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`, }); setLastOrderId(res.data.orderId); setIsPostCheckoutOpen(true); setIsCheckoutModalOpen(false); setAppliedDiscount(null); setCouponCode(''); } catch (err) { console.error('Checkout error:', err); } };
+    
+    // PERBAIKAN: Fungsi ini diubah agar mengirim subtotal yang benar
+    const handleCheckout = async (checkoutData) => {
+        if (cart.length === 0) return;
+
+        // PERBAIKAN: Hitung subtotal asli (sebelum diskon) secara manual dari keranjang.
+        const originalSubtotal = cart.reduce((total, item) => {
+            const itemTotal = (parseFloat(item.price) * 100 * item.quantity) / 100;
+            return total + itemTotal;
+        }, 0);
+
+        const orderData = {
+            items: cart.map((item) => ({ variantId: item.variantId, quantity: item.quantity })),
+            customer_id: selectedCustomer ? selectedCustomer.id : null,
+            payment_method: checkoutData.paymentMethod,
+            amount_paid: checkoutData.amountPaid,
+            subtotal_amount: originalSubtotal, // PERBAIKAN: Gunakan subtotal asli di sini
+            tax_amount: checkoutData.taxAmount,
+            total_amount: checkoutData.finalTotal,
+            promotion_id: appliedDiscount ? appliedDiscount.id : null,
+            discount_amount: discountAmount,
+        };
+
+        try {
+            const res = await toast.promise(createOrder(orderData), {
+                pending: 'Memproses transaksi...',
+                success: 'Transaksi berhasil!',
+                error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
+            });
+            setLastOrderId(res.data.orderId);
+            setIsPostCheckoutOpen(true);
+            setIsCheckoutModalOpen(false);
+            setAppliedDiscount(null);
+            setCouponCode('');
+        } catch (err) {
+            console.error('Checkout error:', err);
+        }
+    };
+
     const handleClosePostCheckoutModal = () => { setIsPostCheckoutOpen(false); setCart([]); setSelectedCustomer(null); };
     const handleSelectCustomer = (customer) => { setSelectedCustomer(customer); setIsCustomerModalOpen(false); };
     const handleHoldCart = () => { if (cart.length === 0) return; const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer }; setHeldCarts((prev) => [...prev, newHeldCart]); setCart([]); setSelectedCustomer(null); toast.info('Keranjang berhasil ditahan.'); };
@@ -273,7 +325,28 @@ function PosPage() {
     const handleDeleteHeldCart = (cartId) => { setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); toast.warn('Keranjang yang ditahan telah dihapus.'); };
     const filteredProducts = products.filter((p) => { const term = searchTerm.toLowerCase(); if (!term) return true; const nameMatch = p.name.toLowerCase().includes(term); const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term)); return nameMatch || barcodeMatch; });
 
-    const productsContent = ( <ProductsPanel> <PanelHeader> <SearchContainer> <SearchIcon size={18} /> <SearchInput placeholder="Cari nama atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /> </SearchContainer> </PanelHeader> <ProductGrid> {filteredProducts.map((product) => ( <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)} whileHover={product.stock > 0 ? { scale: 1.05 } : {}} whileTap={product.stock > 0 ? { scale: 0.95 } : {}} > <ProductImage src={product.image_url || `https://placehold.co/200`} /> <ProductInfo> <ProductName>{product.name}</ProductName> <ProductPrice> {product.variants && product.variants.length > 0 ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}` : 'Tidak tersedia'} </ProductPrice> </ProductInfo> </ProductCard> ))} </ProductGrid> </ProductsPanel> );
+    // PERBAIKAN: Menghapus `<ProductPrice>` dari JSX
+    const productsContent = (
+        <ProductsPanel>
+            <PanelHeader>
+                <SearchContainer>
+                    <SearchIcon size={18} />
+                    <SearchInput placeholder="Cari nama atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </SearchContainer>
+            </PanelHeader>
+            <ProductGrid>
+                {filteredProducts.map((product) => (
+                    <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)} whileHover={product.stock > 0 ? { scale: 1.05 } : {}} whileTap={product.stock > 0 ? { scale: 0.95 } : {}}>
+                        <ProductImage src={product.image_url || `https://placehold.co/200`} />
+                        <ProductInfo>
+                            <ProductName>{product.name}</ProductName>
+                        </ProductInfo>
+                    </ProductCard>
+                ))}
+            </ProductGrid>
+        </ProductsPanel>
+    );
+
     const cartContent = ( <CartPanel> <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader> <CustomerInfo> {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )} <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton> </CustomerInfo> <CartItemsList> <AnimatePresence> {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )} {cart.map((item) => ( <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <CartItemDetails> <CartItemName>{item.name}</CartItemName> <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice> </CartItemDetails> <CartItemControls> <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton> <QuantityDisplay>{item.quantity}</QuantityDisplay> <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton> </CartItemControls> <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton> </CartItem> ))} </AnimatePresence> </CartItemsList> <CheckoutSection> <CartActions> <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton> <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton> </CartActions> <PromoSection> <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} /> {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)} </PromoSection> {cart.length > 0 && ( <> <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow> {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)} <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow> <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton> </> )} </CheckoutSection> </CartPanel> );
     
     if (isLoadingShift || userRole === null) {

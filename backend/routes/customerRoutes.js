@@ -20,7 +20,7 @@ router.get('/', protect, async (req, res) => {
     const { search } = req.query;
     const businessId = req.user.business_id;
     try {
-        let query = 'SELECT id, name, phone, email FROM customers WHERE business_id = ?';
+        let query = 'SELECT id, name, phone, email, points FROM customers WHERE business_id = ?';
         const params = [businessId];
         
         if (search && search.trim() !== '') {
@@ -53,16 +53,23 @@ router.get('/:id/history', protect, async (req, res) => {
     const customerId = req.params.id;
     const businessId = req.user.business_id;
     try {
+        // PERBAIKAN: Tambahkan 'o.points_earned' ke dalam SELECT dan GROUP BY
         const query = `
-            SELECT o.id, o.created_at, o.total_amount, COUNT(oi.id) as item_count
+            SELECT 
+                o.id, 
+                o.created_at, 
+                o.total_amount, 
+                o.points_earned, 
+                COUNT(oi.id) as item_count
             FROM orders o
             JOIN order_items oi ON o.id = oi.order_id
             WHERE o.customer_id = ? AND o.business_id = ?
-            GROUP BY o.id
+            GROUP BY o.id, o.created_at, o.total_amount, o.points_earned
             ORDER BY o.created_at DESC`;
         const [history] = await db.query(query, [customerId, businessId]);
         res.json(history);
     } catch (error) {
+        console.error("Error fetching customer history:", error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });

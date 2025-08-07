@@ -1,5 +1,8 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\middleware\authMiddleware.js
+
 const jwt = require('jsonwebtoken');
-const db = require('../config/db');
+// PERBAIKAN: db tidak lagi diperlukan di sini karena data diambil dari token
+// const db = require('../config/db');
 
 const protect = async (req, res, next) => {
     let token;
@@ -8,24 +11,17 @@ const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            const [[user]] = await db.query('SELECT id, name, email, business_id, role_id FROM users WHERE id = ?', [decoded.id]);
-            if (!user) {
-                return res.status(401).json({ message: 'Pengguna tidak ditemukan.' });
-            }
-
-            const [[role]] = await db.query('SELECT name FROM roles WHERE id = ?', [user.role_id]);
-            const [permissions] = await db.query(
-                `SELECT p.name FROM permissions p
-                 JOIN role_permissions rp ON p.id = rp.permission_id
-                 WHERE rp.role_id = ?`,
-                [user.role_id]
-            );
-
+            // PERBAIKAN: Tidak perlu query ke database sama sekali.
+            // Semua data yang dibutuhkan diambil langsung dari token yang sudah didekode.
             req.user = {
-                ...user,
-                role: decoded.role || (role ? role.name : null),
-                permissions: permissions.map(p => p.name)
+                id: decoded.id,
+                name: decoded.name,
+                email: decoded.email,
+                business_id: decoded.business_id,
+                role: decoded.role,
+                permissions: decoded.permissions || [] // Pastikan permissions selalu array
             };
+
             next();
         } catch (error) {
             return res.status(401).json({ message: 'Token tidak valid atau kedaluwarsa.' });

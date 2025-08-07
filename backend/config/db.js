@@ -12,9 +12,8 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   // ============================= PERBAIKAN DI SINI =============================
-  // Tambahkan baris ini untuk menyamakan zona waktu aplikasi dan database
-  // Gunakan 'Asia/Jakarta' untuk Waktu Indonesia Barat (WIB)
-  timezone: '+07:00', 
+  // Menggunakan nama zona waktu standar internasional
+  timezone: 'Asia/Jakarta', 
   // ===========================================================================
   dateStrings: true 
 });

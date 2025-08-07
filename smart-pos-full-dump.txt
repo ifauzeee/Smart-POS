@@ -8628,9 +8628,10 @@ router.put('/:id', protect, isAdmin, productValidationRules, async (req, res) =>
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const { barcode } = req.query;
+        const { search, barcode } = req.query;
         let productsSql;
         let params = [];
+
         if (barcode) {
             productsSql = `SELECT p.* FROM products p JOIN product_variants pv ON p.id = pv.product_id WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0`;
             params = [barcode, businessId];
@@ -8646,12 +8647,22 @@ router.get('/', protect, async (req, res) => {
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
                 LEFT JOIN suppliers AS s ON p.supplier_id = s.id
+                LEFT JOIN product_variants pv ON p.id = pv.product_id
                 WHERE p.business_id = ? AND p.is_archived = 0
-                ORDER BY p.created_at DESC
             `;
             params = [businessId];
+
+            if (search && search.trim() !== '') {
+                productsSql += ' AND (p.name LIKE ? OR pv.barcode = ?)';
+                const searchTerm = `%${search.trim()}%`;
+                params.push(searchTerm, search.trim());
+            }
+
+            productsSql += ' GROUP BY p.id ORDER BY p.created_at DESC';
         }
+        
         const [products] = await db.query(productsSql, params);
+
         if (products.length > 0) {
             const productIds = products.map(p => p.id);
             const variantsSql = `SELECT id, product_id, name, price, cost_price, barcode FROM product_variants WHERE product_id IN (?)`;
@@ -8706,14 +8717,12 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
     const businessId = req.user.business_id;
     const userId = req.user.id;
 
-    // Langkah 1: Validasi awal sebelum memulai transaksi
     const productIds = items.map(item => item.productId);
     if (productIds.length === 0) {
         return res.status(400).json({ message: 'Daftar item tidak boleh kosong.' });
     }
 
     try {
-        // Langkah 2: Cek semua ID produk dalam satu kueri
         const [validProducts] = await db.query(
             'SELECT id FROM products WHERE business_id = ? AND is_archived = 0 AND id IN (?)',
             [businessId, productIds]
@@ -8721,20 +8730,17 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
         const validProductIds = new Set(validProducts.map(p => p.id));
         const invalidProductIds = productIds.filter(id => !validProductIds.has(parseInt(id)));
 
-        // Langkah 3: Jika ada ID tidak valid, kembalikan semua dalam satu pesan error
         if (invalidProductIds.length > 0) {
             return res.status(404).json({
                 message: `Beberapa produk tidak ditemukan atau bukan milik bisnis Anda. ID tidak valid: [${invalidProductIds.join(', ')}]`,
             });
         }
 
-        // Langkah 4: Jika semua valid, lanjutkan dengan transaksi
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             for (const item of items) {
-                // Tidak perlu SELECT lagi di sini, langsung UPDATE
                 await connection.query(
                     'UPDATE products SET stock = stock + ? WHERE id = ?',
                     [parseInt(item.quantity, 10), item.productId]
@@ -8742,7 +8748,6 @@ router.post('/receive-stock', protect, isAdmin, receiveStockValidationRules, asy
             }
 
             if (purchase_order_id) {
-                // Validasi PO juga bisa dilakukan di sini jika diperlukan, tapi asumsikan sudah benar
                 await connection.query(
                     'UPDATE purchase_orders SET status = "COMPLETED" WHERE id = ? AND business_id = ?',
                     [purchase_order_id, businessId]
@@ -13288,6 +13293,23 @@ export default defineConfig([
         "node": ">=18"
       }
     },
+    "node_modules/@esbuild/win32-x64": {
+      "version": "0.25.8",
+      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.8.tgz",
+      "integrity": "sha512-cn3Yr7+OaaZq1c+2pe+8yxC8E144SReCQjN6/2ynubzYjvyqZjTXfQJpAcQpsdJq3My7XADANiYGHoFC69pLQw==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "win32"
+      ],
+      "engines": {
+        "node": ">=18"
+      }
+    },
     "node_modules/@eslint-community/eslint-utils": {
       "version": "4.7.0",
       "resolved": "https://registry.npmjs.org/@eslint-community/eslint-utils/-/eslint-utils-4.7.0.tgz",
@@ -13979,6 +14001,20 @@ export default defineConfig([
         "win32"
       ]
     },
+    "node_modules/@rollup/rollup-win32-x64-msvc": {
+      "version": "4.46.2",
+      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.46.2.tgz",
+      "integrity": "sha512-CvUo2ixeIQGtF6WvuB87XWqPQkoFAFqW+HUo/WzHwuHDvIwZCtjdWXoYCcr06iKGydiqTclC4jU/TNObC/xKZg==",
+      "cpu": [
+        "x64"
+      ],
+      "dev": true,
+      "license": "MIT",
+      "optional": true,
+      "os": [
+        "win32"
+      ]
+    },
     "node_modules/@surma/rollup-plugin-off-main-thread": {
       "version": "2.2.3",
       "resolved": "https://registry.npmjs.org/@surma/rollup-plugin-off-main-thread/-/rollup-plugin-off-main-thread-2.2.3.tgz",
@@ -14123,13 +14159,13 @@ export default defineConfig([
       }
     },
     "node_modules/@types/babel__traverse": {
-      "version": "7.20.7",
-      "resolved": "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.20.7.tgz",
-      "integrity": "sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng==",
+      "version": "7.28.0",
+      "resolved": "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.28.0.tgz",
+      "integrity": "sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==",
       "dev": true,
       "license": "MIT",
       "dependencies": {
-        "@babel/types": "^7.20.7"
+        "@babel/types": "^7.28.2"
       }
     },
     "node_modules/@types/chai": {
@@ -15000,9 +15036,9 @@ export default defineConfig([
       "license": "MIT"
     },
     "node_modules/core-js-compat": {
-      "version": "3.44.0",
-      "resolved": "https://registry.npmjs.org/core-js-compat/-/core-js-compat-3.44.0.tgz",
-      "integrity": "sha512-JepmAj2zfl6ogy34qfWtcE7nHKAJnKsQFRn++scjVS2bZFllwptzw61BZcZFYBPpUznLfAvh0LGhxKppk04ClA==",
+      "version": "3.45.0",
+      "resolved": "https://registry.npmjs.org/core-js-compat/-/core-js-compat-3.45.0.tgz",
+      "integrity": "sha512-gRoVMBawZg0OnxaVv3zpqLLxaHmsubEGyTnqdpI/CEBvX4JadI1dMSHxagThprYRtSVbuQxvi6iUatdPxohHpA==",
       "dev": true,
       "license": "MIT",
       "dependencies": {
@@ -15465,9 +15501,9 @@ export default defineConfig([
       }
     },
     "node_modules/electron-to-chromium": {
-      "version": "1.5.192",
-      "resolved": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.192.tgz",
-      "integrity": "sha512-rP8Ez0w7UNw/9j5eSXCe10o1g/8B1P5SM90PCCMVkIRQn2R0LEHWz4Eh9RnxkniuDe1W0cTSOB3MLlkTGDcuCg==",
+      "version": "1.5.197",
+      "resolved": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.197.tgz",
+      "integrity": "sha512-m1xWB3g7vJ6asIFz+2pBUbq3uGmfmln1M9SSvBe4QIFWYrRHylP73zL/3nMjDmwz8V+1xAXQDfBd6+HPW0WvDQ==",
       "dev": true,
       "license": "ISC"
     },
@@ -15704,23 +15740,6 @@ export default defineConfig([
         "@esbuild/win32-arm64": "0.25.8",
         "@esbuild/win32-ia32": "0.25.8",
         "@esbuild/win32-x64": "0.25.8"
-      }
-    },
-    "node_modules/esbuild/node_modules/@esbuild/win32-x64": {
-      "version": "0.25.8",
-      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.8.tgz",
-      "integrity": "sha512-cn3Yr7+OaaZq1c+2pe+8yxC8E144SReCQjN6/2ynubzYjvyqZjTXfQJpAcQpsdJq3My7XADANiYGHoFC69pLQw==",
-      "cpu": [
-        "x64"
-      ],
-      "dev": true,
-      "license": "MIT",
-      "optional": true,
-      "os": [
-        "win32"
-      ],
-      "engines": {
-        "node": ">=18"
       }
     },
     "node_modules/escalade": {
@@ -16130,9 +16149,9 @@ export default defineConfig([
       "license": "ISC"
     },
     "node_modules/follow-redirects": {
-      "version": "1.15.9",
-      "resolved": "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.9.tgz",
-      "integrity": "sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==",
+      "version": "1.15.11",
+      "resolved": "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.11.tgz",
+      "integrity": "sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==",
       "funding": [
         {
           "type": "individual",
@@ -17145,16 +17164,15 @@ export default defineConfig([
       }
     },
     "node_modules/jake": {
-      "version": "10.9.2",
-      "resolved": "https://registry.npmjs.org/jake/-/jake-10.9.2.tgz",
-      "integrity": "sha512-2P4SQ0HrLQ+fw6llpLnOaGAvN2Zu6778SJMrCUwns4fOoG9ayrTiZk3VV8sCPkVZF8ab0zksVpS8FDY5pRCNBA==",
+      "version": "10.9.4",
+      "resolved": "https://registry.npmjs.org/jake/-/jake-10.9.4.tgz",
+      "integrity": "sha512-wpHYzhxiVQL+IV05BLE2Xn34zW1S223hvjtqk0+gsPrwd/8JNLXJgZZM/iPFsYc1xyphF+6M6EvdE5E9MBGkDA==",
       "dev": true,
       "license": "Apache-2.0",
       "dependencies": {
-        "async": "^3.2.3",
-        "chalk": "^4.0.2",
+        "async": "^3.2.6",
         "filelist": "^1.0.4",
-        "minimatch": "^3.1.2"
+        "picocolors": "^1.1.1"
       },
       "bin": {
         "jake": "bin/cli.js"
@@ -18411,20 +18429,6 @@ export default defineConfig([
         "@rollup/rollup-win32-x64-msvc": "4.46.2",
         "fsevents": "~2.3.2"
       }
-    },
-    "node_modules/rollup/node_modules/@rollup/rollup-win32-x64-msvc": {
-      "version": "4.46.2",
-      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.46.2.tgz",
-      "integrity": "sha512-CvUo2ixeIQGtF6WvuB87XWqPQkoFAFqW+HUo/WzHwuHDvIwZCtjdWXoYCcr06iKGydiqTclC4jU/TNObC/xKZg==",
-      "cpu": [
-        "x64"
-      ],
-      "dev": true,
-      "license": "MIT",
-      "optional": true,
-      "os": [
-        "win32"
-      ]
     },
     "node_modules/rrweb-cssom": {
       "version": "0.8.0",
@@ -22159,10 +22163,12 @@ OrderDetailModal.propTypes = {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\PageWrapper.jsx =====
 
+// frontend/src/components/PageWrapper.jsx
+
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
+import PropTypes from 'prop-types';
 
 const PageContainer = styled.div`
   padding: 30px;
@@ -22179,20 +22185,13 @@ const pageVariants = {
 };
 
 const pageTransition = {
-  duration: 0.2, // Animasi fade yang sangat cepat
+  duration: 0.2,
   ease: "easeInOut",
 };
 
-const PageWrapper = ({ loading, children }) => {
-  if (loading) {
-    return (
-      <PageContainer>
-        <Skeleton height="40px" style={{ marginBottom: '30px', flexShrink: 0 }} />
-        <Skeleton height="calc(100vh - 150px)" />
-      </PageContainer>
-    );
-  }
-
+// PERBAIKAN: Hapus blok "if (loading)" dari sini.
+// PageWrapper sekarang hanya bertanggung jawab untuk animasi halaman.
+const PageWrapper = ({ children }) => {
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -22202,14 +22201,19 @@ const PageWrapper = ({ loading, children }) => {
         exit="exit"
         variants={pageVariants}
         transition={pageTransition}
-        style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
+        style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}
       >
         <PageContainer>
-            {children}
+          {children}
         </PageContainer>
       </motion.div>
     </AnimatePresence>
   );
+};
+
+PageWrapper.propTypes = {
+  children: PropTypes.node.isRequired,
+  loading: PropTypes.bool, // Prop loading tidak lagi digunakan untuk render, tapi kita biarkan untuk kompatibilitas
 };
 
 export default PageWrapper;
@@ -24131,6 +24135,30 @@ export const ThemeProvider = ({ children }) => {
     );
 };
 
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\hooks\useDebounce.js =====
+
+import { useState, useEffect } from 'react';
+
+// Custom hook untuk debouncing
+export function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    // Set timeout untuk update nilai setelah delay
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    // Bersihkan timeout jika value berubah (misal: user lanjut mengetik)
+    // Ini akan mencegah nilai di-update sebelum waktunya
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]); // Hanya re-run jika value atau delay berubah
+
+  return debouncedValue;
+}
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\AppPasswordTutorialPage.jsx =====
 
 import React from 'react';
@@ -25946,7 +25974,6 @@ import { getOrders, getOrderById, deleteOrder, exportOrders, clearOrderHistory }
 import { toast } from 'react-toastify';
 import { useReactToPrint } from 'react-to-print';
 import { FiEye, FiTrash2, FiDownload, FiAlertTriangle } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import OrderDetailModal from '../components/OrderDetailModal';
 import Receipt from '../components/Receipt';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -25956,6 +25983,12 @@ import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -25997,8 +26030,6 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-
-// --- PERUBAHAN DI SINI: Menghilangkan scrollbar pada TableWrapper ---
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
@@ -26009,7 +26040,6 @@ const TableWrapper = styled.div`
     scrollbar-width: none;
     -ms-overflow-style: none;
 `;
-
 const Table = styled.table`
     width: 100%;
     min-width: 800px;
@@ -26069,8 +26099,8 @@ const DatePickerWrapper = styled.div`
         font-weight: 500; width: 130px; cursor: pointer; text-align: center;
     }
 `;
+// --- End of Styled Components ---
 
-// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -26205,68 +26235,70 @@ function HistoryPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title>Riwayat Transaksi</Title>
-                </PageHeader>
-                
-                <FilterContainer>
-                    <span style={{fontWeight: 500}}>Filter Tanggal:</span>
-                    <DatePickerWrapper>
-                        <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
-                    </DatePickerWrapper>
-                    <span>sampai</span>
-                    <DatePickerWrapper>
-                        <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
-                    </DatePickerWrapper>
-                    <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
-                    <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
-                </FilterContainer>
+                <PageContainer>
+                    <PageHeader>
+                        <Title>Riwayat Transaksi</Title>
+                    </PageHeader>
+                    
+                    <FilterContainer>
+                        <span style={{fontWeight: 500}}>Filter Tanggal:</span>
+                        <DatePickerWrapper>
+                            <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
+                        </DatePickerWrapper>
+                        <span>sampai</span>
+                        <DatePickerWrapper>
+                            <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
+                        </DatePickerWrapper>
+                        <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
+                        <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
+                    </FilterContainer>
 
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th style={{width: '10%'}}>ID Pesanan</Th>
-                                    <Th style={{width: '25%'}}>Tanggal</Th>
-                                    <Th style={{width: '15%'}}>Kasir</Th>
-                                    <Th style={{width: '15%'}}>Pelanggan</Th>
-                                    <Th style={{width: '10%', textAlign: 'center'}}>Metode</Th>
-                                    <Th style={{width: '15%', textAlign: 'right'}}>Total</Th>
-                                    <Th style={{width: '10%', textAlign: 'center'}}>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.length > 0 ? (
-                                    orders.map((order, i) => (
-                                        <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                            <Td>#{order.id}</Td>
-                                            <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
-                                            <Td>{order.cashier_name}</Td>
-                                            <Td>{order.customer_name || '-'}</Td>
-                                            <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
-                                            <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
-                                            <Td style={{textAlign: 'center'}}>
-                                                <ActionButton onClick={() => handleViewDetail(order.id)}>
-                                                    <FiEye size={18} />
-                                                </ActionButton>
-                                                <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
-                                                    <FiTrash2 size={18} />
-                                                </ActionButton>
+                    <TableContainer>
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th style={{width: '10%'}}>ID Pesanan</Th>
+                                        <Th style={{width: '25%'}}>Tanggal</Th>
+                                        <Th style={{width: '15%'}}>Kasir</Th>
+                                        <Th style={{width: '15%'}}>Pelanggan</Th>
+                                        <Th style={{width: '10%', textAlign: 'center'}}>Metode</Th>
+                                        <Th style={{width: '15%', textAlign: 'right'}}>Total</Th>
+                                        <Th style={{width: '10%', textAlign: 'center'}}>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {orders.length > 0 ? (
+                                        orders.map((order, i) => (
+                                            <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                                <Td>#{order.id}</Td>
+                                                <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
+                                                <Td>{order.cashier_name}</Td>
+                                                <Td>{order.customer_name || '-'}</Td>
+                                                <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
+                                                <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
+                                                <Td style={{textAlign: 'center'}}>
+                                                    <ActionButton onClick={() => handleViewDetail(order.id)}>
+                                                        <FiEye size={18} />
+                                                    </ActionButton>
+                                                    <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
+                                                        <FiTrash2 size={18} />
+                                                    </ActionButton>
+                                                </Td>
+                                            </Tr>
+                                        ))
+                                    ) : (
+                                        <Tr>
+                                            <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
+                                                Tidak ada riwayat transaksi pada rentang tanggal ini.
                                             </Td>
                                         </Tr>
-                                    ))
-                                ) : (
-                                    <Tr>
-                                        <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
-                                            Tidak ada riwayat transaksi pada rentang tanggal ini.
-                                        </Td>
-                                    </Tr>
-                                )}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
+                                    )}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    </TableContainer>
+                </PageContainer>
             </PageWrapper>
             
             {isModalOpen && selectedOrder && (
@@ -26297,222 +26329,216 @@ export default HistoryPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\LoginPage.jsx =====
 
-// frontend/src/pages/LoginPage.jsx
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { loginUser } from '../services/api';
+import { login } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiLogIn } from 'react-icons/fi';
 
 const PageContainer = styled.div`
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  background-color: var(--bg-main);
-  @media (max-width: 768px) {
-    flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-  }
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-main);
+    @media (max-width: 768px) {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
 `;
 
 const BrandingPanel = styled.div`
-  flex: 1.2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px;
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px;
 
-  @media (max-width: 768px) {
-    padding: 30px;
-    align-items: center;
-    text-align: center;
-  }
+    @media (max-width: 768px) {
+        padding: 30px;
+        align-items: center;
+        text-align: center;
+    }
 `;
 
 const BrandingContent = styled.div`
-  max-width: 450px;
+    max-width: 450px;
 `;
 
 const BrandingTitle = styled.h1`
-  font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 15px;
-  color: var(--primary-color);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 15px;
+    color: var(--primary-color);
 
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
 `;
 
 const BrandingSubtitle = styled.p`
-  font-size: 1.2rem;
-  font-weight: 300;
-  color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--text-secondary);
 
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
 `;
 
 const FormPanel = styled.div`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-y: auto;
-  padding: 20px 0;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    padding: 20px 0;
 
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
+    @media (max-width: 768px) {
+        padding: 20px;
+    }
 `;
 
 const FormBox = styled.div`
-  width: 100%;
-  max-width: 400px;
-  padding: 40px;
-  background-color: var(--bg-surface);
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
 
-  @media (max-width: 768px) {
-    padding: 30px;
-  }
+    @media (max-width: 768px) {
+        padding: 30px;
+    }
 `;
 
 const Title = styled.h2`
-  font-size: 2.2rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: var(--text-primary);
+    font-size: 2.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
 
-  @media (max-width: 768px) {
-    font-size: 1.8rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 1.8rem;
+    }
 `;
 
 const Subtitle = styled.p`
-  color: var(--text-secondary);
-  margin-bottom: 50px;
-  font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 50px;
+    font-size: 1rem;
 
-  @media (max-width: 768px) {
-    margin-bottom: 30px;
-  }
+    @media (max-width: 768px) {
+        margin-bottom: 30px;
+    }
 `;
 
 const Form = styled.form``;
 
 const InputGroup = styled.div`
-  margin-bottom: 25px;
+    margin-bottom: 25px;
 `;
 
 const Label = styled.label`
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 14px 18px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: var(--bg-main);
-  color: var(--text-primary);
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
 `;
 
 const Button = styled.button`
-  width: 100%;
-  padding: 15px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  &:hover {
-    background-color: var(--primary-hover);
-  }
-`;
-
-// --- TAMBAHKAN STYLED COMPONENT BARU DI SINI ---
-const LinksContainer = styled.div`
-  text-align: center;
-  margin-top: 25px;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-
-  a {
-    color: var(--primary-color);
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
     font-weight: 600;
-    text-decoration: none;
-    &:hover { text-decoration: underline; }
-  }
+    cursor: pointer;
+    &:hover {
+        background-color: var(--primary-hover);
+    }
 `;
-// --- AKHIR TAMBAHAN ---
+
+const LinksContainer = styled.div`
+    text-align: center;
+    margin-top: 25px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+
+    a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+    }
+`;
 
 function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    try {
-      const userData = { email, password };
-      const response = await loginUser(userData);
-      localStorage.setItem('token', response.data.token);
-      navigate('/pos', { replace: true });
-    } catch (err) {
-      console.error("Login Error:", err.response || err);
-      // NEW: Improved error message for network issues
-      toast.error(err.response?.data?.message || 'Terjadi kesalahan jaringan atau server tidak merespons.');
-    }
-  };
+    const handleLogin = async (event) => {
+        event.preventDefault();
+        try {
+            const userData = { email, password };
+            const response = await login(userData); // GANTI: loginUser -> login
+            localStorage.setItem('token', response.data.token);
+            navigate('/pos', { replace: true });
+        } catch (err) {
+            console.error("Login Error:", err.response || err);
+            toast.error(err.response?.data?.message || 'Terjadi kesalahan jaringan atau server tidak merespons.');
+        }
+    };
 
-  return (
-    <PageContainer>
-      <BrandingPanel>
-        <BrandingContent>
-          <BrandingTitle>SmartPOS</BrandingTitle>
-          <BrandingSubtitle>Solusi kasir modern untuk mengembangkan bisnis Anda.</BrandingSubtitle>
-        </BrandingContent>
-      </BrandingPanel>
-      <FormPanel>
-        <FormBox>
-          <Title>Selamat Datang</Title>
-          <Subtitle>Silakan login untuk melanjutkan.</Subtitle>
-          <Form onSubmit={handleLogin}>
-            <InputGroup>
-              <Label htmlFor="email">Alamat Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-            </InputGroup>
-            <InputGroup>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </InputGroup>
-            <Button type="submit"><FiLogIn style={{ marginRight: '8px' }}/> Login</Button>
-            
-            {/* --- GANTI BAGIAN LINK DI SINI --- */}
-            <LinksContainer>
-              <Link to="/forgot-password">Lupa Password?</Link>
-              <span style={{ margin: '0 10px' }}>|</span>
-              <span>Belum punya akun? <Link to="/register">Daftar di sini</Link></span>
-            </LinksContainer>
-          </Form>
-        </FormBox>
-      </FormPanel>
-    </PageContainer>
-  );
+    return (
+        <PageContainer>
+            <BrandingPanel>
+                <BrandingContent>
+                    <BrandingTitle>SmartPOS</BrandingTitle>
+                    <BrandingSubtitle>Solusi kasir modern untuk mengembangkan bisnis Anda.</BrandingSubtitle>
+                </BrandingContent>
+            </BrandingPanel>
+            <FormPanel>
+                <FormBox>
+                    <Title>Selamat Datang</Title>
+                    <Subtitle>Silakan login untuk melanjutkan.</Subtitle>
+                    <Form onSubmit={handleLogin}>
+                        <InputGroup>
+                            <Label htmlFor="email">Alamat Email</Label>
+                            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+                        </InputGroup>
+                        <InputGroup>
+                            <Label htmlFor="password">Password</Label>
+                            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                        </InputGroup>
+                        <Button type="submit"><FiLogIn style={{ marginRight: '8px' }}/> Login</Button>
+                        
+                        <LinksContainer>
+                            <Link to="/forgot-password">Lupa Password?</Link>
+                            <span style={{ margin: '0 10px' }}>|</span>
+                            <span>Belum punya akun? <Link to="/register">Daftar di sini</Link></span>
+                        </LinksContainer>
+                    </Form>
+                </FormBox>
+            </FormPanel>
+        </PageContainer>
+    );
 }
 
 export default LoginPage;
@@ -26565,7 +26591,7 @@ import { toast } from 'react-toastify';
 import { useReactToPrint } from 'react-to-print';
 import PostCheckoutModal from '../components/PostCheckoutModal';
 import CheckoutModal from '../components/CheckoutModal';
-import CustomerSelectModal from '../components/CustomerSelectModal'; 
+import CustomerSelectModal from '../components/CustomerSelectModal';
 import VariantSelectModal from '../components/VariantSelectModal';
 import HeldCartsModal from '../components/HeldCartsModal';
 import Receipt from '../components/Receipt';
@@ -26779,6 +26805,7 @@ const Badge = styled.span` position: absolute; top: -5px; right: -5px; backgroun
 const SkeletonCard = () => ( <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}> <Skeleton height={136} /> <div style={{ padding: '15px' }}> <Skeleton height={20} style={{ marginBottom: '8px' }} count={2} /> <Skeleton height={24} width="60%" style={{ marginTop: '8px' }} /> </div> </div> );
 const PromoInput = styled.input` flex-grow: 1; padding: 10px 15px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); `;
 const PromoSection = styled.div` display: flex; gap: 10px; margin-bottom: 20px; `;
+// --- End of Styled Components ---
 
 function PosPage() {
     const [products, setProducts] = useState([]);
@@ -26808,7 +26835,17 @@ function PosPage() {
     useEffect(() => { localStorage.setItem('heldCarts', JSON.stringify(heldCarts)); }, [heldCarts]);
     useEffect(() => { const fetchProductData = async () => { setLoading(true); try { const productsRes = await getProducts(); setProducts(productsRes.data); } catch (error) { toast.error("Gagal memuat data produk."); } finally { setLoading(false); } }; fetchProductData(); }, []);
     const addToCart = useCallback((product, variant) => { const cartItemId = `${product.id}-${variant.id}`; const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); } else { const newItem = { cartItemId, productId: product.id, variantId: variant.id, name: `${product.name} (${variant.name})`, price: variant.price, image_url: product.image_url, quantity: 1 }; setCart(prevCart => [...prevCart, newItem]); } }, [cart]);
-    const handleProductClick = useCallback((product) => { if (product.variants && product.variants.length > 1) { setSelectedProductForVariant(product); setIsVariantModalOpen(true); } else if (product.variants && product.variants.length === 1) { addToCart(product, product.variants[0]); } else { toast.warn('Produk ini tidak memiliki varian yang tersedia.'); } }, [addToCart]);
+    
+    // PERUBAHAN: Fungsi ini sekarang selalu membuka modal varian
+    const handleProductClick = useCallback((product) => {
+        if (!product.variants || product.variants.length === 0) {
+            toast.warn('Produk ini tidak memiliki varian yang tersedia.');
+            return;
+        }
+        setSelectedProductForVariant(product);
+        setIsVariantModalOpen(true);
+    }, []);
+
     const handleSelectVariant = (product, variant) => { if (!product || !variant) { toast.error('Gagal memilih varian.'); return; } addToCart(product, variant); setIsVariantModalOpen(false); };
     const decreaseQuantity = (cartItemId) => { const existingItem = cart.find((item) => item.cartItemId === cartItemId); if (existingItem && existingItem.quantity > 1) { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item))); } else { removeFromCart(cartItemId); } };
     const increaseQuantity = (cartItemId) => { setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item))); };
@@ -26826,11 +26863,53 @@ function PosPage() {
     const handleDeleteHeldCart = (cartId) => { setHeldCarts(heldCarts.filter((c) => c.id !== cartId)); toast.warn('Keranjang yang ditahan telah dihapus.'); };
     const filteredProducts = products.filter((p) => { const term = searchTerm.toLowerCase(); if (!term) return true; const nameMatch = p.name.toLowerCase().includes(term); const barcodeMatch = p.variants.some(v => v.barcode && v.barcode.toLowerCase().includes(term)); return nameMatch || barcodeMatch; });
 
-    const productsContent = ( <ProductsPanel> <PanelHeader> <SearchContainer> <SearchIcon size={18} /> <SearchInput placeholder="Cari nama atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /> </SearchContainer> </PanelHeader> <ProductGrid> {filteredProducts.map((product) => ( <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)} whileHover={product.stock > 0 ? { scale: 1.05 } : {}} whileTap={product.stock > 0 ? { scale: 0.95 } : {}} > <ProductImage src={product.image_url || `https://placehold.co/200`} /> <ProductInfo> <ProductName>{product.name}</ProductName> <ProductPrice> {product.variants && product.variants.length > 0 ? `Mulai Rp ${new Intl.NumberFormat('id-ID').format(Math.min(...product.variants.map((v) => v.price)))}` : 'Tidak tersedia'} </ProductPrice> </ProductInfo> </ProductCard> ))} </ProductGrid> </ProductsPanel> );
+    // PERUBAHAN: Menghapus `<ProductPrice>` dari JSX
+    const productsContent = (
+        <ProductsPanel>
+            <PanelHeader>
+                <SearchContainer>
+                    <SearchIcon size={18} />
+                    <SearchInput placeholder="Cari nama atau barcode..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </SearchContainer>
+            </PanelHeader>
+            <ProductGrid>
+                {filteredProducts.map((product) => (
+                    <ProductCard key={product.id} $disabled={product.stock <= 0} onClick={() => handleProductClick(product)} whileHover={product.stock > 0 ? { scale: 1.05 } : {}} whileTap={product.stock > 0 ? { scale: 0.95 } : {}}>
+                        <ProductImage src={product.image_url || `https://placehold.co/200`} />
+                        <ProductInfo>
+                            <ProductName>{product.name}</ProductName>
+                        </ProductInfo>
+                    </ProductCard>
+                ))}
+            </ProductGrid>
+        </ProductsPanel>
+    );
+
     const cartContent = ( <CartPanel> <CartHeader><PanelTitle>Pesanan</PanelTitle></CartHeader> <CustomerInfo> {selectedCustomer ? ( <div><span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span><RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink></div> ) : ( <span>Pelanggan Umum</span> )} <CustomerButton onClick={() => setIsCustomerModalOpen(true)}><FiUser size={16} /> {selectedCustomer ? 'Ganti' : 'Pilih'}</CustomerButton> </CustomerInfo> <CartItemsList> <AnimatePresence> {cart.length === 0 && ( <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '20px' }}>Keranjang Anda kosong.</p> )} {cart.map((item) => ( <CartItem key={item.cartItemId} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}> <CartItemDetails> <CartItemName>{item.name}</CartItemName> <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice> </CartItemDetails> <CartItemControls> <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}><FiMinus size={16} /></ControlButton> <QuantityDisplay>{item.quantity}</QuantityDisplay> <ControlButton onClick={() => increaseQuantity(item.cartItemId)}><FiPlus size={16} /></ControlButton> </CartItemControls> <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}><FiTrash2 size={18} /></RemoveItemButton> </CartItem> ))} </AnimatePresence> </CartItemsList> <CheckoutSection> <CartActions> <ActionButton onClick={handleHoldCart}><FiPause /> Tahan</ActionButton> <ActionButton onClick={() => setIsHeldCartsModalOpen(true)}><FiGrid /> Lihat Keranjang {heldCarts.length > 0 && <Badge>{heldCarts.length}</Badge>}</ActionButton> </CartActions> <PromoSection> <PromoInput placeholder="Kode Promo" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} disabled={!!appliedDiscount} /> {appliedDiscount ? (<ActionButton onClick={removeDiscount}><FiTrash2/> Batal</ActionButton>) : (<ActionButton onClick={handleApplyCoupon}><FiTag/> Terapkan</ActionButton>)} </PromoSection> {cart.length > 0 && ( <> <TotalRow><span>Subtotal</span><span>Rp {new Intl.NumberFormat('id-ID').format(cartTotal)}</span></TotalRow> {appliedDiscount && (<TotalRow style={{color: 'var(--green-color)'}}><span>Diskon ({appliedDiscount.name})</span><span>- Rp {new Intl.NumberFormat('id-ID').format(discountAmount)}</span></TotalRow>)} <TotalRow><span>Total Akhir</span><span>Rp {new Intl.NumberFormat('id-ID').format(finalTotal)}</span></TotalRow> <CheckoutButton onClick={() => setIsCheckoutModalOpen(true)}>Bayar Sekarang</CheckoutButton> </> )} </CheckoutSection> </CartPanel> );
     
     if (isLoadingShift || userRole === null) {
-        return ( <PageWrapper loading={true}> <PageGrid> <ProductsPanel> <PanelHeader><SearchContainer><SearchIcon size={18} /><SearchInput placeholder="Cari nama produk atau barcode..." /></SearchContainer></PanelHeader> <ProductGrid>{Array.from({ length: 12 }).map((_, index) => ( <SkeletonCard key={index} /> ))}</ProductGrid> </ProductsPanel> <CartPanel><Skeleton height="100%" /></CartPanel> </PageGrid> </PageWrapper> );
+        return (
+            <PageWrapper loading={true}>
+                <PageGrid>
+                    <ProductsPanel>
+                        <PanelHeader>
+                            <SearchContainer>
+                                <SearchIcon size={18} />
+                                <SearchInput placeholder="Cari nama produk atau barcode..." />
+                            </SearchContainer>
+                        </PanelHeader>
+                        <ProductGrid>
+                            {Array.from({ length: 12 }).map((_, index) => (
+                                <SkeletonCard key={index} />
+                            ))}
+                        </ProductGrid>
+                    </ProductsPanel>
+                    <CartPanel>
+                        <Skeleton height="100%" />
+                    </CartPanel>
+                </PageGrid>
+            </PageWrapper>
+        );
     }
     
     if (userRole === 'kasir' && !activeShift) {
@@ -26862,11 +26941,42 @@ function PosPage() {
                 )}
             </AnimatePresence>
 
-            <CheckoutModal isOpen={isCheckoutModalOpen} onClose={() => setIsCheckoutModalOpen(false)} cart={cart} cartTotal={finalTotal} onConfirmCheckout={handleCheckout} paymentMethods={settings.payment_methods} taxRate={settings.tax_rate} selectedCustomer={selectedCustomer} coupon={appliedDiscount} onRemoveDiscount={removeDiscount} />
-            <PostCheckoutModal isOpen={isPostCheckoutOpen} onClose={handleClosePostCheckoutModal} orderId={lastOrderId} onPrint={handlePrintReceipt} />
-            <CustomerSelectModal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} onSelectCustomer={handleSelectCustomer} />
-            <VariantSelectModal isOpen={isVariantModalOpen} onClose={() => setIsVariantModalOpen(false)} product={selectedProductForVariant} onSelectVariant={handleSelectVariant} />
-            <HeldCartsModal isOpen={isHeldCartsModalOpen} onClose={() => setIsHeldCartsModalOpen(false)} heldCarts={heldCarts} onResume={handleResumeCart} onDelete={handleDeleteHeldCart} />
+            <CheckoutModal 
+                isOpen={isCheckoutModalOpen} 
+                onClose={() => setIsCheckoutModalOpen(false)} 
+                cart={cart}
+                cartTotal={finalTotal} 
+                onConfirmCheckout={handleCheckout} 
+                paymentMethods={settings.payment_methods} 
+                taxRate={settings.tax_rate}
+                selectedCustomer={selectedCustomer}
+                coupon={appliedDiscount}
+                onRemoveDiscount={removeDiscount}
+            />
+            <PostCheckoutModal 
+                isOpen={isPostCheckoutOpen} 
+                onClose={handleClosePostCheckoutModal} 
+                orderId={lastOrderId} 
+                onPrint={handlePrintReceipt} 
+            />
+            <CustomerSelectModal 
+                isOpen={isCustomerModalOpen} 
+                onClose={() => setIsCustomerModalOpen(false)} 
+                onSelectCustomer={handleSelectCustomer} 
+            />
+            <VariantSelectModal 
+                isOpen={isVariantModalOpen} 
+                onClose={() => setIsVariantModalOpen(false)} 
+                product={selectedProductForVariant} 
+                onSelectVariant={handleSelectVariant} 
+            />
+            <HeldCartsModal 
+                isOpen={isHeldCartsModalOpen} 
+                onClose={() => setIsHeldCartsModalOpen(false)} 
+                heldCarts={heldCarts} 
+                onResume={handleResumeCart} 
+                onDelete={handleDeleteHeldCart} 
+            />
             
             <div style={{ display: 'none' }}><Receipt ref={receiptRef} order={orderToPrint} /></div>
         </>
@@ -26877,38 +26987,270 @@ export default PosPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductFormPage.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductFormPage.jsx
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { getCategories, getSubCategories, getSuppliers, getProductById, createProduct, updateProduct, uploadImage, getRawMaterials } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft, FiUpload } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import { formatRupiah as formatCurrency, parseRupiah as parseCurrency } from '../utils/formatters';
+import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
-const PageContainer = styled.div` padding: 30px; max-width: 900px; margin: 0 auto; `;
-const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; `;
-const Title = styled.h1` font-size: 1.8rem; `;
-const BackLink = styled(Link)` display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); text-decoration: none; margin-bottom: 20px; font-weight: 500; &:hover { color: var(--text-primary); } `;
-const Form = styled.form` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 25px; `;
-const FormGrid = styled.div` display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 20px; `;
-const InputGroup = styled.div` grid-column: ${props => props.$fullWidth ? '1 / -1' : 'span 1'}; `;
-const Label = styled.label` display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); `;
-const Input = styled.input` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; &[type="number"] { -moz-appearance: textfield; } &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; } `;
-const FileInputContainer = styled.div` display: flex; gap: 10px; align-items: center; width: 100%; `;
-const UploadButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 15px; font-weight: 600; display: flex; align-items: center; gap: 5px; cursor: pointer; flex-shrink: 0; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
-const FileInput = styled.input` display: none; `;
-const Select = styled.select` width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-main); color: var(--text-primary); font-size: 1rem; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 20px; &:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2); } `;
-const VariantSection = styled.div` grid-column: 1 / -1; border-top: 1px solid var(--border-color); margin-top: 10px; padding-top: 20px; `;
-const VariantRow = styled.div` display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
-const AddVariantButton = styled.button` display: flex; align-items: center; gap: 5px; background-color: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 500; margin-top: 10px; &:hover { opacity: 0.9; } `;
-const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--red-color); `;
-const FormFooter = styled.div` padding-top: 25px; margin-top: 25px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; `;
-const SaveButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 25px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } &:disabled { opacity: 0.5; cursor: not-allowed; } `;
+const PageContainer = styled.div`
+    padding: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+    
+    @media (max-width: 768px) {
+        padding: 15px;
+    }
+`;
+
+const PageHeader = styled.header`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+`;
+
+const Title = styled.h1`
+    font-size: 1.8rem;
+    color: var(--text-primary);
+`;
+
+const BackLink = styled(Link)`
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-bottom: 20px;
+    font-weight: 500;
+
+    &:hover {
+        color: var(--text-primary);
+    }
+`;
+
+const Form = styled.form`
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    padding: 25px;
+`;
+
+const FormGrid = styled.div`
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px 20px;
+    
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
+const InputGroup = styled.div`
+    grid-column: ${props => props.$fullWidth ? '1 / -1' : 'span 1'};
+`;
+
+const Label = styled.label`
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+`;
+
+const Input = styled.input`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-size: 1rem;
+    
+    &[type="number"] {
+        -moz-appearance: textfield;
+    }
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+`;
+
+const FileInputContainer = styled.div`
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+`;
+
+const UploadButton = styled.button`
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+        background-color: var(--primary-hover);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
+const FileInput = styled.input`
+    display: none;
+`;
+
+const Select = styled.select`
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-size: 1rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 20px;
+
+    &:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
+    }
+`;
+
+const VariantSection = styled.div`
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+    padding-top: 20px;
+`;
+
+const VariantRow = styled.div`
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr 50px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+    
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        & input {
+            width: 100%;
+        }
+        & button {
+            width: 100%;
+            margin-top: 10px;
+        }
+    }
+`;
+
+const AddVariantButton = styled.button`
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 10px;
+    
+    &:hover {
+        opacity: 0.9;
+    }
+`;
+
+const ActionButton = styled.button`
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--red-color);
+    
+    @media (max-width: 768px) {
+        border: 1px solid var(--border-color);
+        padding: 10px;
+        border-radius: 8px;
+        color: var(--red-color);
+    }
+`;
+
+const FormFooter = styled.div`
+    padding-top: 25px;
+    margin-top: 25px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+`;
+
+const SaveButton = styled.button`
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--primary-hover);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+
 const RecipeSection = styled(VariantSection)``;
-const RecipeRow = styled.div` display: grid; grid-template-columns: 3fr 1fr 1fr 50px; gap: 15px; align-items: center; margin-bottom: 10px; `;
+
+const RecipeRow = styled.div`
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr 50px;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 10px;
+    
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        & select, & input {
+            width: 100%;
+        }
+        & span {
+            width: 100%;
+            text-align: left;
+        }
+        & button {
+            width: 100%;
+            margin-top: 10px;
+        }
+    }
+`;
+
 const AddRecipeItemButton = styled(AddVariantButton)``;
+// --- End of Styled Components ---
 
 function ProductFormPage() {
     const { id } = useParams();
@@ -27006,7 +27348,11 @@ function ProductFormPage() {
 
     const handleVariantChange = (index, field, value) => {
         const newVariants = [...formData.variants];
-        newVariants[index][field] = value;
+        if (field === 'price' || field === 'cost_price') {
+            newVariants[index][field] = parseCurrency(value);
+        } else {
+            newVariants[index][field] = value;
+        }
         setFormData({ ...formData, variants: newVariants });
     };
 
@@ -27083,79 +27429,79 @@ function ProductFormPage() {
         }
     };
 
-    if (loading) return <PageContainer><Skeleton height={500} /></PageContainer>;
-
     return (
-        <PageContainer>
-            <BackLink to="/products"><FiArrowLeft /> Kembali ke Daftar Produk</BackLink>
-            <PageHeader>
-                <Title>{isEditing ? 'Edit Produk' : 'Tambah Produk Baru'}</Title>
-            </PageHeader>
-            <Form onSubmit={handleSubmit}>
-                <FormGrid>
-                    <InputGroup $fullWidth><Label>Nama Produk</Label><Input name="name" value={formData.name} onChange={handleChange} required autoFocus /></InputGroup>
-                    <InputGroup><Label>Kategori</Label><Select name="category_id" value={formData.category_id} onChange={handleChange}><option value="">-- Pilih Kategori --</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</Select></InputGroup>
-                    <InputGroup><Label>Sub-Kategori</Label><Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}><option value="">-- Pilih Sub-Kategori --</option>{subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</Select></InputGroup>
-                    <InputGroup><Label>Pemasok</Label><Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}><option value="">-- Pilih Pemasok --</option>{suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}</Select></InputGroup>
-                    <InputGroup><Label>Tanggal Kadaluarsa (Opsional)</Label><Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} /></InputGroup>
-                    <InputGroup><Label>Total Stok</Label><Input name="stock" type="number" value={formData.stock} onChange={handleChange} required /></InputGroup>
-                    <InputGroup><Label>Ambang Batas Stok Rendah</Label><Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required /></InputGroup>
-                </FormGrid>
+        <PageWrapper loading={loading}>
+            <PageContainer>
+                <BackLink to="/products"><FiArrowLeft /> Kembali ke Daftar Produk</BackLink>
+                <PageHeader>
+                    <Title>{isEditing ? 'Edit Produk' : 'Tambah Produk Baru'}</Title>
+                </PageHeader>
+                <Form onSubmit={handleSubmit}>
+                    <FormGrid>
+                        <InputGroup $fullWidth><Label>Nama Produk</Label><Input name="name" value={formData.name} onChange={handleChange} required autoFocus /></InputGroup>
+                        <InputGroup><Label>Kategori</Label><Select name="category_id" value={formData.category_id} onChange={handleChange}><option value="">-- Pilih Kategori --</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</Select></InputGroup>
+                        <InputGroup><Label>Sub-Kategori</Label><Select name="sub_category_id" value={formData.sub_category_id} onChange={handleChange} disabled={subCategories.length === 0}><option value="">-- Pilih Sub-Kategori --</option>{subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}</Select></InputGroup>
+                        <InputGroup><Label>Pemasok</Label><Select name="supplier_id" value={formData.supplier_id} onChange={handleChange}><option value="">-- Pilih Pemasok --</option>{suppliers.map(sup => <option key={sup.id} value={sup.id}>{sup.name}</option>)}</Select></InputGroup>
+                        <InputGroup><Label>Tanggal Kadaluarsa (Opsional)</Label><Input type="date" name="expiration_date" value={formData.expiration_date} onChange={handleChange} /></InputGroup>
+                        <InputGroup><Label>Total Stok</Label><Input name="stock" type="number" value={formData.stock} onChange={handleChange} required /></InputGroup>
+                        <InputGroup><Label>Ambang Batas Stok Rendah</Label><Input name="low_stock_threshold" type="number" value={formData.low_stock_threshold} onChange={handleChange} required /></InputGroup>
+                    </FormGrid>
 
-                <VariantSection>
-                    <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Varian Produk</Label>
-                    {formData.variants.map((variant, index) => (
-                        <VariantRow key={index}>
-                            <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
-                            <Input type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)} onChange={e => handleVariantChange(index, 'cost_price', e.target.value)} required />
-                            <Input type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)} onChange={e => handleVariantChange(index, 'price', e.target.value)} required />
-                            <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
-                            <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
-                        </VariantRow>
-                    ))}
-                    <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
-                </VariantSection>
+                    <VariantSection>
+                        <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Varian Produk</Label>
+                        {formData.variants.map((variant, index) => (
+                            <VariantRow key={index}>
+                                <Input placeholder="Nama Varian (cth: Panas)" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} required />
+                                <Input type="text" placeholder="Harga Beli (Modal)" value={formatCurrency(variant.cost_price)} onChange={e => handleVariantChange(index, 'cost_price', e.target.value)} required />
+                                <Input type="text" placeholder="Harga Jual" value={formatCurrency(variant.price)} onChange={e => handleVariantChange(index, 'price', e.target.value)} required />
+                                <Input placeholder="Barcode/SKU" value={variant.barcode || ''} onChange={e => handleVariantChange(index, 'barcode', e.target.value)} />
+                                <ActionButton type="button" onClick={() => removeVariant(index)}><FiTrash2 size={18} /></ActionButton>
+                            </VariantRow>
+                        ))}
+                        <AddVariantButton type="button" onClick={addVariant}><FiPlus /> Tambah Varian</AddVariantButton>
+                    </VariantSection>
 
-                <RecipeSection>
-                    <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Resep (jika ada)</Label>
-                    {formData.recipeItems.map((item, index) => (
-                        <RecipeRow key={index}>
-                            <Select name="raw_material_id" value={item.raw_material_id} onChange={e => handleRecipeItemChange(index, 'raw_material_id', e.target.value)} required>
-                                <option value="">-- Pilih Bahan Baku --</option>
-                                {rawMaterials.map(mat => <option key={mat.id} value={mat.id}>{mat.name}</option>)}
-                            </Select>
-                            <Input type="number" step="0.01" placeholder="Jumlah" value={item.quantity_used} onChange={e => handleRecipeItemChange(index, 'quantity_used', e.target.value)} required />
-                            <span>{item.raw_material_unit || 'Satuan'}</span>
-                            <ActionButton type="button" onClick={() => removeRecipeItem(index)}><FiTrash2 size={18} /></ActionButton>
-                        </RecipeRow>
-                    ))}
-                    <AddRecipeItemButton type="button" onClick={addRecipeItem}>
-                        <FiPlus /> Tambah Bahan Resep
-                    </AddRecipeItemButton>
-                </RecipeSection>
+                    <RecipeSection>
+                        <Label style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '15px' }}>Resep (jika ada)</Label>
+                        {formData.recipeItems.map((item, index) => (
+                            <RecipeRow key={index}>
+                                <Select name="raw_material_id" value={item.raw_material_id} onChange={e => handleRecipeItemChange(index, 'raw_material_id', e.target.value)} required>
+                                    <option value="">-- Pilih Bahan Baku --</option>
+                                    {rawMaterials.map(mat => <option key={mat.id} value={mat.id}>{mat.name}</option>)}
+                                </Select>
+                                <Input type="number" step="0.01" placeholder="Jumlah" value={item.quantity_used} onChange={e => handleRecipeItemChange(index, 'quantity_used', e.target.value)} required />
+                                <span>{item.raw_material_unit || 'Satuan'}</span>
+                                <ActionButton type="button" onClick={() => removeRecipeItem(index)}><FiTrash2 size={18} /></ActionButton>
+                            </RecipeRow>
+                        ))}
+                        <AddRecipeItemButton type="button" onClick={addRecipeItem}>
+                            <FiPlus /> Tambah Bahan Resep
+                        </AddRecipeItemButton>
+                    </RecipeSection>
 
-                <InputGroup $fullWidth>
-                    <Label>URL Gambar (atau Unggah)</Label>
-                    <FileInputContainer>
-                        <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
-                        <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
-                        <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
-                    </FileInputContainer>
-                    {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
-                    {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
-                </InputGroup>
-                <InputGroup $fullWidth>
-                    <Label>Deskripsi</Label>
-                    <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
-                </InputGroup>
+                    <InputGroup $fullWidth>
+                        <Label>URL Gambar (atau Unggah)</Label>
+                        <FileInputContainer>
+                            <Input name="image_url" value={selectedFile ? selectedFile.name : formData.image_url} onChange={handleChange} placeholder="URL Gambar atau pilih file" disabled={!!selectedFile} />
+                            <UploadButton type="button" onClick={triggerFileInput}> <FiUpload /> Unggah </UploadButton>
+                            <FileInput type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} />
+                        </FileInputContainer>
+                        {selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>File dipilih: {selectedFile.name}</small>}
+                        {formData.image_url && !selectedFile && <small style={{ color: 'var(--text-secondary)', marginTop: '5px' }}>URL Gambar: {formData.image_url}</small>}
+                    </InputGroup>
+                    <InputGroup $fullWidth>
+                        <Label>Deskripsi</Label>
+                        <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
+                    </InputGroup>
 
-                <FormFooter>
-                    <SaveButton type="submit" disabled={isSubmitting}>
-                        <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
-                    </SaveButton>
-                </FormFooter>
-            </Form>
-        </PageContainer>
+                    <FormFooter>
+                        <SaveButton type="submit" disabled={isSubmitting}>
+                            <FiSave /> {isSubmitting ? 'Menyimpan...' : 'Simpan Produk'}
+                        </SaveButton>
+                    </FormFooter>
+                </Form>
+            </PageContainer>
+        </PageWrapper>
     );
 }
 
@@ -27534,7 +27880,6 @@ const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(va
 function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
 
@@ -27567,7 +27912,7 @@ function ProductsPage() {
                 deleteProduct(productToDelete.id),
                 {
                     pending: 'Menghapus produk...',
-                    success: 'Produk berhasil dihapus!',
+                    success: 'Produk berhasil diarsipkan!',
                     error: (err) => err.response?.data?.message || 'Gagal menghapus produk.'
                 }
             );
@@ -27588,7 +27933,6 @@ function ProductsPage() {
         if (minPrice === maxPrice) return formatCurrency(minPrice);
         return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
     };
-
 
     const renderTable = () => (
         <TableWrapper>
@@ -27665,13 +28009,7 @@ function ProductsPage() {
                         </AddButton>
                     </PageHeader>
                     
-                    {loading ? (
-                        <ContentContainer>
-                            <div style={{ padding: '20px' }}>
-                                <Skeleton height={50} count={5} style={{ marginBottom: '10px' }} />
-                            </div>
-                        </ContentContainer>
-                    ) : products.length > 0 ? (
+                    {products.length > 0 ? (
                         <ContentContainer>
                             {renderTable()}
                             {renderCards()}
@@ -27690,8 +28028,8 @@ function ProductsPage() {
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus produk "${productToDelete?.name}"? Aksi ini akan mengarsipkan produk.`}
+                title="Konfirmasi Pengarsipan"
+                message={`Apakah Anda yakin ingin mengarsipkan produk "${productToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
             />
         </>
     );
@@ -27979,7 +28317,7 @@ export default PromotionFormPage;
 
 // frontend/src/pages/PromotionsPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { getPromotions, deletePromotion } from '../services/api';
@@ -27987,10 +28325,16 @@ import { toast } from 'react-toastify';
 import { FiPlus, FiTrash2, FiTag, FiEdit } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -28082,6 +28426,10 @@ const EmptyStateContainer = styled.div`
     align-items: center;
     text-align: center;
     color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+    margin: 30px;
 `;
 
 const EmptyStateTitle = styled.h3`
@@ -28107,8 +28455,10 @@ function PromotionsPage() {
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [promotionToDelete, setPromotionToDelete] = useState(null);
 
-    const fetchPromotions = async () => {
+    const fetchPromotions = useCallback(async () => {
         setLoading(true);
         try {
             const res = await getPromotions();
@@ -28118,20 +28468,32 @@ function PromotionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchPromotions();
-    }, []);
+    }, [fetchPromotions]);
 
-    const handleDelete = async (id) => {
-        if (window.confirm('Yakin ingin menghapus promosi ini?')) {
-            await toast.promise(deletePromotion(id), {
-                pending: 'Menghapus...',
+    const openDeleteConfirmation = (promotion) => {
+        setPromotionToDelete(promotion);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!promotionToDelete) return;
+
+        try {
+            await toast.promise(deletePromotion(promotionToDelete.id), {
+                pending: 'Menghapus promosi...',
                 success: 'Promosi berhasil dihapus!',
                 error: (err) => err.response?.data?.message || 'Gagal menghapus promosi.'
             });
             fetchPromotions();
+        } catch (error) {
+            console.error("Delete promotion error:", error);
+        } finally {
+            setIsConfirmOpen(false);
+            setPromotionToDelete(null);
         }
     };
 
@@ -28158,15 +28520,15 @@ function PromotionsPage() {
                                         <Td>{promo.code || '-'}</Td>
                                         <Td>{promo.type === 'percentage' ? 'Persentase' : 'Potongan Tetap'}</Td>
                                         <Td>
-                                            {promo.type === 'percentage' 
-                                                ? `${promo.value}%` 
+                                            {promo.type === 'percentage'
+                                                ? `${promo.value}%`
                                                 : `Rp ${new Intl.NumberFormat('id-ID').format(promo.value)}`
                                             }
                                         </Td>
                                         <Td>{promo.is_active ? 'Aktif' : 'Tidak Aktif'}</Td>
                                         <Td>
                                             <ActionButton onClick={() => navigate(`/promotions/edit/${promo.id}`)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDelete(promo.id)}><FiTrash2 size={18} /></ActionButton>
+                                            <ActionButton $danger onClick={() => openDeleteConfirmation(promo)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
                                 ))}
@@ -28187,16 +28549,27 @@ function PromotionsPage() {
     };
 
     return (
-        <PageWrapper loading={loading}>
-            <PageHeader>
-                <Title><FiTag /> Manajemen Promosi</Title>
-                <AddButton onClick={() => navigate('/promotions/new')}>
-                    <FiPlus /> Tambah Promosi
-                </AddButton>
-            </PageHeader>
-            
-            {renderTableContent()}
-        </PageWrapper>
+        <>
+            <PageWrapper loading={loading}>
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiTag /> Manajemen Promosi</Title>
+                        <AddButton onClick={() => navigate('/promotions/new')}>
+                            <FiPlus /> Tambah Promosi
+                        </AddButton>
+                    </PageHeader>
+                    {renderTableContent()}
+                </PageContainer>
+            </PageWrapper>
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Penghapusan"
+                message={`Apakah Anda yakin ingin menghapus promosi "${promotionToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+            />
+        </>
     );
 }
 
@@ -28882,14 +29255,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { getRawMaterials, createRawMaterial, updateRawMaterial, deleteRawMaterial } from '../services/api';
 import RawMaterialFormModal from '../components/RawMaterialFormModal';
+import ConfirmationModal from '../components/ConfirmationModal'; // Import ConfirmationModal
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiBox } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -28897,12 +29276,14 @@ const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
 `;
+
 const Title = styled.h1`
     font-size: 1.8rem;
     display: flex;
     align-items: center;
     gap: 12px;
 `;
+
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
@@ -28916,6 +29297,7 @@ const AddButton = styled.button`
     cursor: pointer;
     &:hover { background-color: var(--primary-hover); }
 `;
+
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
@@ -28925,14 +29307,17 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
+
 const TableWrapper = styled.div`
     overflow-x: auto;
     flex-grow: 1;
 `;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
+
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -28943,15 +29328,18 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
+
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
+
 const Tr = styled(motion.tr)`
     &:last-child > td { border-bottom: none; }
 `;
+
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -28960,6 +29348,7 @@ const ActionButton = styled.button`
     margin-right: 15px;
     &:hover { color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'}; }
 `;
+
 const EmptyStateContainer = styled.div`
     flex-grow: 1;
     display: flex;
@@ -28968,6 +29357,18 @@ const EmptyStateContainer = styled.div`
     align-items: center;
     text-align: center;
     color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+    margin: 30px;
+`;
+
+const EmptyStateTitle = styled.h3`
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
 `;
 
 // --- Animation Variants & Helper Functions ---
@@ -28989,6 +29390,8 @@ function RawMaterialsPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMaterial, setEditingMaterial] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [materialToDelete, setMaterialToDelete] = useState(null);
 
     const fetchMaterials = useCallback(async () => {
         setLoading(true);
@@ -29028,26 +29431,34 @@ function RawMaterialsPage() {
                 error: (err) => err.response?.data?.message || 'Gagal menyimpan data.'
             });
             fetchMaterials();
+            handleCloseModal();
         } catch (error) {
             console.error(error);
         } finally {
             setIsSubmitting(false);
-            handleCloseModal();
         }
     };
 
-    const handleDeleteMaterial = async (id) => {
-        if (window.confirm('Yakin ingin menghapus bahan baku ini?')) {
-            try {
-                await toast.promise(deleteRawMaterial(id), {
-                    pending: 'Menghapus data...',
-                    success: 'Bahan baku berhasil dihapus!',
-                    error: (err) => err.response?.data?.message || 'Gagal menghapus bahan baku.'
-                });
-                fetchMaterials();
-            } catch (error) {
-                console.error(error);
-            }
+    const openDeleteConfirmation = (material) => {
+        setMaterialToDelete(material);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!materialToDelete) return;
+
+        try {
+            await toast.promise(deleteRawMaterial(materialToDelete.id), {
+                pending: 'Menghapus data...',
+                success: 'Bahan baku berhasil dihapus!',
+                error: (err) => err.response?.data?.message || 'Gagal menghapus bahan baku.'
+            });
+            fetchMaterials();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsConfirmOpen(false);
+            setMaterialToDelete(null);
         }
     };
     
@@ -29075,7 +29486,7 @@ function RawMaterialsPage() {
                                         <Td>{formatCurrency(material.cost_per_unit)}</Td>
                                         <Td>
                                             <ActionButton onClick={() => handleOpenModal(material)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => handleDeleteMaterial(material.id)}><FiTrash2 size={18} /></ActionButton>
+                                            <ActionButton $danger onClick={() => openDeleteConfirmation(material)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
                                 ))}
@@ -29089,7 +29500,7 @@ function RawMaterialsPage() {
         return (
             <EmptyStateContainer>
                 <FiBox size={48} />
-                <h3 style={{ marginTop: '20px' }}>Belum Ada Bahan Baku</h3>
+                <EmptyStateTitle>Belum Ada Bahan Baku</EmptyStateTitle>
                 <p>Klik tombol di atas untuk menambahkan bahan baku pertama Anda.</p>
             </EmptyStateContainer>
         );
@@ -29098,13 +29509,15 @@ function RawMaterialsPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title>Manajemen Bahan Baku</Title>
-                    <AddButton onClick={() => handleOpenModal()}>
-                        <FiPlus /> Tambah Bahan Baku
-                    </AddButton>
-                </PageHeader>
-                {renderTableContent()}
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiBox/> Manajemen Bahan Baku</Title>
+                        <AddButton onClick={() => handleOpenModal()}>
+                            <FiPlus /> Tambah Bahan Baku
+                        </AddButton>
+                    </PageHeader>
+                    {renderTableContent()}
+                </PageContainer>
             </PageWrapper>
             
             <RawMaterialFormModal
@@ -29113,6 +29526,14 @@ function RawMaterialsPage() {
                 onSave={handleSaveMaterial}
                 material={editingMaterial}
                 isSubmitting={isSubmitting}
+            />
+
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Penghapusan"
+                message={`Apakah Anda yakin ingin menghapus bahan baku "${materialToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
             />
         </>
     );
@@ -29347,172 +29768,171 @@ export default ReceiveStockPage;
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { createUser } from '../services/api'; // Removed checkInitialUser import
+import { registerAdmin } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiUserPlus } from 'react-icons/fi';
 
 const PageContainer = styled.div`
-  display: flex;
-  height: 100vh;
-  width: 100vw;
-  background-color: var(--bg-main);
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-main);
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-  }
+    @media (max-width: 768px) {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+    }
 `;
 
 const BrandingPanel = styled.div`
-  flex: 1.2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 60px;
+    flex: 1.2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 60px;
 
-  @media (max-width: 768px) {
-    padding: 30px;
-    align-items: center;
-    text-align: center;
-  }
+    @media (max-width: 768px) {
+        padding: 30px;
+        align-items: center;
+        text-align: center;
+    }
 `;
 
 const BrandingContent = styled.div`
-  max-width: 450px;
+    max-width: 450px;
 `;
 
 const BrandingTitle = styled.h1`
-  font-size: 3.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 15px;
-  color: var(--primary-color);
+    font-size: 3.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 15px;
+    color: var(--primary-color);
 
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 2.5rem;
+    }
 `;
 
 const BrandingSubtitle = styled.p`
-  font-size: 1.2rem;
-  font-weight: 300;
-  color: var(--text-secondary);
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--text-secondary);
 
-  @media (max-width: 768px) {
-    font-size: 1rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
 `;
 
 const FormPanel = styled.div`
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow-y: auto;
-  padding: 20px 0;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    padding: 20px 0;
 
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
+    @media (max-width: 768px) {
+        padding: 20px;
+    }
 `;
 
 const FormBox = styled.div`
-  width: 100%;
-  max-width: 550px;
-  padding: 40px;
-  background-color: var(--bg-surface);
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 550px;
+    padding: 40px;
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
 
-  @media (max-width: 768px) {
-    padding: 30px;
-  }
+    @media (max-width: 768px) {
+        padding: 30px;
+    }
 `;
 
 const Title = styled.h2`
-  font-size: 2.2rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: var(--text-primary);
+    font-size: 2.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
 
-  @media (max-width: 768px) {
-    font-size: 1.8rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 1.8rem;
+    }
 `;
 
 const Subtitle = styled.p`
-  color: var(--text-secondary);
-  margin-bottom: 50px;
-  font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 50px;
+    font-size: 1rem;
 
-  @media (max-width: 768px) {
-    margin-bottom: 30px;
-  }
+    @media (max-width: 768px) {
+        margin-bottom: 30px;
+    }
 `;
 
 const Form = styled.form`
-  display: grid;
-  grid-template-columns: 1fr 1fr; /* Mengubah menjadi 2 kolom */
-  gap: 25px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr; /* Kembali ke 1 kolom di HP */
-  }
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
 `;
 
 const InputGroup = styled.div`
-  /* Defaultnya akan menempati 1 kolom, kecuali diberi prop fullWidth */
-  grid-column: ${props => props.fullWidth ? '1 / -1' : 'auto'};
+    grid-column: ${props => props.fullWidth ? '1 / -1' : 'auto'};
 `;
 
 const Label = styled.label`
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-secondary);
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 14px 18px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  font-size: 1rem;
-  background-color: var(--bg-main);
-  color: var(--text-primary);
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
 `;
 
 const Button = styled.button`
-  width: 100%;
-  padding: 15px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  grid-column: 1 / -1; /* Tombol tetap mengisi 2 kolom */
-  &:hover {
-    background-color: var(--primary-hover);
-  }
+    width: 100%;
+    padding: 15px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    grid-column: 1 / -1;
+    &:hover {
+        background-color: var(--primary-hover);
+    }
 `;
 
 const LoginLink = styled.p`
-  text-align: center;
-  margin-top: 15px;
-  color: var(--text-secondary);
-  font-size: 0.9rem;
-  grid-column: 1 / -1; /* Link tetap mengisi 2 kolom */
+    text-align: center;
+    margin-top: 15px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    grid-column: 1 / -1;
 
-  a {
-    color: var(--primary-color);
-    font-weight: 600;
-    text-decoration: none;
-    &:hover { text-decoration: underline; }
-  }
+    a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+        &:hover { text-decoration: underline; }
+    }
 `;
 
 
@@ -29520,36 +29940,17 @@ function RegisterPage() {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', registrationKey: '' });
     const navigate = useNavigate();
 
-    // The useEffect block for checkInitialUser is no longer needed
-    // as the registration logic now relies on ADMIN_REGISTRATION_KEY.
-    // useEffect(() => {
-    //     const checkUser = async () => {
-    //         try {
-    //             const res = await checkInitialUser();
-    //             if (!res.data.setupNeeded) {
-    //                 toast.info("Registrasi publik dinonaktifkan.");
-    //                 navigate('/login');
-    //             }
-    //         } catch (error) {
-    //             toast.error("Tidak bisa terhubung ke server.");
-    //             navigate('/login');
-    //         }
-    //     };
-    //     checkUser();
-    // }, [navigate]);
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const promise = createUser(formData); 
+        const promise = registerAdmin(formData);
         
-        // Store the toast promise result
         const toastResult = toast.promise(promise, {
             pending: 'Mendaftarkan admin...',
-            success: 'Registrasi Admin berhasil! Silakan login.', // Simplified success message
+            success: 'Registrasi Admin berhasil! Silakan login.',
             error: {
                 render({data}){
                     return `Gagal: ${data.response?.data?.message || 'Server error'}`;
@@ -29558,11 +29959,9 @@ function RegisterPage() {
         });
 
         try {
-            await toastResult; // Await the toast promise to ensure it completes
-            navigate('/login'); // Navigate after the toast promise resolves successfully
+            await toastResult;
+            navigate('/login');
         } catch (error) {
-            // Error handling is already done by toast.promise, but we catch it here
-            // to prevent unhandled promise rejections if needed for other logic.
             console.error("Registration failed:", error);
         }
     };
@@ -29594,7 +29993,6 @@ function RegisterPage() {
                         </InputGroup>
                         <InputGroup>
                             <Label htmlFor="registrationKey">Kode Registrasi</Label>
-                            {/* NEW: Make sure this input sends the registrationKey */}
                             <Input id="registrationKey" name="registrationKey" type="password" onChange={handleChange} required />
                         </InputGroup>
                         <Button type="submit"><FiUserPlus style={{ marginRight: '8px' }}/> Buat Akun Admin</Button>
@@ -29612,6 +30010,8 @@ export default RegisterPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ReportsPage.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ReportsPage.jsx
+
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -29622,6 +30022,17 @@ import "react-datepicker/dist/react-datepicker.css";
 import { exportSalesSummaryPDF as exportReport } from '../services/api';
 import PageWrapper from '../components/PageWrapper';
 
+// --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    @media (max-width: 768px) {
+        padding: 15px;
+    }
+`;
 const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
@@ -29632,12 +30043,17 @@ const Title = styled.h1`
     display: flex;
     align-items: center;
     gap: 12px;
+    color: var(--text-primary); /* Ensure consistent text color */
 `;
 
 const ReportGrid = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
     gap: 25px;
+
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr; /* Stack cards on small screens */
+    }
 `;
 
 const ReportCard = styled.div`
@@ -29664,6 +30080,7 @@ const CardTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 10px;
+    color: var(--text-primary); /* Ensure consistent text color */
 `;
 
 const CardDescription = styled.p`
@@ -29694,6 +30111,10 @@ const ActionButton = styled.button`
         opacity: 0.5;
         cursor: not-allowed;
     }
+
+    @media (max-width: 768px) {
+        width: 100%; /* Full width button on small screens */
+    }
 `;
 
 const DateFilterContainer = styled.div`
@@ -29703,6 +30124,8 @@ const DateFilterContainer = styled.div`
     margin-top: 15px;
     padding-top: 15px;
     border-top: 1px solid var(--border-color);
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    justify-content: center; /* Center items on smaller screens */
 `;
 const DatePickerWrapper = styled.div`
     .react-datepicker-wrapper input {
@@ -29716,6 +30139,7 @@ const DatePickerWrapper = styled.div`
         text-align: center;
     }
 `;
+// --- End of Styled Components ---
 
 function ReportsPage() {
     const navigate = useNavigate();
@@ -29758,40 +30182,42 @@ function ReportsPage() {
 
     return (
         <PageWrapper loading={false}>
-            <PageHeader>
-                <Title><FiFileText /> Pusat Laporan</Title>
-            </PageHeader>
-            <ReportGrid>
-                <ReportCard>
-                    <CardTitle><FiTrendingUp /> Laporan Profitabilitas Produk</CardTitle>
-                    <CardDescription>
-                        Analisis mendalam tentang produk mana yang paling menguntungkan. Lihat total pendapatan, modal, laba kotor, dan marjin profit untuk setiap item.
-                    </CardDescription>
-                    <ActionButton onClick={() => navigate('/reports/product-profitability')}>
-                        Lihat Laporan
-                    </ActionButton>
-                </ReportCard>
+            <PageContainer>
+                <PageHeader>
+                    <Title><FiFileText /> Pusat Laporan</Title>
+                </PageHeader>
+                <ReportGrid>
+                    <ReportCard>
+                        <CardTitle><FiTrendingUp /> Laporan Profitabilitas Produk</CardTitle>
+                        <CardDescription>
+                            Analisis mendalam tentang produk mana yang paling menguntungkan. Lihat total pendapatan, modal, laba kotor, dan marjin profit untuk setiap item.
+                        </CardDescription>
+                        <ActionButton onClick={() => navigate('/reports/product-profitability')}>
+                            Lihat Laporan
+                        </ActionButton>
+                    </ReportCard>
 
-                <ReportCard>
-                    <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
-                    <CardDescription>
-                        Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
-                    </CardDescription>
-                    <DateFilterContainer>
-                        <FiCalendar size={18} />
-                        <DatePickerWrapper>
-                            <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
-                        </DatePickerWrapper>
-                        <span>-</span>
-                        <DatePickerWrapper>
-                            <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
-                        </DatePickerWrapper>
-                    </DateFilterContainer>
-                    <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
-                        {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
-                    </ActionButton>
-                </ReportCard>
-            </ReportGrid>
+                    <ReportCard>
+                        <CardTitle><FiDownload /> Laporan Penjualan (CSV)</CardTitle>
+                        <CardDescription>
+                            Hasilkan ringkasan penjualan dalam format CSV untuk periode tertentu. Cocok untuk dokumentasi dan arsip.
+                        </CardDescription>
+                        <DateFilterContainer>
+                            <FiCalendar size={18} />
+                            <DatePickerWrapper>
+                                <DatePicker selected={reportStartDate} onChange={(date) => setReportStartDate(date)} dateFormat="dd/MM/yy" maxDate={reportEndDate} />
+                            </DatePickerWrapper>
+                            <span>-</span>
+                            <DatePickerWrapper>
+                                <DatePicker selected={reportEndDate} onChange={(date) => setReportEndDate(date)} dateFormat="dd/MM/yy" minDate={reportStartDate} />
+                            </DatePickerWrapper>
+                        </DateFilterContainer>
+                        <ActionButton onClick={handleGenerateReport} disabled={isGenerating}>
+                            {isGenerating ? 'Memproses...' : 'Ekspor Laporan (CSV)'}
+                        </ActionButton>
+                    </ReportCard>
+                </ReportGrid>
+            </PageContainer>
         </PageWrapper>
     );
 }
@@ -30555,10 +30981,9 @@ import styled from 'styled-components';
 import { getShiftHistory, deleteShift, clearShiftHistory, exportShiftHistory } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiClock, FiTrash2, FiAlertTriangle, FiDownload } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import { jwtDecode } from 'jwt-decode';
 import ConfirmationModal from '../components/ConfirmationModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components dengan Perbaikan Mobile ---
@@ -30599,14 +31024,14 @@ const Title = styled.h1`
 `;
 const TableContainer = styled.div`
     flex-grow: 1;
-    overflow: hidden; /* Sembunyikan overflow di sini */
+    overflow: hidden;
 `;
 
 // --- DESKTOP TABLE STYLES ---
 const TableWrapper = styled.div`
-    display: none; /* Sembunyikan di mobile */
+    display: none;
     @media (min-width: 769px) {
-        display: block; /* Tampilkan di PC */
+        display: block;
         background-color: var(--bg-surface);
         border-radius: 16px;
         border: 1px solid var(--border-color);
@@ -30620,9 +31045,9 @@ const Tr = styled(motion.tr)` &:last-child > td { border-bottom: none; } `;
 
 // --- MOBILE CARD STYLES ---
 const CardList = styled.div`
-    display: none; /* Sembunyikan di PC */
+    display: none;
     @media (max-width: 768px) {
-        display: grid; /* Tampilkan sebagai grid di mobile */
+        display: grid;
         gap: 15px;
     }
 `;
@@ -30676,26 +31101,112 @@ const SalesDetail = styled.div` font-size: 0.8rem; color: var(--text-secondary);
 const ExportButton = styled.button` background-color: var(--green-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
 const ClearHistoryButton = styled.button` background-color: var(--red-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { opacity: 0.9; } `;
 const EmptyStateContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-secondary); `;
-const tableRowVariants = { hidden: { opacity: 0, y: -10 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 }, }), };
+
+const tableRowVariants = {
+    hidden: { opacity: 0, y: -10 },
+    visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 }, }),
+};
+
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
-const formatDateTimeCombined = (start, end) => { if (!start || !end) return null; const startDate = new Date(start); const endDate = new Date(end); const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }); const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); return ( <TimePeriodCell> <div className="start-time">{dateStr}</div> <div className="end-time">{startTime} - {endTime}</div> </TimePeriodCell> ); };
+
+const formatDateTimeCombined = (start, end) => {
+    if (!start || !end) return null;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const dateStr = startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return (
+        <TimePeriodCell>
+            <div className="start-time">{dateStr}</div>
+            <div className="end-time">{startTime} - {endTime}</div>
+        </TimePeriodCell>
+    );
+};
 
 function ShiftHistoryPage() {
-    // ... (State dan fungsi lainnya biarkan sama persis) ...
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userRole, setUserRole] = useState(null);
     const [modalState, setModalState] = useState({ isOpen: false, action: null, id: null, title: '', message: '' });
-    const fetchHistory = useCallback(async () => { setLoading(true); try { const res = await getShiftHistory(); setHistory(res.data); } catch (error) { toast.error("Gagal memuat riwayat shift."); } finally { setLoading(false); } }, []);
-    useEffect(() => { const token = localStorage.getItem('token'); if (token) { try { const decoded = jwtDecode(token); setUserRole(decoded.role ? decoded.role.toLowerCase() : null); } catch (error) { console.error("Invalid token:", error); setUserRole(null); } } fetchHistory(); }, [fetchHistory]);
-    const openConfirmation = (action, id = null) => { let title = ''; let message = ''; if (action === 'delete') { title = 'Hapus Shift'; message = `Yakin ingin menghapus riwayat shift #${id}?`; } else if (action === 'clearAll') { title = 'Hapus Semua Riwayat'; message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.'; } setModalState({ isOpen: true, action, id, title, message }); };
-    const handleExport = async () => { toast.info("Mempersiapkan data untuk diunduh..."); try { const response = await exportShiftHistory(); const url = window.URL.createObjectURL(new Blob([response.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`); document.body.appendChild(link); link.click(); link.remove(); } catch (error) { toast.error(error.response?.data?.message || "Gagal mengekspor data."); } };
-    const handleConfirm = async () => { const { action, id } = modalState; setModalState({ isOpen: false, action: null, id: null, title: '', message: '' }); let promise; if (action === 'delete') { promise = deleteShift(id); } else if (action === 'clearAll') { promise = clearShiftHistory(); } if (promise) { await toast.promise(promise, { pending: 'Memproses...', success: 'Aksi berhasil dijalankan!', error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.' }); fetchHistory(); } };
-    
-    const renderContent = () => {
-        if (loading) {
-            return <Skeleton height={300} />;
+
+    const fetchHistory = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await getShiftHistory();
+            setHistory(res.data);
+        } catch (error) {
+            toast.error("Gagal memuat riwayat shift.");
+        } finally {
+            setLoading(false);
         }
+    }, []);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decoded = jwtDecode(token);
+                setUserRole(decoded.role ? decoded.role.toLowerCase() : null);
+            } catch (error) {
+                console.error("Invalid token:", error);
+                setUserRole(null);
+            }
+        }
+        fetchHistory();
+    }, [fetchHistory]);
+
+    const openConfirmation = (action, id = null) => {
+        let title = '';
+        let message = '';
+        if (action === 'delete') {
+            title = 'Hapus Shift';
+            message = `Yakin ingin menghapus riwayat shift #${id}?`;
+        } else if (action === 'clearAll') {
+            title = 'Hapus Semua Riwayat';
+            message = 'Yakin ingin menghapus SELURUH riwayat shift? Aksi ini tidak dapat dibatalkan.';
+        }
+        setModalState({ isOpen: true, action, id, title, message });
+    };
+
+    const handleExport = async () => {
+        toast.info("Mempersiapkan data untuk diunduh...");
+        try {
+            const response = await exportShiftHistory();
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `riwayat-shift-${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success("Laporan berhasil diunduh!");
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gagal mengekspor data.");
+        }
+    };
+
+    const handleConfirm = async () => {
+        const { action, id } = modalState;
+        setModalState({ isOpen: false, action: null, id: null, title: '', message: '' });
+        let promise;
+        if (action === 'delete') {
+            promise = deleteShift(id);
+        } else if (action === 'clearAll') {
+            promise = clearShiftHistory();
+        }
+        if (promise) {
+            await toast.promise(promise, {
+                pending: 'Memproses...',
+                success: 'Aksi berhasil dijalankan!',
+                error: (err) => err.response?.data?.message || 'Gagal menjalankan aksi.'
+            });
+            fetchHistory();
+        }
+    };
+    
+    // Perbaikan: Hapus logika loading dari sini, serahkan ke PageWrapper
+    const renderContent = () => {
         if (history.length === 0) {
             return (
                 <EmptyStateContainer>
@@ -30787,7 +31298,7 @@ function ShiftHistoryPage() {
 
     return (
         <>
-            <PageWrapper>
+            <PageWrapper loading={loading}>
                 <PageContent>
                     <PageHeader>
                         <Title><FiClock /> Riwayat Shift</Title>
@@ -31124,10 +31635,15 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiTruck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -31167,7 +31683,6 @@ const TableContainer = styled.div`
     flex-direction: column;
 `;
 
-// Menghapus overflow-x: auto untuk menghilangkan scrollbar
 const TableWrapper = styled.div`
     flex-grow: 1;
 `;
@@ -31305,7 +31820,7 @@ function SupplierPage() {
         try {
             await toast.promise(deleteSupplier(supplierToDelete.id), {
                 pending: 'Menghapus data...',
-                success: 'Pemasok berhasil dihapus!',
+                success: 'Pemasok berhasil diarsipkan!',
                 error: (err) => err.response?.data?.message || 'Gagal menghapus data.'
             });
             fetchSuppliers();
@@ -31364,14 +31879,16 @@ function SupplierPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiTruck /> Manajemen Pemasok</Title>
-                    <AddButton onClick={() => handleOpenModal()}>
-                        <FiPlus /> Tambah Pemasok
-                    </AddButton>
-                </PageHeader>
-                
-                {renderTableContent()}
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiTruck /> Manajemen Pemasok</Title>
+                        <AddButton onClick={() => handleOpenModal()}>
+                            <FiPlus /> Tambah Pemasok
+                        </AddButton>
+                    </PageHeader>
+                    
+                    {renderTableContent()}
+                </PageContainer>
             </PageWrapper>
 
             <SupplierFormModal 
@@ -31386,8 +31903,8 @@ function SupplierPage() {
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus pemasok "${supplierToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+                title="Konfirmasi Pengarsipan"
+                message={`Apakah Anda yakin ingin mengarsipkan pemasok "${supplierToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
             />
         </>
     );
@@ -31661,18 +32178,22 @@ export default TargetPage;
 
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
 import { getUsers, deleteUser, getRoles, createUserByAdmin, updateUser } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiUserPlus, FiEdit, FiTrash2, FiUsers } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
 import ConfirmationModal from '../components/ConfirmationModal';
 import UserFormModal from '../components/UserFormModal';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
 // --- Styled Components ---
+const PageContainer = styled.div`
+    padding: 30px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+`;
+
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -31680,12 +32201,14 @@ const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
 `;
+
 const Title = styled.h1`
     font-size: 1.8rem;
     display: flex;
     align-items: center;
     gap: 12px;
 `;
+
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
@@ -31701,6 +32224,7 @@ const AddButton = styled.button`
         background-color: var(--primary-hover);
     }
 `;
+
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
@@ -31710,14 +32234,16 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-// Menghapus scrollbar dengan menghapus overflow-x: auto
+
 const TableWrapper = styled.div`
     flex-grow: 1;
 `;
+
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
+
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -31728,17 +32254,20 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
+
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
+
 const Tr = styled(motion.tr)`
     &:last-child > td {
         border-bottom: none;
     }
 `;
+
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -31750,6 +32279,28 @@ const ActionButton = styled.button`
     }
 `;
 
+const EmptyStateContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-radius: 16px;
+    border: 1px dashed var(--border-color);
+`;
+
+const EmptyStateTitle = styled.h3`
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-top: 20px;
+    margin-bottom: 10px;
+`;
+
+// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -31758,15 +32309,12 @@ const tableRowVariants = {
         transition: { delay: i * 0.05 },
     }),
 };
-// --- End Styled Components ---
 
 function UsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
-
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [roles, setRoles] = useState([]);
@@ -31826,45 +32374,34 @@ function UsersPage() {
 
     const confirmDelete = async () => {
         if (!userToDelete) return;
-        
-        // Buat promise di sini untuk dikelola oleh toast
         const deletePromise = deleteUser(userToDelete.id);
-
         try {
-            // Gunakan toast.promise untuk menampilkan notifikasi
             await toast.promise(deletePromise, {
-                pending: 'Menghapus pengguna...',
-                success: 'Pengguna berhasil dihapus!',
+                pending: 'Menonaktifkan pengguna...',
+                success: 'Pengguna berhasil dinonaktifkan!',
                 error: {
                     render({ data }) {
-                        // Menampilkan pesan spesifik dari backend
-                        return data.response?.data?.message || 'Gagal menghapus pengguna.';
+                        return data.response?.data?.message || 'Gagal menonaktifkan pengguna.';
                     }
                 }
             });
-
-            // Hanya memuat ulang data jika penghapusan berhasil
             fetchUsersAndRoles();
         } catch (error) {
-            // Log error, tapi tidak perlu toast.error lagi karena sudah ditangani
-            console.error("Delete user error:", error);
+            console.error("Deactivate user error:", error);
         } finally {
-            // Tutup modal dan reset state terlepas dari berhasil atau tidaknya operasi
             setIsConfirmOpen(false);
             setUserToDelete(null);
         }
     };
 
     const renderTableContent = () => {
-        if (loading) {
-            return <div style={{ padding: '20px' }}><Skeleton count={5} height={50} /></div>;
-        }
-
         if (users.length === 0) {
             return (
-                <div style={{ textAlign: 'center', padding: '50px' }}>
-                    <p>Tidak ada pengguna yang terdaftar.</p>
-                </div>
+                <EmptyStateContainer>
+                    <FiUsers size={48} />
+                    <EmptyStateTitle>Tidak Ada Pengguna</EmptyStateTitle>
+                    <p>Klik tombol di pojok kanan atas untuk menambahkan pengguna pertama Anda.</p>
+                </EmptyStateContainer>
             );
         }
 
@@ -31904,23 +32441,25 @@ function UsersPage() {
     return (
         <>
             <PageWrapper loading={loading}>
-                <PageHeader>
-                    <Title><FiUsers /> Manajemen Pengguna</Title>
-                    <AddButton onClick={() => handleOpenModal()}>
-                        <FiUserPlus size={18} /> Tambah Pengguna
-                    </AddButton>
-                </PageHeader>
-                <TableContainer>
-                    {renderTableContent()}
-                </TableContainer>
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiUsers /> Manajemen Pengguna</Title>
+                        <AddButton onClick={() => handleOpenModal()}>
+                            <FiUserPlus size={18} /> Tambah Pengguna
+                        </AddButton>
+                    </PageHeader>
+                    <TableContainer>
+                        {renderTableContent()}
+                    </TableContainer>
+                </PageContainer>
             </PageWrapper>
             
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
-                title="Konfirmasi Penghapusan"
-                message={`Apakah Anda yakin ingin menghapus pengguna "${userToDelete?.name}"?`}
+                title="Konfirmasi Penonaktifan"
+                message={`Apakah Anda yakin ingin menonaktifkan pengguna "${userToDelete?.name}"?`}
             />
 
             <UserFormModal
@@ -31953,12 +32492,8 @@ import {
     getRevenueTarget, getStockInfo, getStaleProducts, getExpiredProducts,
     getTopCustomers
 } from '../../services/api';
-
-// Imports for the new layout and animations
 import { motion } from 'framer-motion';
 import PageWrapper from '../../components/PageWrapper';
-
-// Dashboard Components
 import DashboardHeader from './components/DashboardHeader';
 import StatCardGrid from './components/StatCardGrid';
 import DailyReport from '../../components/DailyReport';
@@ -31975,8 +32510,6 @@ import { useShift } from '../../context/ShiftContext';
 import StartShiftModal from '../../components/StartShiftModal';
 import CloseShiftModal from '../../components/CloseShiftModal';
 
-
-// --- Styled Components with Animations ---
 const DashboardGrid = styled(motion.div)`
     display: grid;
     grid-template-columns: repeat(12, 1fr);
@@ -34316,8 +34849,6 @@ TopProductsChart.propTypes = {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
-
 import axios from 'axios';
 
 const API = axios.create({
@@ -34386,8 +34917,8 @@ const createQueryParams = (params = {}) => {
 // --- API Services ---
 
 // User & Auth
-export const loginUser = (userData) => API.post('/users/login', userData);
-export const createUser = (userData) => API.post('/users/register', userData);
+export const login = (userData) => API.post('/users/login', userData); // GANTI: loginUser -> login
+export const registerAdmin = (userData) => API.post('/users/register', userData); // GANTI: createUser -> registerAdmin
 export const createUserByAdmin = (userData) => API.post('/users', userData);
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
@@ -34404,7 +34935,7 @@ export const deleteRole = (id) => API.delete(`/roles/${id}`);
 export const getPermissions = () => API.get('/roles/permissions');
 
 // Products & Inventory
-export const getProducts = (params) => API.get(`/products?${createQueryParams(params)}`);
+export const getProducts = (params = {}) => API.get(`/products?${createQueryParams(params)}`);
 export const getProductById = (id) => API.get(`/products/${id}`);
 export const createProduct = (productData) => API.post('/products', productData);
 export const updateProduct = (id, productData) => API.put(`/products/${id}`, productData);

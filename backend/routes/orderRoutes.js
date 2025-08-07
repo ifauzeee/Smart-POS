@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\orderRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -30,12 +32,12 @@ async function handleStockUpdate(connection, items, factor = -1, validateOnly = 
             for (const recipeItem of recipeItems) {
                 const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
                 const requiredQuantity = recipeItem.quantity_used * item.quantity;
-                
+
                 if (factor === -1 && material.stock_quantity < requiredQuantity) {
                     throw new Error(`Stok "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
                 }
                 if (!validateOnly) {
-                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity + ? WHERE id = ?', [requiredQuantity * factor * -1, recipeItem.raw_material_id]);
+                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity + ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
                 }
             }
         } else { // Produk jadi
@@ -43,7 +45,7 @@ async function handleStockUpdate(connection, items, factor = -1, validateOnly = 
                 throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
             }
             if (!validateOnly) {
-                await connection.execute('UPDATE products SET stock = stock + ? WHERE id = ?', [item.quantity * factor * -1, productId]);
+                await connection.execute('UPDATE products SET stock = stock + ? WHERE id = ?', [item.quantity * factor, productId]);
             }
         }
     }
@@ -159,14 +161,14 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
 
         if (ordersInBusiness.length > 0) {
             const orderIdsToDelete = ordersInBusiness.map(order => order.id);
-            
+
             // Hapus data terkait terlebih dahulu
             await connection.query('DELETE FROM customer_points_log WHERE order_id IN (?)', [orderIdsToDelete]);
             await connection.query('DELETE FROM order_items WHERE order_id IN (?)', [orderIdsToDelete]);
-            
+
             // Hapus pesanan utama
             const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE id IN (?)', [orderIdsToDelete]);
-            
+
             // Perintah untuk me-reset ID Pesanan kembali ke 1
             await connection.query('ALTER TABLE orders AUTO_INCREMENT = 1');
 
@@ -215,6 +217,8 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         // Kembalikan poin jika ada
         if (order.customer_id && order.points_earned > 0) {
             await connection.execute('UPDATE customers SET points = points - ? WHERE id = ? AND business_id = ?', [order.points_earned, order.customer_id, businessId]);
+            
+            // Hapus log poin (ini sudah benar)
             await connection.execute('DELETE FROM customer_points_log WHERE order_id = ?', [orderId]);
         }
         
@@ -224,7 +228,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
 
         await connection.commit();
         await logActivity(businessId, userId, 'DELETE_ORDER', `Deleted order ID ${orderId}. Stock and points reverted.`);
-        res.json({ message: 'Pesanan berhasil dihapus dan stok telah dikembalikan.' });
+        res.json({ message: 'Pesanan berhasil dihapus dan stok serta poin telah dikembalikan.' });
     } catch (error) {
         await connection.rollback();
         console.error("Error deleting order:", error);
@@ -234,7 +238,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         connection.release();
     }
 });
-
 
 // Rute untuk ekspor data transaksi
 router.get('/export', protect, isAdmin, async (req, res) => {
