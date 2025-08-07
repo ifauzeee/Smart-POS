@@ -316,20 +316,26 @@ function PosPage() {
                 </SearchContainer>
             </PanelHeader>
             <ProductGrid>
-                {filteredProducts.map((product) => (
-                    <ProductCard 
-                        key={product.id} 
-                        $disabled={product.stock <= 0} 
-                        onClick={() => product.stock > 0 && handleProductClick(product)} 
-                        whileHover={product.stock > 0 ? { scale: 1.03 } : {}} 
-                        src={product.image_url || `https://placehold.co/200`}
-                    >
-                        <ProductInfo>
-                            <ProductName>{product.name}</ProductName>
-                            <ProductPrice>{getPriceDisplay(product.variants)}</ProductPrice>
-                        </ProductInfo>
-                    </ProductCard>
-                ))}
+                {loading ? (
+                    Array.from({ length: 12 }).map((_, index) => (
+                        <SkeletonCard key={index} />
+                    ))
+                ) : (
+                    filteredProducts.map((product) => (
+                        <ProductCard 
+                            key={product.id} 
+                            $disabled={product.stock <= 0} 
+                            onClick={() => product.stock > 0 && handleProductClick(product)} 
+                            whileHover={product.stock > 0 ? { scale: 1.03 } : {}} 
+                            src={product.image_url || `https://placehold.co/200`}
+                        >
+                            <ProductInfo>
+                                <ProductName>{product.name}</ProductName>
+                                <ProductPrice>{getPriceDisplay(product.variants)}</ProductPrice>
+                            </ProductInfo>
+                        </ProductCard>
+                    ))
+                )}
             </ProductGrid>
         </ProductsPanel>
     );

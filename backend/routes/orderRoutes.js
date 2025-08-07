@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\orderRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -11,7 +13,8 @@ const fs = require('fs');
 const router = express.Router();
 
 // =================================================================
-// PERBAIKAN DIMULAI DI SINI: Logika update stok diubah
+// PERBAIKAN: Logika update stok diubah menjadi lebih komprehensif.
+// Fungsi ini sekarang menangani stok produk jadi dan bahan baku (jika produk memiliki resep).
 // =================================================================
 async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
     for (const item of items) {
@@ -69,7 +72,7 @@ router.post('/', protect, async (req, res) => {
             await connection.execute(orderItemSql, [orderId, variant.product_id, item.variantId, item.quantity, variant.price, variant.cost_price]);
         }
         await handleStockUpdate(connection, items, 1, false);
-        
+
         if (customer_id) {
             if (pointsEarned > 0) {
                 await connection.execute('INSERT INTO customer_points_log (customer_id, order_id, points_change, description, user_id) VALUES (?, ?, ?, ?, ?)', [customer_id, orderId, pointsEarned, `Poin dari Transaksi #${orderId}`, userId]);
@@ -91,6 +94,8 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+// ... sisa kode tidak berubah ...
+// (Kode untuk GET, DELETE, export, dll. tetap sama seperti yang Anda berikan)
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;

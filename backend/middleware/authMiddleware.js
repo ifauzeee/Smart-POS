@@ -1,18 +1,17 @@
 // C:\Users\Ibnu\Project\smart-pos\backend\middleware\authMiddleware.js
 
 const jwt = require('jsonwebtoken');
-// PERBAIKAN: db tidak lagi diperlukan di sini karena data diambil dari token
-// const db = require('../config/db');
 
 const protect = async (req, res, next) => {
     let token;
+    // PERBAIKAN: Logika dioptimalkan untuk tidak melakukan query database pada setiap request.
+    // Data pengguna diambil langsung dari payload token yang sudah diverifikasi.
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // PERBAIKAN: Tidak perlu query ke database sama sekali.
-            // Semua data yang dibutuhkan diambil langsung dari token yang sudah didekode.
+            // Mengisi req.user dengan data dari token, ini jauh lebih efisien.
             req.user = {
                 id: decoded.id,
                 name: decoded.name,
