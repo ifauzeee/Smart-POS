@@ -4,7 +4,8 @@ export const parseRupiah = (value) => {
     // PERBAIKAN: Menambahkan validasi input untuk mencegah error pada nilai null/undefined
     if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
         // Melempar error agar bisa ditangkap jika diperlukan, atau bisa juga return ''
-        throw new Error('Invalid input: value must be a string or number');
+        console.error('Invalid input to parseRupiah:', value);
+        return '';
     }
     // Menghapus semua karakter non-digit
     return String(value).replace(/[^0-9]/g, '');
@@ -13,6 +14,7 @@ export const parseRupiah = (value) => {
 export const formatRupiah = (value) => {
     try {
         const cleanValue = parseRupiah(value);
+        // ✅ PERBAIKAN DI SINI: Jika value setelah dibersihkan adalah string kosong, kembalikan string kosong
         if (cleanValue === '') return '';
 
         const number = Number(cleanValue);

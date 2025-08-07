@@ -136,7 +136,18 @@ function DashboardPage() {
         toast.info("Laporan harian siap, klik 'Cetak Laporan' untuk mencetak.");
     };
 
-    const handleManualPrint = useReactToPrint({ content: () => reportRef.current });
+    const handleManualPrint = useReactToPrint({ 
+        content: () => reportRef.current,
+        documentTitle: `Laporan-Harian-${new Date().toISOString().slice(0, 10)}`
+    });
+    
+    // ✅ PERBAIKAN: Pisahkan logic untuk memastikan state `dailyReportData` sudah ter-update sebelum mencetak.
+    useEffect(() => {
+        if (dailyReportData) {
+            handleManualPrint();
+        }
+    }, [dailyReportData, handleManualPrint]);
+
 
     return (
         <>

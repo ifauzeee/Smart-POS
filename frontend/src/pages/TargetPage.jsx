@@ -184,7 +184,7 @@ function TargetPage() {
             const weeksInMonth = 4; // Asumsi 4 minggu
             setCalculation({
                 daily: target / daysInMonth,
-                // PERBAIKAN: Target mingguan dibagi 4, bukan dikali 7 dari harian
+                // ✅ PERBAIKAN: Target mingguan dibagi 4, bukan dikali 7 dari harian
                 weekly: target / weeksInMonth,
             });
         } else {

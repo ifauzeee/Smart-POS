@@ -82,10 +82,6 @@ router.get('/:id', protect, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const businessId = req.user.business_id;
-
-        // =================================================================
-        // PERBAIKAN DI SINI: Menambahkan subquery untuk menghitung total_amount
-        // =================================================================
         const poQuery = `
             SELECT 
                 po.*, 
