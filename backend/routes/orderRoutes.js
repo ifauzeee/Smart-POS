@@ -10,34 +10,43 @@ const fs = require('fs');
 
 const router = express.Router();
 
+// =================================================================
+// PERBAIKAN DIMULAI DI SINI: Logika update stok diubah
+// =================================================================
 async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
     for (const item of items) {
         const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId || item.variant_id]);
         if (!variant) throw new Error(`Varian produk dengan ID ${item.variantId || item.variant_id} tidak ditemukan.`);
         const productId = variant.product_id;
+
+        // Langkah 1: SELALU periksa dan kurangi stok produk jadi (barang utama)
         const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
+        if (factor > 0 && product.stock < item.quantity) {
+            throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
+        }
+        if (!validateOnly) {
+            await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity * factor, productId]);
+        }
+
+        // Langkah 2: JIKA produk memiliki resep, kurangi JUGA stok bahan bakunya
         const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
         if (recipeItems.length > 0) {
             for (const recipeItem of recipeItems) {
                 const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
                 const requiredQuantity = recipeItem.quantity_used * item.quantity;
                 if (factor > 0 && material.stock_quantity < requiredQuantity) {
-                    throw new Error(`Stok "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
+                    throw new Error(`Stok bahan baku "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
                 }
                 if (!validateOnly) {
                     await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity - ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
                 }
             }
-        } else {
-            if (factor > 0 && product.stock < item.quantity) {
-                throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
-            }
-            if (!validateOnly) {
-                await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity * factor, productId]);
-            }
         }
     }
 }
+// =================================================================
+// AKHIR DARI PERBAIKAN
+// =================================================================
 
 router.post('/', protect, async (req, res) => {
     const { items, customer_id, payment_method, amount_paid, subtotal_amount, tax_amount, total_amount, promotion_id, discount_amount } = req.body;
@@ -125,7 +134,6 @@ router.get('/:id', protect, async (req, res) => {
     }
 });
 
-// PERBAIKAN DEFINITIF: Fungsi ini sekarang melakukan hard reset
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
@@ -133,19 +141,10 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     try {
         await connection.beginTransaction();
 
-        // 1. Hapus SEMUA log poin untuk bisnis ini (bukan hanya yang terkait order)
         await connection.query('DELETE cpl FROM customer_points_log cpl JOIN customers c ON cpl.customer_id = c.id WHERE c.business_id = ?', [businessId]);
-        
-        // 2. Hapus semua item pesanan
         await connection.query('DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.business_id = ?', [businessId]);
-        
-        // 3. Hapus semua pesanan
         const [ordersDeleteResult] = await connection.query('DELETE FROM orders WHERE business_id = ?', [businessId]);
-
-        // 4. Reset poin SEMUA pelanggan di bisnis ini menjadi 0
         await connection.query('UPDATE customers SET points = 0 WHERE business_id = ?', [businessId]);
-
-        // 5. Reset auto-increment ID
         await connection.query('ALTER TABLE orders AUTO_INCREMENT = 1');
         await connection.query('ALTER TABLE customer_points_log AUTO_INCREMENT = 1');
 

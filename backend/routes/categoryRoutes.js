@@ -6,9 +6,6 @@ const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 
-// The local isAdmin function has been removed from here.
-// It should now be defined and exported from '../middleware/authMiddleware.js'.
-
 // --- Validation Rules ---
 
 // Define validation rules for Category

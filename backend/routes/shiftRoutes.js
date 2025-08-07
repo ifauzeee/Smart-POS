@@ -46,10 +46,8 @@ router.post('/start', protect, async (req, res) => {
 router.post('/close/:id', protect, async (req, res) => {
     const { id: shiftId } = req.params;
     const { id: userId, business_id: businessId } = req.user;
-    // PERBAIKAN: Ambil nilai kas fisik dari request body
     const { physicalEndingCash } = req.body;
 
-    // PERBAIKAN: Validasi input dari frontend
     if (physicalEndingCash === undefined || physicalEndingCash === null || isNaN(parseFloat(physicalEndingCash))) {
         return res.status(400).json({ message: 'Jumlah kas akhir fisik harus diisi dan berupa angka.' });
     }
@@ -67,12 +65,11 @@ router.post('/close/:id', protect, async (req, res) => {
                 COALESCE(SUM(CASE WHEN payment_method = 'Kartu' THEN total_amount ELSE 0 END), 0) as card_sales,
                 COALESCE(SUM(CASE WHEN payment_method = 'QRIS' THEN total_amount ELSE 0 END), 0) as qris_sales,
                 COALESCE(SUM(CASE WHEN payment_method NOT IN ('Tunai', 'Kartu', 'QRIS') THEN total_amount ELSE 0 END), 0) as other_sales
-            FROM orders 
+             FROM orders 
             WHERE user_id = ? AND business_id = ? AND created_at BETWEEN ? AND NOW()
         `;
         const [[salesData]] = await connection.query(salesQuery, [userId, businessId, shift.start_time]);
 
-        // PERBAIKAN: Query baru untuk mengambil total pengeluaran selama shift
         const expenseQuery = `SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses WHERE user_id = ? AND created_at BETWEEN ? AND NOW()`;
         const [[expenseData]] = await connection.query(expenseQuery, [userId, shift.start_time]);
         const total_expenses = parseFloat(expenseData.total_expenses);
@@ -84,10 +81,8 @@ router.post('/close/:id', protect, async (req, res) => {
 
         const total_sales = cash_sales + card_sales + qris_sales + other_sales;
         
-        // PERBAIKAN: Formula kas sistem dikurangi pengeluaran
         const expected_cash = (parseFloat(shift.starting_cash) + cash_sales) - total_expenses;
         const finalPhysicalCash = parseFloat(physicalEndingCash);
-        // PERBAIKAN: Selisih dihitung berdasarkan input kasir
         const difference = finalPhysicalCash - expected_cash;
 
         const updateQuery = `
@@ -98,7 +93,7 @@ router.post('/close/:id', protect, async (req, res) => {
             WHERE id = ?
         `;
         await connection.query(updateQuery, [
-            finalPhysicalCash, // Gunakan nilai dari input kasir
+            finalPhysicalCash,
             cash_sales, card_sales, qris_sales, other_sales,
             total_sales, expected_cash, difference, shiftId
         ]);
