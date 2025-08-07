@@ -4,11 +4,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
-// =================================================================
-// PERBAIKAN DI SINI: Tambahkan FiArchive
-// =================================================================
 import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList, FiArrowUp, FiArrowDown, FiChevronDown, FiChevronUp, FiArchive } from 'react-icons/fi';
-// =================================================================
 
 const GridContainer = styled.div`
     display: grid;
@@ -47,8 +43,16 @@ const ExpandButton = styled.button`
     gap: 8px; transition: all 0.3s ease;
     &:hover { background-color: var(--primary-color); color: white; }
 `;
+
+/**
+ * Calculates percentage change between current and previous values.
+ * Returns null if previous value is zero or undefined to avoid invalid results.
+ * @param {number} current Current value
+ * @param {number} previous Previous value
+ * @returns {number|null} Percentage change or null if invalid
+ */
 const calculatePercentageChange = (current, previous) => {
-    if (previous === null || previous === undefined || previous === 0) return current > 0 ? Infinity : 0;
+    if (previous === null || previous === undefined || previous === 0) return null;
     return ((current - previous) / previous) * 100;
 };
 
@@ -59,7 +63,7 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         const isGood = positiveIsGood ? isPositive : !isPositive;
         const displayValue = `${isPositive ? '+' : ''}${comparisonChange.toFixed(1)}%`;
         const chipColor = isGood ? 'var(--green-color)' : 'var(--red-color)';
-        const chipIcon = isPositive ? <FiArrowUp size={12}/> : <FiArrowDown size={12}/>;
+        const chipIcon = isPositive ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />;
         chip = <ComparisonChip color={chipColor}>{chipIcon}{displayValue}</ComparisonChip>;
     }
     return (
@@ -73,17 +77,40 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         </Card>
     );
 };
-StatCard.propTypes = { icon: PropTypes.node.isRequired, value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired, label: PropTypes.string.isRequired, color: PropTypes.string.isRequired, comparisonChange: PropTypes.number, positiveIsGood: PropTypes.bool };
-const StatCardSkeleton = () => ( <Card as="div"> <Skeleton circle width={60} height={60} /> <div> <Skeleton height={30} width={150} style={{marginBottom: '5px'}} /> <Skeleton height={20} width="60%" /> </div> </Card> );
+
+StatCard.propTypes = {
+    icon: PropTypes.node.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    label: PropTypes.string.isRequired,
+    color: PropTypes.string.isRequired,
+    comparisonChange: PropTypes.number,
+    positiveIsGood: PropTypes.bool
+};
+
+const StatCardSkeleton = () => (
+    <Card as="div">
+        <Skeleton circle width={60} height={60} />
+        <div>
+            <Skeleton height={30} width={150} style={{ marginBottom: '5px' }} />
+            <Skeleton height={20} width="60%" />
+        </div>
+    </Card>
+);
 
 function StatCardGrid({ loading, stats, previousStats, userName }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const handleToggleExpand = () => setIsExpanded(!isExpanded);
 
     if (loading || !stats) {
-        return ( <GridContainer> {Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} />)} </GridContainer> );
+        return (
+            <GridContainer>
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <StatCardSkeleton key={i} />
+                ))}
+            </GridContainer>
+        );
     }
-    
+
     const revenueChange = calculatePercentageChange(stats.totalRevenue, previousStats?.totalRevenue);
     const transactionsChange = calculatePercentageChange(stats.totalTransactions, previousStats?.totalTransactions);
     const profitChange = calculatePercentageChange(stats.totalProfit, previousStats?.totalProfit);
@@ -92,32 +119,102 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
 
     return (
         <GridContainer>
-            <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalRevenue)} label="Pendapatan" color="var(--primary-color)" comparisonChange={revenueChange} />
-            <StatCard icon={<FiShoppingBag size={28} />} value={stats.totalTransactions || 0} label="Total Transaksi" color="var(--green-color)" comparisonChange={transactionsChange} />
-            <StatCard icon={<FiTrendingUp size={28} />} value={formatCurrency(stats.totalProfit)} label="Total Laba" color="#FFA500" comparisonChange={profitChange} />
-            {/* ================================================================= */}
-            {/* PERBAIKAN DI SINI: Menambahkan Kartu Kas Akhir */}
-            {/* ================================================================= */}
-            <StatCard icon={<FiArchive size={28} />} value={formatCurrency(stats.cashInDrawer)} label="Total Kas di Laci" color="#17a2b8" />
-            {/* ================================================================= */}
-            
-            <StatCard icon={<FiTag size={28} />} value={stats.totalSoldUnits || 0} label="Produk Terjual" color="#007bff" />
-            <StatCard icon={<FiUsers size={28} />} value={stats.newCustomers || 0} label="Pelanggan Baru" color="#6f42c4" />
-            
+            <StatCard
+                icon={<FiDollarSign size={28} />}
+                value={formatCurrency(stats.totalRevenue)}
+                label="Pendapatan"
+                color="var(--primary-color)"
+                comparisonChange={revenueChange}
+            />
+            <StatCard
+                icon={<FiShoppingBag size={28} />}
+                value={stats.totalTransactions || 0}
+                label="Total Transaksi"
+                color="var(--green-color)"
+                comparisonChange={transactionsChange}
+            />
+            <StatCard
+                icon={<FiTrendingUp size={28} />}
+                value={formatCurrency(stats.totalProfit)}
+                label="Total Laba"
+                color="#FFA500"
+                comparisonChange={profitChange}
+            />
+            <StatCard
+                icon={<FiArchive size={28} />}
+                value={formatCurrency(stats.cashInDrawer)}
+                label="Total Kas di Laci"
+                color="#17a2b8"
+            />
+            <StatCard
+                icon={<FiTag size={28} />}
+                value={stats.totalSoldUnits || 0}
+                label="Produk Terjual"
+                color="#007bff"
+            />
+            <StatCard
+                icon={<FiUsers size={28} />}
+                value={stats.newCustomers || 0}
+                label="Pelanggan Baru"
+                color="#6f42c4"
+            />
             {isExpanded && (
                 <>
-                    <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalExpenses)} label="Total Pengeluaran" color="#dc3545" comparisonChange={expensesChange} positiveIsGood={false} />
-                    <StatCard icon={<FiList size={28} />} value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`} label="Rata-rata Transaksi" color="#6c757d" />
-                    <StatCard icon={<FiUserCheck size={28} />} value={userName} label="Kasir Aktif" color="#20c997" />
+                    <StatCard
+                        icon={<FiDollarSign size={28} />}
+                        value={formatCurrency(stats.totalExpenses)}
+                        label="Total Pengeluaran"
+                        color="#dc3545"
+                        comparisonChange={expensesChange}
+                        positiveIsGood={false}
+                    />
+                    <StatCard
+                        icon={<FiList size={28} />}
+                        value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`}
+                        label="Rata-rata Transaksi"
+                        color="#6c757d"
+                    />
+                    <StatCard
+                        icon={<FiUserCheck size={28} />}
+                        value={userName}
+                        label="Kasir Aktif"
+                        color="#20c997"
+                    />
                 </>
             )}
             <ExpandButton onClick={handleToggleExpand}>
-                {isExpanded ? <><FiChevronUp size={20} /> Sembunyikan Detail</> : <><FiChevronDown size={20} /> Lihat Detail Lainnya</>}
+                {isExpanded ? (
+                    <>
+                        <FiChevronUp size={20} /> Sembunyikan Detail
+                    </>
+                ) : (
+                    <>
+                        <FiChevronDown size={20} /> Lihat Detail Lainnya
+                    </>
+                )}
             </ExpandButton>
         </GridContainer>
     );
 }
 
-StatCardGrid.propTypes = { loading: PropTypes.bool.isRequired, stats: PropTypes.object, previousStats: PropTypes.object, userName: PropTypes.string, };
+StatCardGrid.propTypes = {
+    loading: PropTypes.bool.isRequired,
+    stats: PropTypes.shape({
+        totalRevenue: PropTypes.number,
+        totalTransactions: PropTypes.number,
+        totalProfit: PropTypes.number,
+        cashInDrawer: PropTypes.number,
+        totalSoldUnits: PropTypes.number,
+        newCustomers: PropTypes.number,
+        totalExpenses: PropTypes.number
+    }),
+    previousStats: PropTypes.shape({
+        totalRevenue: PropTypes.number,
+        totalTransactions: PropTypes.number,
+        totalProfit: PropTypes.number,
+        totalExpenses: PropTypes.number
+    }),
+    userName: PropTypes.string
+};
 
 export default StatCardGrid;

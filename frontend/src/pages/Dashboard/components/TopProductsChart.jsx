@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -9,7 +11,7 @@ const ChartContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
-    border: 1 personally solid var(--border-color);
+    border: 1px solid var(--border-color);
     grid-column: 1 / -1;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 `;
@@ -37,6 +39,11 @@ const EmptyStateContainer = styled.div`
     min-height: 250px;
 `;
 
+const getColor = (index) => {
+    const colors = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1', '#007bff', '#28a745', '#FFA500', '#dc3545', '#6f42c4'];
+    return colors[index % colors.length];
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
@@ -60,12 +67,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.string,
+    active: PropTypes.bool,
+    payload: PropTypes.array,
+    label: PropTypes.string,
 };
-
-const COLORS = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1'];
 
 function TopProductsChart({ loading, data }) {
     if (loading) {
@@ -77,32 +82,35 @@ function TopProductsChart({ loading, data }) {
         );
     }
 
-    const formattedData = data && data.map(item => ({
-        ...item,
-        shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
-    }));
-    const top10Data = formattedData ? formattedData.slice(0, 10) : [];
+    const formattedData = React.useMemo(() => {
+        return data?.map(item => ({
+            ...item,
+            shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
+        })) || [];
+    }, [data]);
+
+    const top10Data = formattedData.slice(0, 10);
 
     return (
         <ChartContainer>
-           <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
+            <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
             {top10Data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={top10Data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                         <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                        <YAxis 
-                            dataKey="shortName" 
-                            type="category" 
-                            width={180} 
-                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }} 
-                            tickLine={false} 
+                        <YAxis
+                            dataKey="shortName"
+                            type="category"
+                            width={180}
+                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
+                            tickLine={false}
                             axisLine={false}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }}/>
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }} />
                         <Bar dataKey="totalSold" name="Unit Terjual" barSize={20} radius={[0, 10, 10, 0]}>
                             {top10Data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={getColor(index)} />
                             ))}
                         </Bar>
                     </BarChart>
@@ -117,9 +125,14 @@ function TopProductsChart({ loading, data }) {
     );
 }
 
-export default TopProductsChart;
-
 TopProductsChart.propTypes = {
-  loading: PropTypes.bool.isRequired,
-  data: PropTypes.array,
+    loading: PropTypes.bool.isRequired,
+    data: PropTypes.arrayOf(
+        PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            totalSold: PropTypes.number.isRequired
+        })
+    )
 };
+
+export default React.memo(TopProductsChart);

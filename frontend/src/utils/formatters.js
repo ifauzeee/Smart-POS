@@ -7,8 +7,9 @@
  * @returns {string} String yang hanya berisi angka.
  */
 export const parseRupiah = (value) => {
-    if (value === null || value === undefined) return '';
-    // Hapus semua karakter yang bukan digit (0-9)
+    if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
+        return '';
+    }
     return String(value).replace(/[^0-9]/g, '');
 };
 
@@ -25,7 +26,6 @@ export const formatRupiah = (value) => {
     const number = Number(cleanValue);
     if (isNaN(number)) return '';
 
-    // Menggunakan Intl.NumberFormat untuk pemformatan yang andal
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',

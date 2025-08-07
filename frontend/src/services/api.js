@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
+
 import axios from 'axios';
 
 const API = axios.create({
@@ -6,58 +8,65 @@ const API = axios.create({
 });
 
 // Request Interceptor
-API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+API.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        if (import.meta.env.DEV) {
+            console.log(`Request: ${config.method.toUpperCase()} ${config.url}`);
+        }
+        return config;
+    },
+    (error) => {
+        if (import.meta.env.DEV) {
+            console.error(`Request error: ${error.config?.method.toUpperCase()} ${error.config?.url} - ${error.message}`);
+        }
+        return Promise.reject({ message: error.message, config: error.config });
     }
-    if (import.meta.env.DEV) {
-        console.log('Sending request:', config.method?.toUpperCase(), config.url, config.data);
-    }
-    return config;
-}, (error) => {
-    if (import.meta.env.DEV) {
-        console.error('Request error:', error.config?.method?.toUpperCase(), error.config?.url, error.message);
-    }
-    return Promise.reject(error);
-});
+);
 
 // Response Interceptor
 API.interceptors.response.use(
     (response) => {
         if (import.meta.env.DEV) {
-            console.log('Received response:', response.config.method?.toUpperCase(), response.config.url, response.status, response.data);
+            console.log(`Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
     (error) => {
         if (import.meta.env.DEV) {
-            console.error('Response error:', error.response?.config?.method?.toUpperCase(), error.response?.config?.url, error.response?.status, error.message);
+            console.error(`Response error: ${error.response?.config?.method.toUpperCase()} ${error.response?.config?.url} - ${error.response?.status || 'No status'} - ${error.message}`);
         }
         if (axios.isCancel(error)) {
-            return Promise.reject(new Error('Request was canceled.'));
+            return Promise.reject({ message: 'Request was canceled.', code: 'CANCELLED' });
         }
         if (error.code === 'ECONNABORTED') {
-            return Promise.reject(new Error('Connection timeout. Please ensure the backend is running and connected.'));
+            return Promise.reject({ message: 'Connection timeout. Please ensure the backend is running and connected.', code: 'TIMEOUT' });
         }
         if (error.response) {
-            return Promise.reject(error.response);
+            return Promise.reject({ message: error.response.data?.message || 'Server error occurred.', status: error.response.status, code: 'SERVER_ERROR' });
         }
         if (error.request) {
-            return Promise.reject(new Error('No response from server. The server may not be running.'));
+            return Promise.reject({ message: 'No response from server. The server may not be running.', code: 'NO_RESPONSE' });
         }
-        return Promise.reject(new Error('An unexpected error occurred.'));
+        return Promise.reject({ message: 'An unexpected error occurred.', code: 'UNKNOWN' });
     }
 );
 
+/**
+ * Creates query parameters from an object, ensuring valid types.
+ * @param {Object} params Parameters to convert to query string
+ * @returns {string} Query string
+ */
 const createQueryParams = (params = {}) => {
     const searchParams = new URLSearchParams();
-    for (const key in params) {
-        const value = params[key];
+    for (const [key, value] of Object.entries(params)) {
         if (value instanceof Date && !isNaN(value)) {
             searchParams.append(key, value.toISOString());
-        } else if (value !== null && value !== undefined) {
-            searchParams.append(key, value);
+        } else if (typeof value === 'string' || typeof value === 'number') {
+            searchParams.append(key, String(value));
         }
     }
     return searchParams.toString();
@@ -146,7 +155,7 @@ export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
 export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`);
 export const getCustomerById = (id) => API.get(`/customers/${id}`);
 export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`);
-export const getCustomerStats = (id) => API.get(`/customers/${id}/stats`); // PERBAIKAN: Menambahkan fungsi yang hilang
+export const getCustomerStats = (id) => API.get(`/customers/${id}/stats`);
 export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/redeem`, data);
 export const createCustomer = (customerData) => API.post('/customers', customerData);
 export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData);

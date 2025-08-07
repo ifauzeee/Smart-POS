@@ -6846,18 +6846,17 @@ module.exports = pool;
 // C:\Users\Ibnu\Project\smart-pos\backend\middleware\authMiddleware.js
 
 const jwt = require('jsonwebtoken');
-// PERBAIKAN: db tidak lagi diperlukan di sini karena data diambil dari token
-// const db = require('../config/db');
 
 const protect = async (req, res, next) => {
     let token;
+    // PERBAIKAN: Logika dioptimalkan untuk tidak melakukan query database pada setiap request.
+    // Data pengguna diambil langsung dari payload token yang sudah diverifikasi.
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // PERBAIKAN: Tidak perlu query ke database sama sekali.
-            // Semua data yang dibutuhkan diambil langsung dari token yang sudah didekode.
+            // Mengisi req.user dengan data dari token, ini jauh lebih efisien.
             req.user = {
                 id: decoded.id,
                 name: decoded.name,
@@ -8194,6 +8193,8 @@ module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\orderRoutes.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\orderRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -8207,7 +8208,8 @@ const fs = require('fs');
 const router = express.Router();
 
 // =================================================================
-// PERBAIKAN DIMULAI DI SINI: Logika update stok diubah
+// PERBAIKAN: Logika update stok diubah menjadi lebih komprehensif.
+// Fungsi ini sekarang menangani stok produk jadi dan bahan baku (jika produk memiliki resep).
 // =================================================================
 async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
     for (const item of items) {
@@ -8265,7 +8267,7 @@ router.post('/', protect, async (req, res) => {
             await connection.execute(orderItemSql, [orderId, variant.product_id, item.variantId, item.quantity, variant.price, variant.cost_price]);
         }
         await handleStockUpdate(connection, items, 1, false);
-        
+
         if (customer_id) {
             if (pointsEarned > 0) {
                 await connection.execute('INSERT INTO customer_points_log (customer_id, order_id, points_change, description, user_id) VALUES (?, ?, ?, ?, ?)', [customer_id, orderId, pointsEarned, `Poin dari Transaksi #${orderId}`, userId]);
@@ -8287,6 +8289,8 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+// ... sisa kode tidak berubah ...
+// (Kode untuk GET, DELETE, export, dll. tetap sama seperti yang Anda berikan)
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -26477,20 +26481,26 @@ function PosPage() {
                 </SearchContainer>
             </PanelHeader>
             <ProductGrid>
-                {filteredProducts.map((product) => (
-                    <ProductCard 
-                        key={product.id} 
-                        $disabled={product.stock <= 0} 
-                        onClick={() => product.stock > 0 && handleProductClick(product)} 
-                        whileHover={product.stock > 0 ? { scale: 1.03 } : {}} 
-                        src={product.image_url || `https://placehold.co/200`}
-                    >
-                        <ProductInfo>
-                            <ProductName>{product.name}</ProductName>
-                            <ProductPrice>{getPriceDisplay(product.variants)}</ProductPrice>
-                        </ProductInfo>
-                    </ProductCard>
-                ))}
+                {loading ? (
+                    Array.from({ length: 12 }).map((_, index) => (
+                        <SkeletonCard key={index} />
+                    ))
+                ) : (
+                    filteredProducts.map((product) => (
+                        <ProductCard 
+                            key={product.id} 
+                            $disabled={product.stock <= 0} 
+                            onClick={() => product.stock > 0 && handleProductClick(product)} 
+                            whileHover={product.stock > 0 ? { scale: 1.03 } : {}} 
+                            src={product.image_url || `https://placehold.co/200`}
+                        >
+                            <ProductInfo>
+                                <ProductName>{product.name}</ProductName>
+                                <ProductPrice>{getPriceDisplay(product.variants)}</ProductPrice>
+                            </ProductInfo>
+                        </ProductCard>
+                    ))
+                )}
             </ProductGrid>
         </ProductsPanel>
     );
@@ -33032,6 +33042,226 @@ ExpiredProductsList.propTypes = {
 
 export default ExpiredProductsList;
 
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\GenericProductList.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\GenericProductList.jsx
+
+import React from 'react';
+import PropTypes from 'prop-types';
+import styled from 'styled-components';
+import Skeleton from 'react-loading-skeleton';
+import * as FiIcons from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+
+const ListContainer = styled.div`
+    background-color: var(--bg-surface);
+    padding: 30px;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    grid-column: 1 / -1;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+`;
+
+const ListTitle = styled.h3`
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    text-align: center;
+`;
+
+const List = styled.ul`
+    list-style: none;
+    padding: 0;
+    flex-grow: 1;
+`;
+
+const ListItem = styled.li`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 8px;
+    background-color: var(--bg-main);
+    transition: all 0.2s ease;
+    &:hover {
+        background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
+        border-color: var(--primary-color, #007bff);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    &:last-child {
+        margin-bottom: 0;
+    }
+`;
+
+const ProductInfo = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-grow: 1;
+`;
+
+const ProductImage = styled.img`
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+`;
+
+const ProductName = styled.span`
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const ItemValue = styled.span`
+    color: var(--text-secondary);
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-left: 15px;
+    font-size: 0.9rem;
+`;
+
+const StockIndicator = styled.div`
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: ${props => props.$color};
+    margin-right: 8px;
+    flex-shrink: 0;
+`;
+
+const EmptyStateContainer = styled.div`
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 50px 20px;
+    gap: 15px;
+`;
+
+const EmptyStateIcon = styled.div`
+    color: var(--text-tertiary, #ccc);
+    margin-bottom: 10px;
+`;
+
+const EmptyStateText = styled.p`
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-secondary);
+`;
+
+const SkeletonContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+`;
+
+const GenericProductList = React.memo(({ loading, items, title, icon, renderItemValue, renderItemLink, emptyMessage, showImage, getStockColor }) => {
+    if (loading) {
+        return (
+            <ListContainer>
+                <ListTitle>{icon} {title}</ListTitle>
+                <SkeletonContainer>
+                    {[...Array(5)].map((_, index) => (
+                        <Skeleton
+                            key={index}
+                            count={1}
+                            height={60}
+                            style={{ marginBottom: '8px', borderRadius: '12px' }}
+                        />
+                    ))}
+                </SkeletonContainer>
+            </ListContainer>
+        );
+    }
+
+    return (
+        <ListContainer>
+            <ListTitle>{icon} {title}</ListTitle>
+            {items?.length > 0 ? (
+                <List>
+                    {items.map(item => (
+                        renderItemLink ? (
+                            <Link to={renderItemLink(item)} key={item.id}>
+                                <ListItem>
+                                    <ProductInfo>
+                                        {showImage && <ProductImage src={item.image_url || 'https://placehold.co/100'} alt={item.name} />}
+                                        {getStockColor && <StockIndicator $color={getStockColor(item.stock)} />}
+                                        <ProductName>{item.name}</ProductName>
+                                    </ProductInfo>
+                                    <ItemValue style={getStockColor ? { color: getStockColor(item.stock), fontWeight: '700' } : {}}>
+                                        {renderItemValue(item)}
+                                    </ItemValue>
+                                </ListItem>
+                            </Link>
+                        ) : (
+                            <ListItem key={item.id}>
+                                <ProductInfo>
+                                    {showImage && <ProductImage src={item.image_url || 'https://placehold.co/100'} alt={item.name} />}
+                                    {getStockColor && <StockIndicator $color={getStockColor(item.stock)} />}
+                                    <ProductName>{item.name}</ProductName>
+                                </ProductInfo>
+                                <ItemValue style={getStockColor ? { color: getStockColor(item.stock), fontWeight: '700' } : {}}>
+                                    {renderItemValue(item)}
+                                </ItemValue>
+                            </ListItem>
+                        )
+                    ))}
+                </List>
+            ) : (
+                <EmptyStateContainer>
+                    <EmptyStateIcon>{icon}</EmptyStateIcon>
+                    <EmptyStateText>{emptyMessage}</EmptyStateText>
+                </EmptyStateContainer>
+            )}
+        </ListContainer>
+    );
+});
+
+GenericProductList.propTypes = {
+    loading: PropTypes.bool.isRequired,
+    items: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            stock: PropTypes.number,
+            image_url: PropTypes.string,
+            lastSoldDate: PropTypes.string,
+            totalSpent: PropTypes.number,
+            totalOrders: PropTypes.number
+        })
+    ),
+    title: PropTypes.string.isRequired,
+    icon: PropTypes.node.isRequired,
+    renderItemValue: PropTypes.func.isRequired,
+    renderItemLink: PropTypes.func,
+    emptyMessage: PropTypes.string.isRequired,
+    showImage: PropTypes.bool,
+    getStockColor: PropTypes.func
+};
+
+export default GenericProductList;
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\NotificationsPanel.jsx =====
 
 import React from 'react';
@@ -33586,20 +33816,26 @@ export default RecentSuppliersList;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\SalesChart.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\SalesChart.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
-import { FiBarChart2 } from 'react-icons/fi';
+import { FiDollarSign } from 'react-icons/fi';
+import { formatRupiah } from '../../utils/formatters';
 
 const ChartContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
     border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
+    grid-column: span 2;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    @media (max-width: 1200px) {
+        grid-column: 1 / -1;
+    }
 `;
 
 const ChartTitle = styled.h3`
@@ -33625,7 +33861,21 @@ const EmptyStateContainer = styled.div`
     min-height: 250px;
 `;
 
-const CustomTooltip = ({ active, payload, formatter }) => {
+// Fungsi untuk menghasilkan warna secara dinamis
+const getColor = (index) => {
+    const colors = ['#007bff', '#28a745', '#FFA500', '#dc3545', '#6f42c4'];
+    return colors[index % colors.length];
+};
+
+const formatDate = (dateString) => {
+    const cache = new Map();
+    if (cache.has(dateString)) return cache.get(dateString);
+    const formatted = new Date(dateString).toLocaleDateString('id-ID');
+    cache.set(dateString, formatted);
+    return formatted;
+};
+
+const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
             <div style={{
@@ -33637,10 +33887,14 @@ const CustomTooltip = ({ active, payload, formatter }) => {
                 color: 'var(--text-primary)',
                 boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
             }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>{payload[0].payload.date}</p>
-                <p style={{ color: 'var(--primary-color)', margin: 0 }}>
-                    Penjualan: <span style={{ fontWeight: '600' }}>{formatter(payload[0].value)}</span>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>
+                    {formatDate(label)}
                 </p>
+                {payload.map((entry, index) => (
+                    <p key={index} style={{ color: getColor(index), margin: 0 }}>
+                        {entry.name}: <span style={{ fontWeight: '600' }}>{formatRupiah(entry.value)}</span>
+                    </p>
+                ))}
             </div>
         );
     }
@@ -33650,20 +33904,14 @@ const CustomTooltip = ({ active, payload, formatter }) => {
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
     payload: PropTypes.array,
-    formatter: PropTypes.func,
-};
-
-const formatNumberYAxis = (value) => {
-    if (value >= 1000000) return `${value / 1000000} jt`;
-    if (value >= 1000) return `${value / 1000} rb`;
-    return value;
+    label: PropTypes.string,
 };
 
 function SalesChart({ loading, data }) {
     if (loading) {
         return (
             <ChartContainer>
-                <ChartTitle><FiBarChart2 size={22}/> Penjualan Harian</ChartTitle>
+                <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
                 <Skeleton height={300} />
             </ChartContainer>
         );
@@ -33671,26 +33919,35 @@ function SalesChart({ loading, data }) {
 
     return (
         <ChartContainer>
-            <ChartTitle><FiBarChart2 size={22}/> Penjualan Harian</ChartTitle>
-            {data && data.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} animationDuration={1000}>
-                        <defs>
-                            <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.8}/>
-                                <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0}/>
-                            </linearGradient>
-                        </defs>
+            <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
+            {data?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                    <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                        <XAxis dataKey="date" tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }} angle={-45} textAnchor="end" height={60} interval="preserveStartEnd" />
-                        <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 500 }} tickFormatter={formatNumberYAxis} />
-                        <Tooltip content={<CustomTooltip formatter={(value) => `Rp ${new Intl.NumberFormat('id-ID').format(value)}`} />} />
-                        <Area type="monotone" dataKey="sales" name="Penjualan (Rp)" stroke="var(--primary-color)" fill="url(#colorSales)" strokeWidth={3} activeDot={{ r: 8, stroke: 'var(--primary-color)', strokeWidth: 2, fill: 'white' }} animationDuration={1000} />
+                        <XAxis dataKey="date" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                        <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area
+                            type="monotone"
+                            dataKey="revenue"
+                            name="Pendapatan"
+                            stroke={getColor(0)}
+                            fill={getColor(0)}
+                            fillOpacity={0.2}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="profit"
+                            name="Laba"
+                            stroke={getColor(1)}
+                            fill={getColor(1)}
+                            fillOpacity={0.2}
+                        />
                     </AreaChart>
                 </ResponsiveContainer>
             ) : (
                 <EmptyStateContainer>
-                    <FiBarChart2 size={48}/>
+                    <FiDollarSign size={48} />
                     <p>Belum ada data penjualan harian untuk rentang tanggal ini.</p>
                 </EmptyStateContainer>
             )}
@@ -33698,174 +33955,51 @@ function SalesChart({ loading, data }) {
     );
 }
 
-export default SalesChart;
-
 SalesChart.propTypes = {
     loading: PropTypes.bool.isRequired,
-    data: PropTypes.array,
+    data: PropTypes.arrayOf(
+        PropTypes.shape({
+            date: PropTypes.string.isRequired,
+            revenue: PropTypes.number.isRequired,
+            profit: PropTypes.number.isRequired
+        })
+    )
 };
+
+export default SalesChart;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StaleProductsList.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StaleProductsList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
-import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
-import * as FiIcons from 'react-icons/fi';
-
-const ListContainer = styled.div`
-    background-color: var(--bg-surface);
-    padding: 30px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
-`;
-
-const ListTitle = styled.h3`
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 25px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: center;
-    text-align: center;
-`;
-
-// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
-const List = styled.ul`
-    list-style: none;
-    padding: 0;
-    flex-grow: 1;
-    /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
-`;
-
-const ListItem = styled.li`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 8px;
-    background-color: var(--bg-main);
-    transition: all 0.2s ease;
-    
-    &:hover {
-        background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
-        border-color: var(--primary-color, #007bff);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    &:last-child {
-        margin-bottom: 0;
-    }
-`;
-
-const ProductName = styled.span`
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-`;
-
-const ItemValue = styled.span`
-    color: var(--text-secondary);
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-left: 15px;
-    font-size: 0.9rem;
-`;
-
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 50px 20px;
-    gap: 15px;
-`;
-
-const EmptyStateIcon = styled.div`
-    color: var(--text-tertiary, #ccc);
-    margin-bottom: 10px;
-`;
-
-const EmptyStateText = styled.p`
-    margin: 0;
-    font-size: 1rem;
-    color: var(--text-secondary);
-`;
-
-const SkeletonContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
+import GenericProductList from './GenericProductList';
+import { FiLayers } from 'react-icons/fi';
 
 function StaleProductsList({ loading, staleProducts = [] }) {
-    if (loading) {
-        return (
-            <ListContainer>
-                <ListTitle><FiIcons.FiLayers size={22}/> Produk Kurang Laku</ListTitle>
-                <SkeletonContainer>
-                    {[...Array(5)].map((_, index) => (
-                       <Skeleton 
-                            key={index}
-                            count={1} 
-                            height={60} 
-                            style={{ 
-                                marginBottom: '8px',
-                                borderRadius: '12px'
-                            }} 
-                        />
-                    ))}
-                </SkeletonContainer>
-            </ListContainer>
-        );
-    }
     return (
-        <ListContainer>
-            <ListTitle><FiIcons.FiLayers size={22}/> Produk Kurang Laku</ListTitle>
-            {staleProducts?.length > 0 ? (
-                <List>
-                    {staleProducts.map(p => (
-                        <ListItem key={p.id}>
-                            <ProductName>{p.name}</ProductName>
-                            <ItemValue>Stok: {p.stock} ({p.lastSoldDate ? `Terjual ${new Date(p.lastSoldDate).toLocaleDateString('id-ID')}` : 'Belum Pernah Terjual'})</ItemValue>
-                        </ListItem>
-                    ))}
-                </List>
-            ) : (
-                <EmptyStateContainer>
-                    <EmptyStateIcon>
-                        <FiIcons.FiLayers size={48}/>
-                    </EmptyStateIcon>
-                    <EmptyStateText>
-                        Semua produk Anda laris! Tidak ada produk yang tidak laku.
-                    </EmptyStateText>
-                </EmptyStateContainer>
-            )}
-        </ListContainer>
+        <GenericProductList
+            loading={loading}
+            items={staleProducts}
+            title="Produk Kurang Laku"
+            icon={<FiLayers size={22} />}
+            renderItemValue={(item) => `Stok: ${item.stock} (${item.lastSoldDate ? `Terjual ${new Date(item.lastSoldDate).toLocaleDateString('id-ID')}` : 'Belum Pernah Terjual'})`}
+            emptyMessage="Semua produk Anda laris! Tidak ada produk yang tidak laku."
+        />
     );
 }
 
 StaleProductsList.propTypes = {
     loading: PropTypes.bool.isRequired,
-    staleProducts: PropTypes.array,
+    staleProducts: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            stock: PropTypes.number.isRequired,
+            lastSoldDate: PropTypes.string
+        })
+    )
 };
 
 export default StaleProductsList;
@@ -33878,11 +34012,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
-// =================================================================
-// PERBAIKAN DI SINI: Tambahkan FiArchive
-// =================================================================
 import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiTag, FiUsers, FiUserCheck, FiList, FiArrowUp, FiArrowDown, FiChevronDown, FiChevronUp, FiArchive } from 'react-icons/fi';
-// =================================================================
 
 const GridContainer = styled.div`
     display: grid;
@@ -33921,8 +34051,16 @@ const ExpandButton = styled.button`
     gap: 8px; transition: all 0.3s ease;
     &:hover { background-color: var(--primary-color); color: white; }
 `;
+
+/**
+ * Calculates percentage change between current and previous values.
+ * Returns null if previous value is zero or undefined to avoid invalid results.
+ * @param {number} current Current value
+ * @param {number} previous Previous value
+ * @returns {number|null} Percentage change or null if invalid
+ */
 const calculatePercentageChange = (current, previous) => {
-    if (previous === null || previous === undefined || previous === 0) return current > 0 ? Infinity : 0;
+    if (previous === null || previous === undefined || previous === 0) return null;
     return ((current - previous) / previous) * 100;
 };
 
@@ -33933,7 +34071,7 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         const isGood = positiveIsGood ? isPositive : !isPositive;
         const displayValue = `${isPositive ? '+' : ''}${comparisonChange.toFixed(1)}%`;
         const chipColor = isGood ? 'var(--green-color)' : 'var(--red-color)';
-        const chipIcon = isPositive ? <FiArrowUp size={12}/> : <FiArrowDown size={12}/>;
+        const chipIcon = isPositive ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />;
         chip = <ComparisonChip color={chipColor}>{chipIcon}{displayValue}</ComparisonChip>;
     }
     return (
@@ -33947,17 +34085,40 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
         </Card>
     );
 };
-StatCard.propTypes = { icon: PropTypes.node.isRequired, value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired, label: PropTypes.string.isRequired, color: PropTypes.string.isRequired, comparisonChange: PropTypes.number, positiveIsGood: PropTypes.bool };
-const StatCardSkeleton = () => ( <Card as="div"> <Skeleton circle width={60} height={60} /> <div> <Skeleton height={30} width={150} style={{marginBottom: '5px'}} /> <Skeleton height={20} width="60%" /> </div> </Card> );
+
+StatCard.propTypes = {
+    icon: PropTypes.node.isRequired,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    label: PropTypes.string.isRequired,
+    color: PropTypes.string.isRequired,
+    comparisonChange: PropTypes.number,
+    positiveIsGood: PropTypes.bool
+};
+
+const StatCardSkeleton = () => (
+    <Card as="div">
+        <Skeleton circle width={60} height={60} />
+        <div>
+            <Skeleton height={30} width={150} style={{ marginBottom: '5px' }} />
+            <Skeleton height={20} width="60%" />
+        </div>
+    </Card>
+);
 
 function StatCardGrid({ loading, stats, previousStats, userName }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const handleToggleExpand = () => setIsExpanded(!isExpanded);
 
     if (loading || !stats) {
-        return ( <GridContainer> {Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} />)} </GridContainer> );
+        return (
+            <GridContainer>
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <StatCardSkeleton key={i} />
+                ))}
+            </GridContainer>
+        );
     }
-    
+
     const revenueChange = calculatePercentageChange(stats.totalRevenue, previousStats?.totalRevenue);
     const transactionsChange = calculatePercentageChange(stats.totalTransactions, previousStats?.totalTransactions);
     const profitChange = calculatePercentageChange(stats.totalProfit, previousStats?.totalProfit);
@@ -33966,167 +34127,114 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
 
     return (
         <GridContainer>
-            <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalRevenue)} label="Pendapatan" color="var(--primary-color)" comparisonChange={revenueChange} />
-            <StatCard icon={<FiShoppingBag size={28} />} value={stats.totalTransactions || 0} label="Total Transaksi" color="var(--green-color)" comparisonChange={transactionsChange} />
-            <StatCard icon={<FiTrendingUp size={28} />} value={formatCurrency(stats.totalProfit)} label="Total Laba" color="#FFA500" comparisonChange={profitChange} />
-            {/* ================================================================= */}
-            {/* PERBAIKAN DI SINI: Menambahkan Kartu Kas Akhir */}
-            {/* ================================================================= */}
-            <StatCard icon={<FiArchive size={28} />} value={formatCurrency(stats.cashInDrawer)} label="Total Kas di Laci" color="#17a2b8" />
-            {/* ================================================================= */}
-            
-            <StatCard icon={<FiTag size={28} />} value={stats.totalSoldUnits || 0} label="Produk Terjual" color="#007bff" />
-            <StatCard icon={<FiUsers size={28} />} value={stats.newCustomers || 0} label="Pelanggan Baru" color="#6f42c4" />
-            
+            <StatCard
+                icon={<FiDollarSign size={28} />}
+                value={formatCurrency(stats.totalRevenue)}
+                label="Pendapatan"
+                color="var(--primary-color)"
+                comparisonChange={revenueChange}
+            />
+            <StatCard
+                icon={<FiShoppingBag size={28} />}
+                value={stats.totalTransactions || 0}
+                label="Total Transaksi"
+                color="var(--green-color)"
+                comparisonChange={transactionsChange}
+            />
+            <StatCard
+                icon={<FiTrendingUp size={28} />}
+                value={formatCurrency(stats.totalProfit)}
+                label="Total Laba"
+                color="#FFA500"
+                comparisonChange={profitChange}
+            />
+            <StatCard
+                icon={<FiArchive size={28} />}
+                value={formatCurrency(stats.cashInDrawer)}
+                label="Total Kas di Laci"
+                color="#17a2b8"
+            />
+            <StatCard
+                icon={<FiTag size={28} />}
+                value={stats.totalSoldUnits || 0}
+                label="Produk Terjual"
+                color="#007bff"
+            />
+            <StatCard
+                icon={<FiUsers size={28} />}
+                value={stats.newCustomers || 0}
+                label="Pelanggan Baru"
+                color="#6f42c4"
+            />
             {isExpanded && (
                 <>
-                    <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalExpenses)} label="Total Pengeluaran" color="#dc3545" comparisonChange={expensesChange} positiveIsGood={false} />
-                    <StatCard icon={<FiList size={28} />} value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`} label="Rata-rata Transaksi" color="#6c757d" />
-                    <StatCard icon={<FiUserCheck size={28} />} value={userName} label="Kasir Aktif" color="#20c997" />
+                    <StatCard
+                        icon={<FiDollarSign size={28} />}
+                        value={formatCurrency(stats.totalExpenses)}
+                        label="Total Pengeluaran"
+                        color="#dc3545"
+                        comparisonChange={expensesChange}
+                        positiveIsGood={false}
+                    />
+                    <StatCard
+                        icon={<FiList size={28} />}
+                        value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`}
+                        label="Rata-rata Transaksi"
+                        color="#6c757d"
+                    />
+                    <StatCard
+                        icon={<FiUserCheck size={28} />}
+                        value={userName}
+                        label="Kasir Aktif"
+                        color="#20c997"
+                    />
                 </>
             )}
             <ExpandButton onClick={handleToggleExpand}>
-                {isExpanded ? <><FiChevronUp size={20} /> Sembunyikan Detail</> : <><FiChevronDown size={20} /> Lihat Detail Lainnya</>}
+                {isExpanded ? (
+                    <>
+                        <FiChevronUp size={20} /> Sembunyikan Detail
+                    </>
+                ) : (
+                    <>
+                        <FiChevronDown size={20} /> Lihat Detail Lainnya
+                    </>
+                )}
             </ExpandButton>
         </GridContainer>
     );
 }
 
-StatCardGrid.propTypes = { loading: PropTypes.bool.isRequired, stats: PropTypes.object, previousStats: PropTypes.object, userName: PropTypes.string, };
+StatCardGrid.propTypes = {
+    loading: PropTypes.bool.isRequired,
+    stats: PropTypes.shape({
+        totalRevenue: PropTypes.number,
+        totalTransactions: PropTypes.number,
+        totalProfit: PropTypes.number,
+        cashInDrawer: PropTypes.number,
+        totalSoldUnits: PropTypes.number,
+        newCustomers: PropTypes.number,
+        totalExpenses: PropTypes.number
+    }),
+    previousStats: PropTypes.shape({
+        totalRevenue: PropTypes.number,
+        totalTransactions: PropTypes.number,
+        totalProfit: PropTypes.number,
+        totalExpenses: PropTypes.number
+    }),
+    userName: PropTypes.string
+};
 
 export default StatCardGrid;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StockInfoList.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StockInfoList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
-import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
-import * as FiIcons from 'react-icons/fi';
-
-const ListContainer = styled.div`
-    background-color: var(--bg-surface);
-    padding: 30px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
-`;
-
-const ListTitle = styled.h3`
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 25px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: center;
-    text-align: center;
-`;
-
-// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
-const List = styled.ul`
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px; /* Menggunakan gap untuk jarak antar item */
-    flex-grow: 1;
-`;
-
-const ListItem = styled.li`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-main);
-    transition: all 0.2s ease;
-    
-    &:hover {
-        background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
-        border-color: var(--primary-color, #007bff);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-`;
-
-const ProductInfo = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-grow: 1;
-`;
-
-const ProductImage = styled.img`
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-`;
-
-const ProductName = styled.span`
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-`;
-
-const ItemValue = styled.span`
-    color: var(--text-secondary);
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-left: 15px;
-    font-size: 0.9rem;
-`;
-
-const StockIndicator = styled.div`
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: ${props => props.$color};
-    margin-right: 8px;
-    flex-shrink: 0;
-`;
-
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 50px 20px;
-    gap: 15px;
-`;
-
-const EmptyStateIcon = styled.div`
-    color: var(--text-tertiary, #ccc);
-    margin-bottom: 10px;
-`;
-
-const EmptyStateText = styled.p`
-    margin: 0;
-    font-size: 1rem;
-    color: var(--text-secondary);
-`;
-
-const SkeletonContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
+import GenericProductList from './GenericProductList';
+import { FiArchive } from 'react-icons/fi';
 
 function StockInfoList({ loading, stockInfo = [] }) {
     const getStockColor = (stock) => {
@@ -34135,201 +34243,74 @@ function StockInfoList({ loading, stockInfo = [] }) {
         return 'var(--green-color)';
     };
 
-    if (loading) {
-        return (
-            <ListContainer>
-                <ListTitle><FiIcons.FiArchive size={22}/> Informasi Stok</ListTitle>
-                <SkeletonContainer>
-                    {[...Array(5)].map((_, index) => (
-                        <Skeleton 
-                            key={index}
-                            count={1} 
-                            height={60} 
-                            style={{ 
-                                marginBottom: '8px',
-                                borderRadius: '12px'
-                            }} 
-                        />
-                    ))}
-                </SkeletonContainer>
-            </ListContainer>
-        );
-    }
-
     return (
-        <ListContainer>
-            <ListTitle><FiIcons.FiArchive size={22}/> Informasi Stok</ListTitle>
-            {stockInfo?.length > 0 ? (
-                // Mengubah List agar tidak ada scrollbar
-                <List>
-                    {stockInfo.map(p => {
-                        const stockColor = getStockColor(p.stock);
-                        return (
-                            <ListItem key={p.id}>
-                                <ProductInfo>
-                                    <ProductImage src={p.image_url || 'https://placehold.co/100'} alt={p.name} />
-                                    <StockIndicator $color={stockColor} />
-                                    <ProductName>{p.name}</ProductName>
-                                </ProductInfo>
-                                <ItemValue style={{ color: stockColor, fontWeight: '700' }}>
-                                    {p.stock} unit
-                                </ItemValue>
-                            </ListItem>
-                        );
-                    })}
-                </List>
-            ) : (
-                <EmptyStateContainer>
-                    <EmptyStateIcon>
-                        <FiIcons.FiBox size={48}/>
-                    </EmptyStateIcon>
-                    <EmptyStateText>
-                        Tidak ada produk untuk ditampilkan.
-                    </EmptyStateText>
-                </EmptyStateContainer>
-            )}
-        </ListContainer>
+        <GenericProductList
+            loading={loading}
+            items={stockInfo}
+            title="Informasi Stok"
+            icon={<FiArchive size={22} />}
+            renderItemValue={(item) => `${item.stock} unit`}
+            emptyMessage="Tidak ada produk untuk ditampilkan."
+            showImage
+            getStockColor={getStockColor}
+        />
     );
 }
 
 StockInfoList.propTypes = {
     loading: PropTypes.bool.isRequired,
-    stockInfo: PropTypes.array,
+    stockInfo: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            stock: PropTypes.number.isRequired,
+            image_url: PropTypes.string
+        })
+    )
 };
 
 export default StockInfoList;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopCustomersList.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopCustomersList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
-import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
-import * as FiIcons from 'react-icons/fi';
-import { Link } from 'react-router-dom';
-
-const ListContainer = styled.div`
-    background-color: var(--bg-surface);
-    padding: 30px;
-    border-radius: 24px;
-    border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
-`;
-
-const ListTitle = styled.h3`
-    font-size: 1.4rem;
-    font-weight: 600;
-    margin-bottom: 25px;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: center;
-    text-align: center;
-`;
-
-const List = styled.ul`
-    list-style: none;
-    padding: 0;
-    overflow-y: auto;
-    flex-grow: 1;
-    max-height: 350px;
-`;
-
-const ListItem = styled.li`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    margin: 4px 0;
-    background-color: var(--bg-main);
-    transition: all 0.2s ease;
-    
-    &:hover {
-        border-color: var(--primary-color);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    }
-`;
-
-const ItemValue = styled.span`
-    color: var(--text-secondary);
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-left: 15px;
-    font-size: 0.9rem;
-`;
-
-const StyledLink = styled(Link)`
-    text-decoration: none;
-    color: inherit;
-    display: block;
-`;
-
-const ProductName = styled.span`
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-`;
-
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
-    padding: 50px 20px;
-`;
+import GenericProductList from './GenericProductList';
+import { FiUsers } from 'react-icons/fi';
 
 function TopCustomersList({ loading, topCustomers = [] }) {
-    if (loading) {
-        return (
-            <ListContainer>
-                <ListTitle><FiIcons.FiUsers size={22}/> Pelanggan Teratas</ListTitle>
-                <Skeleton count={5} height={60} style={{ marginBottom: '8px', borderRadius: '12px' }} />
-            </ListContainer>
-        );
-    }
-
     return (
-        <ListContainer>
-            <ListTitle><FiIcons.FiUsers size={22}/> Pelanggan Teratas</ListTitle>
-            {topCustomers?.length > 0 ? (
-                <List>
-                    {topCustomers.map(c => (
-                        <StyledLink to={`/customers/${c.id}`} key={c.id}>
-                            <ListItem>
-                                <ProductName>{c.name}</ProductName>
-                                <ItemValue>Rp {new Intl.NumberFormat('id-ID').format(c.totalSpent)} ({c.totalOrders} order)</ItemValue>
-                            </ListItem>
-                        </StyledLink>
-                    ))}
-                </List>
-            ) : (
-                <EmptyStateContainer>
-                    <FiIcons.FiUsers size={48}/><p style={{marginTop: '15px'}}>Belum ada data pelanggan.</p>
-                </EmptyStateContainer>
-            )}
-        </ListContainer>
+        <GenericProductList
+            loading={loading}
+            items={topCustomers}
+            title="Pelanggan Teratas"
+            icon={<FiUsers size={22} />}
+            renderItemValue={(item) => `Rp ${new Intl.NumberFormat('id-ID').format(item.totalSpent)} (${item.totalOrders} order)`}
+            renderItemLink={(item) => `/customers/${item.id}`}
+            emptyMessage="Belum ada data pelanggan."
+        />
     );
 }
 
 TopCustomersList.propTypes = {
     loading: PropTypes.bool.isRequired,
-    topCustomers: PropTypes.array,
+    topCustomers: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            totalSpent: PropTypes.number.isRequired,
+            totalOrders: PropTypes.number.isRequired
+        })
+    )
 };
 
-export default TopCustomersList;
+export default React.memo(TopCustomersList);
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx
 
 import React from 'react';
 import PropTypes from 'prop-types';
@@ -34342,7 +34323,7 @@ const ChartContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
-    border: 1 personally solid var(--border-color);
+    border: 1px solid var(--border-color);
     grid-column: 1 / -1;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 `;
@@ -34370,6 +34351,11 @@ const EmptyStateContainer = styled.div`
     min-height: 250px;
 `;
 
+const getColor = (index) => {
+    const colors = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1', '#007bff', '#28a745', '#FFA500', '#dc3545', '#6f42c4'];
+    return colors[index % colors.length];
+};
+
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
@@ -34393,12 +34379,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.string,
+    active: PropTypes.bool,
+    payload: PropTypes.array,
+    label: PropTypes.string,
 };
-
-const COLORS = ['#9D4EDD', '#A968E3', '#B583E8', '#C19DEC', '#CDA7F1'];
 
 function TopProductsChart({ loading, data }) {
     if (loading) {
@@ -34410,32 +34394,35 @@ function TopProductsChart({ loading, data }) {
         );
     }
 
-    const formattedData = data && data.map(item => ({
-        ...item,
-        shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
-    }));
-    const top10Data = formattedData ? formattedData.slice(0, 10) : [];
+    const formattedData = React.useMemo(() => {
+        return data?.map(item => ({
+            ...item,
+            shortName: item.name.length > 25 ? `${item.name.substring(0, 22)}...` : item.name,
+        })) || [];
+    }, [data]);
+
+    const top10Data = formattedData.slice(0, 10);
 
     return (
         <ChartContainer>
-           <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
+            <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
             {top10Data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={top10Data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                         <XAxis type="number" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
-                        <YAxis 
-                            dataKey="shortName" 
-                            type="category" 
-                            width={180} 
-                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }} 
-                            tickLine={false} 
+                        <YAxis
+                            dataKey="shortName"
+                            type="category"
+                            width={180}
+                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
+                            tickLine={false}
                             axisLine={false}
                         />
-                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }}/>
+                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }} />
                         <Bar dataKey="totalSold" name="Unit Terjual" barSize={20} radius={[0, 10, 10, 0]}>
                             {top10Data.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                <Cell key={`cell-${index}`} fill={getColor(index)} />
                             ))}
                         </Bar>
                     </BarChart>
@@ -34450,14 +34437,21 @@ function TopProductsChart({ loading, data }) {
     );
 }
 
-export default TopProductsChart;
-
 TopProductsChart.propTypes = {
-  loading: PropTypes.bool.isRequired,
-  data: PropTypes.array,
+    loading: PropTypes.bool.isRequired,
+    data: PropTypes.arrayOf(
+        PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            totalSold: PropTypes.number.isRequired
+        })
+    )
 };
 
+export default React.memo(TopProductsChart);
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
 
 import axios from 'axios';
 
@@ -34467,58 +34461,65 @@ const API = axios.create({
 });
 
 // Request Interceptor
-API.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+API.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        if (import.meta.env.DEV) {
+            console.log(`Request: ${config.method.toUpperCase()} ${config.url}`);
+        }
+        return config;
+    },
+    (error) => {
+        if (import.meta.env.DEV) {
+            console.error(`Request error: ${error.config?.method.toUpperCase()} ${error.config?.url} - ${error.message}`);
+        }
+        return Promise.reject({ message: error.message, config: error.config });
     }
-    if (import.meta.env.DEV) {
-        console.log('Sending request:', config.method?.toUpperCase(), config.url, config.data);
-    }
-    return config;
-}, (error) => {
-    if (import.meta.env.DEV) {
-        console.error('Request error:', error.config?.method?.toUpperCase(), error.config?.url, error.message);
-    }
-    return Promise.reject(error);
-});
+);
 
 // Response Interceptor
 API.interceptors.response.use(
     (response) => {
         if (import.meta.env.DEV) {
-            console.log('Received response:', response.config.method?.toUpperCase(), response.config.url, response.status, response.data);
+            console.log(`Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
     (error) => {
         if (import.meta.env.DEV) {
-            console.error('Response error:', error.response?.config?.method?.toUpperCase(), error.response?.config?.url, error.response?.status, error.message);
+            console.error(`Response error: ${error.response?.config?.method.toUpperCase()} ${error.response?.config?.url} - ${error.response?.status || 'No status'} - ${error.message}`);
         }
         if (axios.isCancel(error)) {
-            return Promise.reject(new Error('Request was canceled.'));
+            return Promise.reject({ message: 'Request was canceled.', code: 'CANCELLED' });
         }
         if (error.code === 'ECONNABORTED') {
-            return Promise.reject(new Error('Connection timeout. Please ensure the backend is running and connected.'));
+            return Promise.reject({ message: 'Connection timeout. Please ensure the backend is running and connected.', code: 'TIMEOUT' });
         }
         if (error.response) {
-            return Promise.reject(error.response);
+            return Promise.reject({ message: error.response.data?.message || 'Server error occurred.', status: error.response.status, code: 'SERVER_ERROR' });
         }
         if (error.request) {
-            return Promise.reject(new Error('No response from server. The server may not be running.'));
+            return Promise.reject({ message: 'No response from server. The server may not be running.', code: 'NO_RESPONSE' });
         }
-        return Promise.reject(new Error('An unexpected error occurred.'));
+        return Promise.reject({ message: 'An unexpected error occurred.', code: 'UNKNOWN' });
     }
 );
 
+/**
+ * Creates query parameters from an object, ensuring valid types.
+ * @param {Object} params Parameters to convert to query string
+ * @returns {string} Query string
+ */
 const createQueryParams = (params = {}) => {
     const searchParams = new URLSearchParams();
-    for (const key in params) {
-        const value = params[key];
+    for (const [key, value] of Object.entries(params)) {
         if (value instanceof Date && !isNaN(value)) {
             searchParams.append(key, value.toISOString());
-        } else if (value !== null && value !== undefined) {
-            searchParams.append(key, value);
+        } else if (typeof value === 'string' || typeof value === 'number') {
+            searchParams.append(key, String(value));
         }
     }
     return searchParams.toString();
@@ -34607,7 +34608,7 @@ export const deleteSupplier = (id) => API.delete(`/suppliers/${id}`);
 export const getCustomers = (searchTerm = '') => API.get(`/customers?search=${searchTerm}`);
 export const getCustomerById = (id) => API.get(`/customers/${id}`);
 export const getCustomerHistory = (id) => API.get(`/customers/${id}/history`);
-export const getCustomerStats = (id) => API.get(`/customers/${id}/stats`); // PERBAIKAN: Menambahkan fungsi yang hilang
+export const getCustomerStats = (id) => API.get(`/customers/${id}/stats`);
 export const redeemCustomerPoints = (id, data) => API.post(`/customers/${id}/redeem`, data);
 export const createCustomer = (customerData) => API.post('/customers', customerData);
 export const updateCustomer = (id, customerData) => API.put(`/customers/${id}`, customerData);
@@ -34666,8 +34667,9 @@ export default API;
  * @returns {string} String yang hanya berisi angka.
  */
 export const parseRupiah = (value) => {
-    if (value === null || value === undefined) return '';
-    // Hapus semua karakter yang bukan digit (0-9)
+    if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
+        return '';
+    }
     return String(value).replace(/[^0-9]/g, '');
 };
 
@@ -34684,7 +34686,6 @@ export const formatRupiah = (value) => {
     const number = Number(cleanValue);
     if (isNaN(number)) return '';
 
-    // Menggunakan Intl.NumberFormat untuk pemformatan yang andal
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
@@ -34737,39 +34738,63 @@ describe('formatters', () => {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\offlineDb.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\offlineDb.js
+
 import Dexie from 'dexie';
 
 export const db = new Dexie('SmartPOSDatabase');
 
 // Definisikan skema database
 db.version(1).stores({
-  offlineOrders: '++id, orderData', // '++id' adalah primary key auto-increment
+    offlineOrders: '++id, orderData.createdAt', // Tambahkan indeks untuk pencarian berdasarkan createdAt
 });
 
-// Fungsi untuk menambahkan order baru ke database offline
+/**
+ * Menambahkan order baru ke database offline.
+ * @param {Object} orderData Data order yang akan disimpan
+ * @returns {Promise<{ success: boolean, id?: number, error?: string }>} Hasil operasi
+ */
 export async function addOfflineOrder(orderData) {
     try {
-        await db.offlineOrders.add({ orderData });
+        if (!orderData || typeof orderData !== 'object') {
+            return { success: false, error: 'Invalid order data' };
+        }
+        const id = await db.offlineOrders.add({ orderData });
+        return { success: true, id };
     } catch (error) {
-        console.error("Gagal menyimpan order offline:", error);
+        console.error('Gagal menyimpan order offline:', error);
+        return { success: false, error: error.message };
     }
 }
 
-// Fungsi untuk mengambil semua order offline
+/**
+ * Mengambil semua order offline.
+ * @returns {Promise<{ success: boolean, data?: Array, error?: string }>} Daftar order offline
+ */
 export async function getAllOfflineOrders() {
     try {
-        return await db.offlineOrders.toArray();
+        const data = await db.offlineOrders.toArray();
+        return { success: true, data };
     } catch (error) {
-        console.error("Gagal mengambil order offline:", error);
-        return [];
+        console.error('Gagal mengambil order offline:', error);
+        return { success: false, error: error.message };
     }
 }
 
-// Fungsi untuk menghapus order dari database offline setelah berhasil sinkronisasi
+/**
+ * Menghapus order dari database offline.
+ * @param {number} id ID order yang akan dihapus
+ * @returns {Promise<{ success: boolean, error?: string }>} Hasil operasi
+ */
 export async function deleteOfflineOrder(id) {
     try {
+        if (typeof id !== 'number') {
+            return { success: false, error: 'Invalid order ID' };
+        }
         await db.offlineOrders.delete(id);
+        return { success: true };
     } catch (error) {
         console.error(`Gagal menghapus order offline ID ${id}:`, error);
+        return { success: false, error: error.message };
     }
 }
