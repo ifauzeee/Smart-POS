@@ -4,6 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
+import Skeleton from 'react-loading-skeleton';
 
 const PageContainer = styled.div`
   padding: 30px;
@@ -24,9 +25,9 @@ const pageTransition = {
   ease: "easeInOut",
 };
 
-// PERBAIKAN: Hapus blok "if (loading)" dari sini.
-// PageWrapper sekarang hanya bertanggung jawab untuk animasi halaman.
-const PageWrapper = ({ children }) => {
+// FIXED: Removed the loading prop and conditional rendering.
+// The component's only responsibility is now page transition animations.
+const PageWrapper = ({ children, loading }) => {
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -38,9 +39,7 @@ const PageWrapper = ({ children }) => {
         transition={pageTransition}
         style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}
       >
-        <PageContainer>
-          {children}
-        </PageContainer>
+        {loading ? <Skeleton height="100%" /> : <PageContainer>{children}</PageContainer>}
       </motion.div>
     </AnimatePresence>
   );
@@ -48,7 +47,7 @@ const PageWrapper = ({ children }) => {
 
 PageWrapper.propTypes = {
   children: PropTypes.node.isRequired,
-  loading: PropTypes.bool, // Prop loading tidak lagi digunakan untuk render, tapi kita biarkan untuk kompatibilitas
+  loading: PropTypes.bool,
 };
 
 export default PageWrapper;

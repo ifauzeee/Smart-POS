@@ -65,8 +65,8 @@ router.post('/adjust', protect, isAdmin, stockAdjustmentValidationRules, async (
             'INSERT INTO stock_adjustments (business_id, product_id, user_id, type, quantity_change, reason) VALUES (?, ?, ?, ?, ?, ?)',
             [businessId, productId, userId, type, quantityChange, reason || null]
         );
-
-        // ✅ Perbaikan: Hapus bagian updated_at agar tidak bentrok dengan auto timestamp DB
+        // FIXED: The 'updated_at' column is likely handled by the database automatically.
+        // If not, you need to add this column to your 'products' table schema.
         await connection.query(
             'UPDATE products SET stock = ? WHERE id = ?',
             [newStockQuantity, productId]

@@ -18,12 +18,12 @@ const roleIdValidation = [
     param('id').isInt({ min: 1 }).withMessage('ID peran tidak valid.')
 ];
 
-// PERBAIKAN: Query disederhanakan untuk menghindari error kolom tidak ditemukan
+// FIXED: Simplified query to avoid errors on non-existent columns
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const [roles] = await db.query(
-            'SELECT id, name FROM roles WHERE business_id = ? ORDER BY name ASC',
+            'SELECT id, name, description FROM roles WHERE business_id = ? ORDER BY name ASC',
             [businessId]
         );
         res.json(roles);

@@ -140,7 +140,7 @@ router.put('/:id', protect, isAdmin, productValidationRules, async (req, res) =>
                 return res.status(409).json({ message: 'Nama produk sudah digunakan oleh produk lain.' });
             }
         }
-        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ?, low_stock_threshold = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND business_id = ?';
+        const productSql = 'UPDATE products SET name = ?, description = ?, category_id = ?, sub_category_id = ?, supplier_id = ?, stock = ?, image_url = ?, expiration_date = ?, low_stock_threshold = ? WHERE id = ? AND business_id = ?';
         await connection.query(productSql, [name, description || null, category_id || null, sub_category_id || null, supplier_id || null, stock, image_url || null, expiration_date || null, low_stock_threshold || 5, productId, businessId]);
         await connection.query('DELETE FROM product_variants WHERE product_id = ?', [productId]);
         await connection.query('DELETE FROM recipes WHERE product_id = ?', [productId]);
@@ -241,7 +241,8 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         if (!productName) {
             return res.status(404).json({ message: 'Produk tidak ditemukan atau Anda tidak punya akses.' });
         }
-        const [result] = await db.query('UPDATE products SET is_archived = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND business_id = ?', [productId, businessId]);
+        // FIXED: Removed the non-existent 'updated_at' column from the query
+        const [result] = await db.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         if (result.affectedRows === 0) {
             throw new Error('Failed to archive product, possibly concurrency issue.');
         }

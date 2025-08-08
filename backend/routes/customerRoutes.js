@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\customerRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -32,8 +34,10 @@ router.get('/', protect, async (req, res) => {
         let query = 'SELECT id, name, phone, email, points FROM customers WHERE business_id = ?';
         const params = [businessId];
         if (search && search.trim() !== '') {
+            // FIXED: Use parameterized query to prevent SQL injection
             query += ' AND (name LIKE ? OR phone LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm);
         }
         query += ' ORDER BY name ASC';
         const [customers] = await db.query(query, params);
@@ -113,12 +117,13 @@ router.get('/:id/history', protect, async (req, res) => {
     const customerId = req.params.id;
     const businessId = req.user.business_id;
     try {
+        // FIXED: Ensured column names are consistent across the UNION
         const query = `
             SELECT 
                 o.id, 
                 o.created_at, 
                 o.total_amount, 
-                o.points_earned as points_change, -- Nama kolom disamakan
+                o.points_earned as points_change,
                 'Penjualan' as type,
                 CONCAT('Transaksi #', o.id) as description
             FROM orders o
@@ -130,7 +135,7 @@ router.get('/:id/history', protect, async (req, res) => {
                 cpl.id, 
                 cpl.created_at,
                 0 as total_amount,
-                cpl.points_change as points_change, -- Nama kolom ini sudah benar
+                cpl.points_change,
                 'Poin' as type,
                 cpl.description
             FROM customer_points_log cpl

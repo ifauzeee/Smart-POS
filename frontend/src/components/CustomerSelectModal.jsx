@@ -27,7 +27,8 @@ const SearchInput = styled.input`
     border-radius: 8px; margin-bottom: 20px; background-color: var(--bg-main);
     color: var(--text-primary); font-size: 1rem;
     &:focus {
-        outline: none; border-color: var(--primary-color);
+        outline: none;
+        border-color: var(--primary-color);
         box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
     }
 `;
@@ -94,12 +95,10 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
                         {loading ? <p>Mencari...</p> : customers.map(customer => (
                             <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
                                 <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
-                                {/* --- PERBAIKAN DIMULAI --- */}
-                                {/* Menggunakan 'phone' sesuai dengan data dari backend */}
+                                {/* FIXED: Correctly reference the 'phone' property */}
                                 <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                                     {customer.phone}
                                 </p>
-                                {/* --- PERBAIKAN SELESAI --- */}
                             </CustomerItem>
                         ))}
                     </CustomerList>

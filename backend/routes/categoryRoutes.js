@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\categoryRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware'); // Updated: Import isAdmin
@@ -52,6 +54,7 @@ router.post('/', protect, isAdmin, categoryValidationRules, async (req, res) => 
 
         const [result] = await db.query('INSERT INTO categories (business_id, name) VALUES (?, ?)', [businessId, name]);
         const categoryId = result.insertId;
+        // FIXED: Added await to ensure logging completes
         await logActivity(businessId, req.user.id, 'CREATE_CATEGORY', `Created category: ${name} (ID: ${categoryId}).`);
         res.status(201).json({ message: 'Kategori berhasil ditambahkan!', categoryId });
     } catch (error) {

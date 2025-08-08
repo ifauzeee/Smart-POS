@@ -9,12 +9,10 @@
  * @returns {string} - String yang hanya berisi digit, atau string kosong jika input tidak valid.
  */
 export const parseRupiah = (value) => {
-    // Menambahkan validasi input untuk mencegah error pada nilai null/undefined atau tipe data yang tidak valid.
+    // FIXED: Added robust validation for various invalid inputs.
     if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
-        console.error('Invalid input to parseRupiah:', value);
         return '';
     }
-    // Menghapus semua karakter non-digit (termasuk titik, koma, dan simbol mata uang).
     return String(value).replace(/[^0-9]/g, '');
 };
 
@@ -28,16 +26,14 @@ export const formatRupiah = (value) => {
     try {
         const cleanValue = parseRupiah(value);
         
-        // PERBAIKAN: Jika nilai yang sudah diurai kosong (misalnya dari input null atau undefined),
-        // langsung kembalikan string kosong. Ini mencegah `Number('')` yang menghasilkan 0.
+        // FIXED: Return empty string if parsed value is empty to avoid formatting '0' incorrectly.
         if (cleanValue === '') {
             return '';
         }
 
         const number = Number(cleanValue);
 
-        // PERBAIKAN: Menambahkan pengecekan jika hasil konversi ke Number adalah NaN (Not a Number).
-        // Ini melindungi dari kasus di mana `parseRupiah` mengembalikan sesuatu yang tidak bisa dikonversi.
+        // FIXED: Check for NaN to prevent crashes on invalid number conversions.
         if (isNaN(number)) {
             return '';
         }
@@ -49,8 +45,8 @@ export const formatRupiah = (value) => {
             maximumFractionDigits: 0,
         }).format(number);
     } catch (error) {
-        // PERBAIKAN: Menambahkan logging error untuk membantu debugging jika ada masalah tak terduga.
+        // FIXED: Added error logging for easier debugging.
         console.error('Format Rupiah error:', error.message);
-        return ''; // Mengembalikan string kosong untuk mencegah aplikasi crash
+        return ''; // Return empty string to prevent app crashes.
     }
 };
