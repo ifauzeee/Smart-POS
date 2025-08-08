@@ -1,4 +1,4 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src/utils/formatters.js
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js
 
 export const parseRupiah = (value) => {
     // FIXED: Added robust validation for various invalid inputs.
