@@ -171,7 +171,7 @@ router.put('/:id', protect, isAdmin, productValidationRules, async (req, res) =>
     }
 });
 
-// GET /api/products (Get all products)
+// GET /api/products (Get all products) - DIKEMBALIKAN KE VERSI AWAL
 router.get('/', protect, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -180,7 +180,9 @@ router.get('/', protect, async (req, res) => {
         let params = [];
 
         if (barcode) {
-            productsSql = `SELECT p.* FROM products p JOIN product_variants pv ON p.id = pv.product_id WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0`;
+            productsSql = `SELECT p.* FROM products p 
+                          JOIN product_variants pv ON p.id = pv.product_id 
+                          WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0`;
             params = [barcode, businessId];
         } else {
             productsSql = `
@@ -194,13 +196,14 @@ router.get('/', protect, async (req, res) => {
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
                 LEFT JOIN suppliers AS s ON p.supplier_id = s.id
-                LEFT JOIN product_variants pv ON p.id = pv.product_id
                 WHERE p.business_id = ? AND p.is_archived = 0
             `;
             params = [businessId];
 
             if (search && search.trim() !== '') {
-                productsSql += ' AND (p.name LIKE ? OR pv.barcode = ?)';
+                productsSql += ` AND (p.name LIKE ? OR EXISTS (
+                                 SELECT 1 FROM product_variants pv_search WHERE pv_search.product_id = p.id AND pv_search.barcode = ?
+                               ))`;
                 const searchTerm = `%${search.trim()}%`;
                 params.push(searchTerm, search.trim());
             }
@@ -214,23 +217,24 @@ router.get('/', protect, async (req, res) => {
             const productIds = products.map(p => p.id);
             const variantsSql = `SELECT id, product_id, name, price, cost_price, barcode FROM product_variants WHERE product_id IN (?)`;
             const [variants] = await db.query(variantsSql, [productIds]);
-            const variantsMap = new Map();
-            variants.forEach(v => {
-                if (!variantsMap.has(v.product_id)) {
-                    variantsMap.set(v.product_id, []);
-                }
-                variantsMap.get(v.product_id).push(v);
-            });
-            products.forEach(p => {
-                p.variants = variantsMap.get(p.id) || [];
-            });
+            
+            // Gabungkan varian ke setiap produk di JavaScript
+            const productsWithVariants = products.map(product => ({
+                ...product,
+                variants: variants.filter(variant => variant.product_id === product.id)
+            }));
+            res.json(productsWithVariants);
+        } else {
+            res.json([]);
         }
-        res.json(products);
+
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 });
+// --- AKHIR PERBAIKAN ---
+
 
 // DELETE /api/products/:id (Archive a product)
 router.delete('/:id', protect, isAdmin, async (req, res) => {
@@ -241,7 +245,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         if (!productName) {
             return res.status(404).json({ message: 'Produk tidak ditemukan atau Anda tidak punya akses.' });
         }
-        // FIXED: Removed the non-existent 'updated_at' column from the query
         const [result] = await db.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         if (result.affectedRows === 0) {
             throw new Error('Failed to archive product, possibly concurrency issue.');

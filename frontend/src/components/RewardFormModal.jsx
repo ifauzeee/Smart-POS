@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RewardFormModal.jsx
+
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -22,11 +24,8 @@ const ModalContainer = styled(motion.div)`
   border-radius: 16px;
   border: 1px solid var(--border-color);
   width: 100%;
-  max-width: 800px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  max-height: 90vh;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 `;
 
 const ModalHeader = styled.div`
@@ -47,30 +46,17 @@ const CloseButton = styled.button`
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  &:hover {
-    color: var(--text-primary);
-  }
+  &:hover { color: var(--text-primary); }
 `;
 
 const ModalBody = styled.div`
   padding: 25px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
 `;
 
-const FormRow = styled.div`
-  display: flex;
-  gap: 20px;
-  @media (max-width: 768px) {
-    flex-direction: column;
-  }
-`;
-
-const InputGroup = styled.div`
-  flex: 1;
-`;
+const InputGroup = styled.div``;
 
 const Label = styled.label`
   display: block;
@@ -90,18 +76,13 @@ const Input = styled.input`
   font-size: 1rem;
 `;
 
-const PermissionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-  margin-top: 10px;
-`;
-
-const PermissionCheckbox = styled.div`
+const CheckboxContainer = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  
   label {
+    margin-bottom: 0;
     cursor: pointer;
   }
 `;
@@ -122,38 +103,37 @@ const Button = styled.button`
   cursor: pointer;
   background-color: ${props => props.$primary ? 'var(--primary-color)' : 'transparent'};
   color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
+  
   &:hover {
     opacity: 0.9;
   }
+  
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 `;
 
-function RoleFormModal({ isOpen, onClose, onSave, role, permissionsList, isSubmitting }) {
-    const [formData, setFormData] = useState({ name: '', description: '', permissions: [] });
-    const isEditing = Boolean(role);
+function RewardFormModal({ isOpen, onClose, onSave, reward, isSubmitting }) {
+    const [formData, setFormData] = useState({ name: '', description: '', points_cost: '', is_active: true });
+    const isEditing = Boolean(reward);
 
     useEffect(() => {
         if (isOpen) {
-            setFormData(role ? { ...role, permissions: role.permissions || [] } : { name: '', description: '', permissions: [] });
+            // Jika sedang mengedit, isi form dengan data hadiah. Jika tidak, reset form.
+            setFormData(reward || { name: '', description: '', points_cost: '', is_active: true });
         }
-    }, [role, isOpen]);
+    }, [reward, isOpen]);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const handlePermissionChange = (permissionId) => {
-        const currentPermissions = formData.permissions;
-        const newPermissions = currentPermissions.includes(permissionId)
-            ? currentPermissions.filter(id => id !== permissionId)
-            : [...currentPermissions, permissionId];
-        setFormData({ ...formData, permissions: newPermissions });
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(formData);
+        // Pastikan biaya poin dikirim sebagai angka
+        onSave({ ...formData, points_cost: parseInt(formData.points_cost, 10) });
     };
 
     return (
@@ -163,36 +143,26 @@ function RoleFormModal({ isOpen, onClose, onSave, role, permissionsList, isSubmi
                     <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} exit={{ y: 50 }}>
                         <form onSubmit={handleSubmit}>
                             <ModalHeader>
-                                <ModalTitle>{isEditing ? 'Edit Peran' : 'Tambah Peran Baru'}</ModalTitle>
+                                <ModalTitle>{isEditing ? 'Edit Hadiah' : 'Tambah Hadiah Baru'}</ModalTitle>
                                 <CloseButton type="button" onClick={onClose}><FiX size={24} /></CloseButton>
                             </ModalHeader>
                             <ModalBody>
-                                <FormRow>
-                                    <InputGroup>
-                                        <Label>Nama Peran</Label>
-                                        <Input name="name" value={formData.name || ''} onChange={handleChange} required autoFocus />
-                                    </InputGroup>
-                                    <InputGroup>
-                                        <Label>Deskripsi</Label>
-                                        <Input name="description" value={formData.description || ''} onChange={handleChange} />
-                                    </InputGroup>
-                                </FormRow>
-                                <div>
-                                    <Label style={{ marginBottom: '15px' }}>Izin (Permissions)</Label>
-                                    <PermissionGrid>
-                                        {permissionsList.map(p => (
-                                            <PermissionCheckbox key={p.id}>
-                                                <input
-                                                    type="checkbox"
-                                                    id={`perm-${p.id}`}
-                                                    checked={formData.permissions.includes(p.id)}
-                                                    onChange={() => handlePermissionChange(p.id)}
-                                                />
-                                                <label htmlFor={`perm-${p.id}`}>{p.description}</label>
-                                            </PermissionCheckbox>
-                                        ))}
-                                    </PermissionGrid>
-                                </div>
+                                <InputGroup>
+                                    <Label htmlFor="name">Nama Hadiah</Label>
+                                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required autoFocus />
+                                </InputGroup>
+                                <InputGroup>
+                                    <Label htmlFor="description">Deskripsi (Opsional)</Label>
+                                    <Input as="textarea" rows="3" id="description" name="description" value={formData.description} onChange={handleChange} />
+                                </InputGroup>
+                                <InputGroup>
+                                    <Label htmlFor="points_cost">Biaya Poin</Label>
+                                    <Input id="points_cost" type="number" name="points_cost" value={formData.points_cost} onChange={handleChange} required min="1" />
+                                </InputGroup>
+                                <CheckboxContainer>
+                                    <input type="checkbox" id="is_active" name="is_active" checked={formData.is_active} onChange={handleChange} />
+                                    <Label htmlFor="is_active">Aktifkan Hadiah</Label>
+                                </CheckboxContainer>
                             </ModalBody>
                             <ModalFooter>
                                 <Button type="button" onClick={onClose}>Batal</Button>
@@ -206,13 +176,12 @@ function RoleFormModal({ isOpen, onClose, onSave, role, permissionsList, isSubmi
     );
 }
 
-RoleFormModal.propTypes = {
+RewardFormModal.propTypes = {
     isOpen: PropTypes.bool.isRequired,
     onClose: PropTypes.func.isRequired,
     onSave: PropTypes.func.isRequired,
-    role: PropTypes.object,
-    permissionsList: PropTypes.array.isRequired,
+    reward: PropTypes.object,
     isSubmitting: PropTypes.bool.isRequired,
 };
 
-export default RoleFormModal;
+export default RewardFormModal;

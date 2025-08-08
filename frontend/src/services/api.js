@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
-
 import axios from 'axios';
 
 const API = axios.create({
@@ -217,5 +215,10 @@ export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
 export const uploadImage = (formData) => API.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
 });
+export const getRewards = () => API.get('/rewards');
+export const createReward = (rewardData) => API.post('/rewards', rewardData);
+export const updateReward = (id, rewardData) => API.put(`/rewards/${id}`, rewardData);
+export const deleteReward = (id) => API.delete(`/rewards/${id}`);
+export const redeemRewardForCustomer = (customerId, rewardId) => API.post(`/customers/${customerId}/redeem-reward`, { reward_id: rewardId });
 
 export default API;

@@ -7,19 +7,10 @@ const { getValidDateRange } = require('../utils/dateUtils');
 
 const router = express.Router();
 
-/**
- * Helper function to fetch various statistical data for a given business within a specified date range.
- * This function is used by the /stats endpoint.
- * @param {number} businessId - The ID of the business.
- * @param {string} startDate - The start date for the period (YYYY-MM-DD).
- * @param {string} endDate - The end date for the period (YYYY-MM-DD).
- * @returns {object} An object containing totalRevenue, totalTransactions, totalProfit, totalSoldUnits, newCustomers, and totalExpenses.
- */
 const getStatsForPeriod = async (businessId, startDate, endDate) => {
     if (!startDate || !endDate) {
         throw new Error("Invalid date range provided for stats query.");
     }
-
     const statsQuery = `
         SELECT
             (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
@@ -31,7 +22,7 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
                     WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                 , 0)
             AS DECIMAL(15,2)) as totalProfit,
-            COALESCE((
+             COALESCE((
                 SELECT SUM(oi.quantity)
                 FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
                 WHERE o2.business_id = ? AND created_at BETWEEN ? AND ?
@@ -49,12 +40,8 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         businessId, startDate, endDate,
         businessId
     ];
-
     const [[stats]] = await db.query(statsQuery, params);
-    
-    // Fetch default starting cash as a fallback
     const [[defaultCashSetting]] = await db.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
-
     return {
         totalRevenue: Number(stats.totalRevenue),
         totalTransactions: Number(stats.totalTransactions),
@@ -62,18 +49,10 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         totalSoldUnits: Number(stats.totalSoldUnits),
         newCustomers: Number(stats.newCustomers),
         totalExpenses: Number(stats.totalExpenses) || 0,
-        // If there's no closed shift, use the default starting cash from settings
         cashInDrawer: Number(stats.cashInDrawer) || Number(defaultCashSetting.default_starting_cash),
     };
 };
 
-// --- Dashboard Statistics Endpoints ---
-
-/**
- * @route GET /api/admin/debug-token
- * @desc Debug endpoint - useful for checking token and user details during development
- * @access Private (Admin only)
- */
 router.get('/debug-token', protect, isAdmin, async (req, res) => {
     res.json({
         headers: req.headers,
@@ -82,11 +61,6 @@ router.get('/debug-token', protect, isAdmin, async (req, res) => {
     });
 });
 
-/**
- * @route GET /api/admin/stats
- * @desc Get various statistics for the current and optionally a comparison period.
- * @access Private (Admin only)
- */
 router.get('/stats', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -118,11 +92,6 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/daily-revenue-profit
- * @desc Get daily revenue and profit data for a given period.
- * @access Private (Admin only)
- */
 router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -163,11 +132,6 @@ router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/daily-sales
- * @desc Get daily sales data for a given period.
- * @access Private (Admin only)
- */
 router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -204,11 +168,6 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/top-products
- * @desc Get top 5 selling products for a given period.
- * @access Private (Admin only)
- */
 router.get('/top-products', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -235,11 +194,6 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/product-sales-performance
- * @desc Get sales performance for all products within a given period.
- * @access Private (Admin only)
- */
 router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -266,47 +220,38 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/cashier-performance
- * @desc Get performance metrics for cashiers within a given period.
- * @access Private (Admin only)
- */
+// --- PERBAIKAN DI SINI ---
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-
+        // Kueri diperbarui untuk hanya mengambil pengguna yang aktif (is_active = 1)
         const query = `
             SELECT
-                u.id, u.name,
+                u.id, 
+                u.name,
                 COALESCE(COUNT(o.id), 0) as totalTransactions,
                 COALESCE(SUM(o.total_amount), 0) as totalSales
             FROM users u
             LEFT JOIN orders o ON u.id = o.user_id AND o.business_id = u.business_id AND o.created_at BETWEEN ? AND ?
-            WHERE u.business_id = ?
+            WHERE u.business_id = ? AND u.is_active = 1
             GROUP BY u.id, u.name
             ORDER BY totalSales DESC
         `;
         const [cashierPerformance] = await db.query(query, [startDate, endDate, businessId]);
-
         const formattedPerformance = cashierPerformance.map(item => ({
             ...item,
             totalTransactions: Number(item.totalTransactions),
             totalSales: Number(item.totalSales)
         }));
-
         res.json(formattedPerformance);
     } catch (error) {
         console.error("Error fetching cashier performance:", error);
         res.status(500).json({ message: "Failed to fetch cashier performance." });
     }
 });
+// --- AKHIR PERBAIKAN ---
 
-/**
- * @route GET /api/admin/notifications
- * @desc Get stock-related notifications (out of stock, low stock).
- * @access Private (Admin only)
- */
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -346,11 +291,6 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/stock-info
- * @desc Get all product stock information.
- * @access Private (Admin only)
- */
 router.get('/stock-info', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -365,15 +305,10 @@ router.get('/stock-info', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/stale-products
- * @desc Get products that haven't been sold for a specified number of days (stale products).
- * @access Private (Admin only)
- */
 router.get('/stale-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT
@@ -395,15 +330,10 @@ router.get('/stale-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/expired-products
- * @desc Get products that are expired or will expire within a specified number of days.
- * @access Private (Admin only)
- */
 router.get('/expired-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT id, name, stock, expiration_date FROM products
@@ -418,11 +348,6 @@ router.get('/expired-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/top-customers
- * @desc Get top 5 customers based on total spent and total orders within a period.
- * @access Private (Admin only)
- */
 router.get('/top-customers', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -448,11 +373,6 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/recent-suppliers
- * @desc Get a list of recent suppliers.
- * @access Private (Admin only)
- */
 router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -472,20 +392,13 @@ router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/insights
- * @desc Get various business insights (e.g., revenue target, top sales day, new customers).
- * @access Private (Admin only)
- */
 router.get('/insights', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const insights = [];
 
-        // Fetch monthly revenue target
         const [[revenueTarget]] = await db.query('SELECT monthly_revenue_target FROM businesses WHERE id = ?', [businessId]);
-        // Fetch current month's sales
         const [[currentMonthSales]] = await db.query(
             `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?`,
             [businessId, startDate, endDate]
@@ -502,7 +415,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             }
         }
 
-        // Fetch top sales day
         const [[topDay]] = await db.query(
             `SELECT DATE(created_at) as date, SUM(total_amount) as sales
             FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
@@ -513,7 +425,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             insights.push({ id: 'insight-high-sales-day', type: 'info', icon: 'FiDollarSign', text: `Hari penjualan tertinggi Anda adalah ${new Date(topDay.date).toLocaleDateString('id-ID')}: Rp ${new Intl.NumberFormat('id-ID').format(topDay.sales)}.` });
         }
 
-        // Check for new customers
         const [[newCustCount]] = await db.query(`SELECT COALESCE(COUNT(id), 0) as count FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?`, [businessId, startDate, endDate]);
         if (newCustCount.count === 0) {
             insights.push({ id: 'insight-no-new-customers', type: 'info', icon: 'FiUsers', text: 'Tidak ada pelanggan baru dalam periode ini. Coba program loyalitas!' });
@@ -526,11 +437,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/product-profitability
- * @desc Get a report on product profitability within a given period.
- * @access Private (Admin only)
- */
 router.get('/product-profitability', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -538,8 +444,7 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
 
         const profitabilityQuery = `
             SELECT
-                p.id,
-                p.name,
+                p.id, p.name,
                 COALESCE(SUM(oi.quantity), 0) as total_quantity_sold,
                 CAST(COALESCE(SUM(oi.quantity * oi.price), 0) AS DECIMAL(15,2)) as total_revenue,
                 CAST(COALESCE(SUM(oi.quantity * oi.cost_price), 0) AS DECIMAL(15,2)) as total_cost,

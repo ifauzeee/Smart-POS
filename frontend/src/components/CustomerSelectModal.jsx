@@ -8,6 +8,7 @@ import { getCustomers } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
 import CustomerFormModal from './CustomerFormModal';
+import { useDebounce } from '../hooks/useDebounce'; // <-- PERUBAHAN: Impor hook
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -48,16 +49,20 @@ const AddCustomerButton = styled.button`
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300); // <-- PERUBAHAN: Gunakan hook
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
+    // <-- PERUBAHAN: Logika useEffect disederhanakan -->
     useEffect(() => {
         if (!isOpen || isFormOpen) return;
+
         const fetchCustomers = async () => {
             setLoading(true);
             try {
-                const res = await getCustomers(searchTerm);
+                // Gunakan nilai yang sudah di-debounce
+                const res = await getCustomers(debouncedSearchTerm);
                 setCustomers(res.data);
             } catch (error) {
                 toast.error("Gagal memuat daftar pelanggan.");
@@ -65,9 +70,10 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
                 setLoading(false);
             }
         };
-        const timer = setTimeout(() => fetchCustomers(), 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm, isOpen, isFormOpen]);
+
+        fetchCustomers();
+        // Hapus timeout manual dan hanya bergantung pada perubahan debouncedSearchTerm
+    }, [debouncedSearchTerm, isOpen, isFormOpen]);
     
     const handleCustomerCreated = (newCustomer) => {
         setIsFormOpen(false);
@@ -95,7 +101,6 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
                         {loading ? <p>Mencari...</p> : customers.map(customer => (
                             <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
                                 <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
-                                {/* FIXED: Correctly reference the 'phone' property */}
                                 <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                                     {customer.phone}
                                 </p>

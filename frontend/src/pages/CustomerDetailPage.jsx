@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useParams, Link } from 'react-router-dom';
-import { getCustomerById, getCustomerHistory, getCustomerStats, redeemCustomerPoints } from '../services/api';
+import { getCustomerById, getCustomerHistory, getCustomerStats, redeemCustomerPoints, getRewards } from '../services/api';
 import { toast } from 'react-toastify';
 import Skeleton from 'react-loading-skeleton';
 import { FiArrowLeft, FiUser, FiAward, FiShoppingBag, FiGift, FiCalendar, FiTrendingUp, FiStar, FiRefreshCw } from 'react-icons/fi';
+import RedeemRewardModal from '../components/RedeemRewardModal';
 
 // --- Animations ---
 const fadeIn = keyframes` from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }`;
@@ -29,6 +30,12 @@ const PointsDisplay = styled.div` margin: 15px 0; position: relative; z-index: 1
 const RedeemForm = styled.form` display: flex; flex-direction: column; gap: 10px; margin-top: 20px; position: relative; z-index: 1; `;
 const RedeemInput = styled.input` width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main); color: var(--text-primary); font-size: 0.9rem; transition: all 0.2s ease; &::placeholder { color: var(--text-secondary); } &:focus { outline: none; border-color: var(--primary-color); background: var(--bg-surface); }`;
 const RedeemButton = styled.button` padding: 10px 18px; border-radius: 8px; border: 1px solid var(--primary-color); background: var(--primary-color); color: white; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; backdrop-filter: none; &:hover:not(:disabled) { background: #4f46e5; border-color: #4f46e5; transform: translateY(-1px); } &:disabled { opacity: 0.5; cursor: not-allowed; }`;
+const RedeemRewardButton = styled(RedeemButton)`
+    background: #0DCAF0;
+    border-color: #0DCAF0;
+    &:hover:not(:disabled) { background: #0AAACF; border-color: #0AAACF; }
+    margin-bottom: 10px;
+`;
 const StatsGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; `;
 const StatCard = styled.div` background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px; text-align: center; transition: all 0.3s ease; &:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); }`;
 const StatIcon = styled.div` width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-color), #4f46e5); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; color: white; font-size: 1rem; `;
@@ -49,20 +56,23 @@ function CustomerDetailPage() {
     const [customer, setCustomer] = useState(null);
     const [history, setHistory] = useState([]);
     const [stats, setStats] = useState(null);
+    const [rewards, setRewards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [redeemAmount, setRedeemAmount] = useState('');
     const [redeemDesc, setRedeemDesc] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
     const fetchData = useCallback(async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true); else setLoading(true);
         try {
-            const [customerRes, historyRes, statsRes] = await Promise.all([ getCustomerById(id), getCustomerHistory(id), getCustomerStats(id) ]);
+            const [customerRes, historyRes, statsRes, rewardsRes] = await Promise.all([ getCustomerById(id), getCustomerHistory(id), getCustomerStats(id), getRewards() ]);
             setCustomer(customerRes.data);
             setHistory(historyRes.data);
             setStats(statsRes.data);
+            setRewards(rewardsRes.data);
         } catch (error) { toast.error("Gagal memuat data pelanggan."); } finally { setLoading(false); setRefreshing(false); }
     }, [id]);
 
@@ -90,130 +100,149 @@ function CustomerDetailPage() {
     if (!customer) { return ( <PageContainer> <EmptyState> <FiUser /> <h3>Pelanggan Tidak Ditemukan</h3> <p>Pelanggan dengan ID tersebut tidak ditemukan dalam sistem.</p> </EmptyState> </PageContainer> ); }
 
     return (
-        <PageContainer>
-            <BackLink to="/customers"><FiArrowLeft /> Kembali ke Daftar Pelanggan</BackLink>
-            <Header>
-                <div>
-                    <CustomerName>
-                        <FiUser /> {customer.name} <StatusBadge>Pelanggan Aktif</StatusBadge>
-                    </CustomerName>
-                </div>
-                <RefreshButton onClick={handleRefresh} disabled={refreshing}>
-                    <FiRefreshCw /> {refreshing ? 'Memuat...' : 'Refresh'}
-                </RefreshButton>
-            </Header>
-            <StatsGrid>
-                <StatCard>
-                    <StatIcon><FiShoppingBag /></StatIcon>
-                    <StatLabel>Total Pesanan</StatLabel>
-                    <StatValue>{stats?.totalOrders || 0}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiTrendingUp /></StatIcon>
-                    <StatLabel>Total Belanja</StatLabel>
-                    <StatValue>Rp {new Intl.NumberFormat('id-ID').format(stats?.totalSpent || 0)}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiStar /></StatIcon>
-                    <StatLabel>Total Poin Diperoleh</StatLabel>
-                    <StatValue>{stats?.totalPointsEarned || 0}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiGift /></StatIcon>
-                    <StatLabel>Rata-rata Belanja</StatLabel>
-                    <StatValue>Rp {new Intl.NumberFormat('id-ID').format(Math.round(stats?.avgOrderValue || 0))}</StatValue>
-                </StatCard>
-            </StatsGrid>
-            <TopCardsGrid>
-                <div>
-                    <InfoCard>
-                        <CardTitle><FiUser /> Detail Pelanggan</CardTitle>
-                        <InfoGrid>
-                            <InfoItem>
-                                <InfoLabel>Nama</InfoLabel>
-                                <InfoValue>{customer.name}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Telepon</InfoLabel>
-                                <InfoValue>{customer.phone || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Email</InfoLabel>
-                                <InfoValue>{customer.email || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Alamat</InfoLabel>
-                                <InfoValue>{customer.address || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Bergabung</InfoLabel>
-                                <InfoValue>{customer.created_at ? new Date(customer.created_at).toLocaleDateString('id-ID') : '-'}</InfoValue>
-                            </InfoItem>
-                        </InfoGrid>
-                    </InfoCard>
-                </div>
-                <div>
-                    <PointsCard>
-                        <CardTitle><FiAward /> Poin Loyalitas</CardTitle>
-                        <PointsDisplay>
-                            <p>Total Poin Saat Ini</p>
-                            <h2>{customer.points.toLocaleString('id-ID')}</h2>
-                        </PointsDisplay>
-                        <RedeemForm onSubmit={handleRedeem}>
-                            <RedeemInput type="number" value={redeemAmount} onChange={(e) => setRedeemAmount(e.target.value)} placeholder="Jumlah poin" max={customer.points} required />
-                            <RedeemInput value={redeemDesc} onChange={(e) => setRedeemDesc(e.target.value)} placeholder="Deskripsi (cth: Tukar Merchandise)" required />
-                            <RedeemButton type="submit" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Tukarkan Poin'}</RedeemButton>
-                        </RedeemForm>
-                    </PointsCard>
-                </div>
-            </TopCardsGrid>
-            <HistoryTableContainer>
-                <TableControls>
-                    <CardTitle style={{ margin: 0, padding: 0 }}><FiShoppingBag /> Riwayat Aktivitas ({filteredHistory.length})</CardTitle>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <SearchInput type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <>
+            <PageContainer>
+                <BackLink to="/customers"><FiArrowLeft /> Kembali ke Daftar Pelanggan</BackLink>
+                <Header>
+                    <div>
+                        <CustomerName>
+                            <FiUser /> {customer.name} <StatusBadge>Pelanggan Aktif</StatusBadge>
+                        </CustomerName>
                     </div>
-                </TableControls>
-                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                    <Table>
-                        <thead>
-                            <tr>
-                                <Th><FiCalendar style={{ marginRight: '8px' }} />Tanggal</Th>
-                                <Th>Deskripsi</Th>
-                                <Th>Total Belanja</Th>
-                                <Th>Perubahan Poin</Th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredHistory.length > 0 ? filteredHistory.map(item => (
-                                <Tr key={`${item.type}-${item.id}`}>
-                                    <Td>{new Date(item.created_at).toLocaleString('id-ID')}</Td>
-                                    <Td>{item.description}</Td>
-                                    <Td style={{ fontWeight: '600' }}>
-                                        {item.total_amount ? new Intl.NumberFormat('id-ID').format(item.total_amount) : '-'}
-                                    </Td>
-                                    <Td>
-                                        <PointsBadge $positive={item.points_change > 0}>
-                                            {item.points_change > 0 ? `+${item.points_change}` : item.points_change}
-                                        </PointsBadge>
-                                    </Td>
-                                </Tr>
-                            )) : (
-                                <Tr>
-                                    <Td colSpan="4">
-                                        <EmptyState>
-                                            <FiShoppingBag />
-                                            <h3>Belum Ada Aktivitas</h3>
-                                            <p>Pelanggan ini belum melakukan transaksi atau aktivitas poin.</p>
-                                        </EmptyState>
-                                    </Td>
-                                </Tr>
-                            )}
-                        </tbody>
-                    </Table>
-                </div>
-            </HistoryTableContainer>
-        </PageContainer>
+                    <RefreshButton onClick={handleRefresh} disabled={refreshing}>
+                        <FiRefreshCw /> {refreshing ? 'Memuat...' : 'Refresh'}
+                    </RefreshButton>
+                </Header>
+                <StatsGrid>
+                    <StatCard>
+                        <StatIcon><FiShoppingBag /></StatIcon>
+                        <StatLabel>Total Pesanan</StatLabel>
+                        <StatValue>{stats?.totalOrders || 0}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiTrendingUp /></StatIcon>
+                        <StatLabel>Total Belanja</StatLabel>
+                        <StatValue>Rp {new Intl.NumberFormat('id-ID').format(stats?.totalSpent || 0)}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiStar /></StatIcon>
+                        <StatLabel>Total Poin Diperoleh</StatLabel>
+                        <StatValue>{stats?.totalPointsEarned || 0}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiGift /></StatIcon>
+                        <StatLabel>Rata-rata Belanja</StatLabel>
+                        <StatValue>Rp {new Intl.NumberFormat('id-ID').format(Math.round(stats?.avgOrderValue || 0))}</StatValue>
+                    </StatCard>
+                </StatsGrid>
+                <TopCardsGrid>
+                    <div>
+                        <InfoCard>
+                            <CardTitle><FiUser /> Detail Pelanggan</CardTitle>
+                            <InfoGrid>
+                                <InfoItem>
+                                    <InfoLabel>Nama</InfoLabel>
+                                    <InfoValue>{customer.name}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Telepon</InfoLabel>
+                                    <InfoValue>{customer.phone || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Email</InfoLabel>
+                                    <InfoValue>{customer.email || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Alamat</InfoLabel>
+                                    <InfoValue>{customer.address || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Bergabung</InfoLabel>
+                                    <InfoValue>{customer.created_at ? new Date(customer.created_at).toLocaleDateString('id-ID') : '-'}</InfoValue>
+                                </InfoItem>
+                            </InfoGrid>
+                        </InfoCard>
+                    </div>
+                    <div>
+                        <PointsCard>
+                            <CardTitle><FiAward /> Poin Loyalitas</CardTitle>
+                            <PointsDisplay>
+                                <p>Total Poin Saat Ini</p>
+                                <h2>{customer.points.toLocaleString('id-ID')}</h2>
+                            </PointsDisplay>
+                            
+                            <RedeemRewardButton onClick={() => setIsRedeemModalOpen(true)} disabled={rewards.length === 0}>
+                                <FiGift /> Tukarkan Hadiah
+                            </RedeemRewardButton>
+
+                            <RedeemForm onSubmit={handleRedeem}>
+                                <p style={{textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>- atau -</p>
+                                <RedeemInput type="number" value={redeemAmount} onChange={(e) => setRedeemAmount(e.target.value)} placeholder="Tukar Poin Manual (cth: 1000)" max={customer.points} required />
+                                <RedeemInput value={redeemDesc} onChange={(e) => setRedeemDesc(e.target.value)} placeholder="Deskripsi (cth: Potongan Harga)" required />
+                                <RedeemButton type="submit" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Tukar Poin Manual'}</RedeemButton>
+                            </RedeemForm>
+                        </PointsCard>
+                    </div>
+                </TopCardsGrid>
+                <HistoryTableContainer>
+                    <TableControls>
+                        <CardTitle style={{ margin: 0, padding: 0 }}><FiShoppingBag /> Riwayat Aktivitas ({filteredHistory.length})</CardTitle>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <SearchInput type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                    </TableControls>
+                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <Th><FiCalendar style={{ marginRight: '8px' }} />Tanggal</Th>
+                                    <Th>Deskripsi</Th>
+                                    <Th>Total Belanja</Th>
+                                    <Th>Perubahan Poin</Th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredHistory.length > 0 ? filteredHistory.map(item => (
+                                    <Tr key={`${item.type}-${item.id}`}>
+                                        <Td>{new Date(item.created_at).toLocaleString('id-ID')}</Td>
+                                        <Td>{item.description}</Td>
+                                        <Td style={{ fontWeight: '600' }}>
+                                            {item.total_amount ? new Intl.NumberFormat('id-ID').format(item.total_amount) : '-'}
+                                        </Td>
+                                        <Td>
+                                            <PointsBadge $positive={item.points_change > 0}>
+                                                {item.points_change > 0 ? `+${item.points_change}` : item.points_change}
+                                            </PointsBadge>
+                                        </Td>
+                                    </Tr>
+                                )) : (
+                                    <Tr>
+                                        <Td colSpan="4">
+                                            <EmptyState>
+                                                <FiShoppingBag />
+                                                <h3>Belum Ada Aktivitas</h3>
+                                                <p>Pelanggan ini belum melakukan transaksi atau aktivitas poin.</p>
+                                            </EmptyState>
+                                        </Td>
+                                    </Tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                </HistoryTableContainer>
+            </PageContainer>
+            
+            <RedeemRewardModal
+                isOpen={isRedeemModalOpen}
+                onClose={() => setIsRedeemModalOpen(false)}
+                customer={customer}
+                rewardsList={rewards}
+                onRedemptionSuccess={() => {
+                    setIsRedeemModalOpen(false);
+                    fetchData(true);
+                }}
+            />
+        </>
     );
 }
 

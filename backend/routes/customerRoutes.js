@@ -302,4 +302,67 @@ router.post('/:id/redeem', protect, async (req, res) => {
     }
 });
 
+// --- PENAMBAHAN: Endpoint untuk menukarkan hadiah dari katalog ---
+router.post('/:id/redeem-reward', protect, async (req, res) => {
+    const { id: customerId } = req.params;
+    const { reward_id } = req.body;
+    const { business_id: businessId, id: userId } = req.user;
+
+    if (!reward_id) {
+        return res.status(400).json({ message: 'ID Hadiah harus disertakan.' });
+    }
+
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Ambil data pelanggan dan hadiah, lalu kunci barisnya untuk keamanan
+        const [[customer]] = await connection.query('SELECT points FROM customers WHERE id = ? AND business_id = ? FOR UPDATE', [customerId, businessId]);
+        const [[reward]] = await connection.query('SELECT name, points_cost FROM rewards WHERE id = ? AND business_id = ? AND is_active = TRUE', [reward_id, businessId]);
+
+        if (!customer) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Pelanggan tidak ditemukan.' });
+        }
+        if (!reward) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Hadiah tidak ditemukan atau tidak aktif.' });
+        }
+
+        // 2. Periksa apakah poin mencukupi
+        if (customer.points < reward.points_cost) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'Poin pelanggan tidak mencukupi untuk menukarkan hadiah ini.' });
+        }
+
+        // 3. Kurangi poin pelanggan
+        await connection.query('UPDATE customers SET points = points - ? WHERE id = ?', [reward.points_cost, customerId]);
+
+        // 4. Catat di log poin (sebagai pengeluaran poin)
+        const logDescription = `Menukarkan Hadiah: ${reward.name}`;
+        await connection.query(
+            'INSERT INTO customer_points_log (customer_id, points_change, description, user_id) VALUES (?, ?, ?, ?)',
+            [customerId, -reward.points_cost, logDescription, userId]
+        );
+
+        // 5. Catat di tabel riwayat penukaran hadiah
+        await connection.query(
+            'INSERT INTO reward_redemptions (customer_id, reward_id, user_id, points_spent) VALUES (?, ?, ?, ?)',
+            [customerId, reward_id, userId, reward.points_cost]
+        );
+
+        await connection.commit();
+
+        await logActivity(businessId, userId, 'REDEEM_REWARD', `Pelanggan ID ${customerId} menukarkan ${reward.points_cost} poin untuk "${reward.name}".`);
+        res.status(200).json({ message: 'Hadiah berhasil ditukarkan!' });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error redeeming reward:", error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
 module.exports = router;

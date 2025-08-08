@@ -5,6 +5,7 @@ import RoleFormModal from '../components/RoleFormModal';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiShield } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const PageContainer = styled.div` padding: 30px; height: 100%; display: flex; flex-direction: column; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-shrink: 0; `;

@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\HistoryPage.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { getOrders, getOrderById, deleteOrder, exportOrders, clearOrderHistory } from '../services/api';
@@ -11,10 +9,42 @@ import Receipt from '../components/Receipt';
 import ConfirmationModal from '../components/ConfirmationModal';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
+// --- PENAMBAHAN: Import fungsi dari date-fns ---
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
-// --- Styled Components ---
+// --- Styled Components (tambahkan ini) ---
+const QuickFilterButtons = styled.div`
+    display: flex;
+    gap: 10px;
+    margin-left: 20px;
+    
+    @media (max-width: 768px) {
+        margin-left: 0;
+        margin-top: 15px;
+        width: 100%;
+        justify-content: space-between;
+    }
+`;
+
+const FilterButton = styled.button`
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: ${props => props.$active ? 'var(--primary-color)' : 'var(--bg-main)'};
+    color: ${props => props.$active ? 'white' : 'var(--text-primary)'};
+    border: 1px solid ${props => props.$active ? 'var(--primary-color)' : 'var(--border-color)'};
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+`;
+// --- (Styled-components lainnya tidak berubah) ---
+
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -131,7 +161,6 @@ const DatePickerWrapper = styled.div`
         font-weight: 500; width: 130px; cursor: pointer; text-align: center;
     }
 `;
-// --- End of Styled Components ---
 
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
@@ -156,6 +185,7 @@ function HistoryPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
     const [modalContent, setModalContent] = useState({ title: '', message: '' });
+    const [activeFilter, setActiveFilter] = useState('');
 
     const receiptRef = useRef();
     const handlePrint = useReactToPrint({
@@ -183,8 +213,36 @@ function HistoryPage() {
         }
     }, [orderToPrint, handlePrint]);
     
+    const handleQuickFilterChange = (filter) => {
+        const now = new Date();
+        setActiveFilter(filter);
+        switch (filter) {
+            case 'today':
+                setStartDate(startOfDay(now));
+                setEndDate(endOfDay(now));
+                break;
+            case 'last7':
+                setStartDate(startOfDay(subDays(now, 6)));
+                setEndDate(endOfDay(now));
+                break;
+            case 'thisMonth':
+                setStartDate(startOfMonth(now));
+                setEndDate(endOfMonth(now));
+                break;
+            default:
+                setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+                setEndDate(new Date());
+        }
+    };
+
     const fetchOrders = useCallback(async () => {
         setLoading(true);
+        // Setiap kali fetch, reset activeFilter jika tanggal diubah manual
+        if (activeFilter === '' || activeFilter === null) {
+            // Jika filter diubah manual, jangan aktifkan tombol mana pun
+            setActiveFilter('');
+        }
+        
         try {
             const res = await getOrders(startDate, endDate);
             setOrders(res.data);
@@ -194,7 +252,7 @@ function HistoryPage() {
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate, activeFilter]);
 
     useEffect(() => {
         fetchOrders();
@@ -275,12 +333,17 @@ function HistoryPage() {
                     <FilterContainer>
                         <span style={{fontWeight: 500}}>Filter Tanggal:</span>
                         <DatePickerWrapper>
-                            <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
+                            <DatePicker selected={startDate} onChange={(date) => { setStartDate(date); setActiveFilter(''); }} dateFormat="dd/MM/yyyy" maxDate={endDate} />
                         </DatePickerWrapper>
                         <span>sampai</span>
                         <DatePickerWrapper>
-                            <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
+                            <DatePicker selected={endDate} onChange={(date) => { setEndDate(date); setActiveFilter(''); }} dateFormat="dd/MM/yyyy" minDate={startDate} />
                         </DatePickerWrapper>
+                        <QuickFilterButtons>
+                            <FilterButton onClick={() => handleQuickFilterChange('today')} $active={activeFilter === 'today'}>Hari Ini</FilterButton>
+                            <FilterButton onClick={() => handleQuickFilterChange('last7')} $active={activeFilter === 'last7'}>7 Hari</FilterButton>
+                            <FilterButton onClick={() => handleQuickFilterChange('thisMonth')} $active={activeFilter === 'thisMonth'}>Bulan Ini</FilterButton>
+                        </QuickFilterButtons>
                         <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
                         <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
                     </FilterContainer>
@@ -300,32 +363,34 @@ function HistoryPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {orders.length > 0 ? (
-                                        orders.map((order, i) => (
-                                            <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                                <Td>#{order.id}</Td>
-                                                <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
-                                                <Td>{order.cashier_name}</Td>
-                                                <Td>{order.customer_name || '-'}</Td>
-                                                <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
-                                                <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
-                                                <Td style={{textAlign: 'center'}}>
-                                                    <ActionButton onClick={() => handleViewDetail(order.id)}>
-                                                        <FiEye size={18} />
-                                                    </ActionButton>
-                                                    <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
-                                                        <FiTrash2 size={18} />
-                                                    </ActionButton>
+                                    <AnimatePresence>
+                                        {orders.length > 0 ? (
+                                            orders.map((order, i) => (
+                                                <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                                    <Td>#{order.id}</Td>
+                                                    <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
+                                                    <Td>{order.cashier_name}</Td>
+                                                    <Td>{order.customer_name || '-'}</Td>
+                                                    <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
+                                                    <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
+                                                    <Td style={{textAlign: 'center'}}>
+                                                        <ActionButton onClick={() => handleViewDetail(order.id)}>
+                                                            <FiEye size={18} />
+                                                        </ActionButton>
+                                                        <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
+                                                            <FiTrash2 size={18} />
+                                                        </ActionButton>
+                                                    </Td>
+                                                </Tr>
+                                            ))
+                                        ) : (
+                                            <Tr>
+                                                <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
+                                                    Tidak ada riwayat transaksi pada rentang tanggal ini.
                                                 </Td>
                                             </Tr>
-                                        ))
-                                    ) : (
-                                        <Tr>
-                                            <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
-                                                Tidak ada riwayat transaksi pada rentang tanggal ini.
-                                            </Td>
-                                        </Tr>
-                                    )}
+                                        )}
+                                    </AnimatePresence>
                                 </tbody>
                             </Table>
                         </TableWrapper>

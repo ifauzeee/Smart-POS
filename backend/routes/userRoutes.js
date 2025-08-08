@@ -58,7 +58,7 @@ const resetPasswordValidationRules = [
     })
 ];
 
-// --- User Authentication & Profile Endpoints ---
+// --- Authentication & User Profile Endpoints ---
 
 router.post('/register', registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
@@ -97,7 +97,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
             await connection.query(`INSERT INTO roles (business_id, name, description) VALUES (?, 'kasir', 'Akses terbatas untuk operasional kasir.')`, [businessId]);
             await connection.query('INSERT INTO email_settings (business_id) VALUES (?)', [businessId]);
             
-            // Tambahkan semua permissions ke peran 'admin' yang baru dibuat
             const [allPermissions] = await connection.query('SELECT id FROM permissions');
             if (allPermissions.length > 0) {
                 const rolePermissionsData = allPermissions.map(p => [role_id, p.id]);
@@ -119,7 +118,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
 
         await connection.commit();
         
-        // Ambil permissions yang baru dibuat untuk admin
         const [permissionsResult] = await connection.query(
             `SELECT p.name FROM permissions p
              JOIN role_permissions rp ON p.id = rp.permission_id
@@ -177,7 +175,6 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(403).json({ message: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
         }
 
-        // Ambil semua izin (permissions) yang dimiliki oleh peran pengguna ini
         const [permissions] = await db.query(
             `SELECT p.name FROM permissions p
              JOIN role_permissions rp ON p.id = rp.permission_id
@@ -186,14 +183,13 @@ router.post('/login', loginValidationRules, async (req, res) => {
         );
         const userPermissions = permissions.map(p => p.name);
 
-        // Buat payload token yang lebih lengkap
         const tokenPayload = {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role_name,
             business_id: user.business_id,
-            permissions: userPermissions // Simpan izin di dalam token
+            permissions: userPermissions
         };
         
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
@@ -322,7 +318,7 @@ router.get('/profile', protect, (req, res) => {
     res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, business_id: req.user.business_id, permissions: req.user.permissions });
 });
 
-// --- Admin-managed User Endpoints ---
+// --- Admin-Managed User Endpoints ---
 
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
@@ -561,4 +557,85 @@ router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
     }
 });
 
+module.exports = router;
+
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\userRoutes.js
+
+// ... (import lainnya)
+const { hasPermission } = require('../middleware/authMiddleware'); // <-- PENAMBAHAN
+
+// ... (kode validasi tidak berubah)
+
+// --- PENAMBAHAN: Rute untuk mendapatkan semua izin yang tersedia ---
+router.get('/permissions', protect, isAdmin, async (req, res) => {
+    try {
+        const [permissions] = await db.query('SELECT id, name, description FROM permissions ORDER BY name');
+        res.json(permissions);
+    } catch (error) {
+        console.error('Error fetching permissions:', error);
+        res.status(500).json({ message: 'Gagal mengambil daftar izin.' });
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
+// --- PENAMBAHAN: Rute untuk mengelola peran (roles) dan izinnya ---
+router.get('/roles', protect, isAdmin, async (req, res) => {
+    try {
+        const businessId = req.user.business_id;
+        const [roles] = await db.query(`SELECT id, name, description FROM roles WHERE business_id = ?`, [businessId]);
+        res.json(roles);
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        res.status(500).json({ message: 'Gagal mengambil daftar peran.' });
+    }
+});
+
+router.get('/roles/:id', protect, isAdmin, async (req, res) => {
+    try {
+        const roleId = req.params.id;
+        const businessId = req.user.business_id;
+
+        const [[role]] = await db.query(`SELECT id, name, description FROM roles WHERE id = ? AND business_id = ?`, [roleId, businessId]);
+        if (!role) {
+            return res.status(404).json({ message: 'Peran tidak ditemukan.' });
+        }
+
+        const [rolePermissions] = await db.query(`SELECT permission_id FROM role_permissions WHERE role_id = ?`, [roleId]);
+        const permissions = rolePermissions.map(p => p.permission_id);
+        res.json({ ...role, permissions });
+
+    } catch (error) {
+        console.error('Error fetching role details:', error);
+        res.status(500).json({ message: 'Gagal mengambil detail peran.' });
+    }
+});
+
+router.put('/roles/:id', protect, isAdmin, async (req, res) => {
+    try {
+        const roleId = req.params.id;
+        const { name, description, permissions } = req.body;
+        const businessId = req.user.business_id;
+
+        const [[role]] = await db.query(`SELECT id FROM roles WHERE id = ? AND business_id = ?`, [roleId, businessId]);
+        if (!role) {
+            return res.status(404).json({ message: 'Peran tidak ditemukan.' });
+        }
+
+        await db.query(`UPDATE roles SET name = ?, description = ? WHERE id = ?`, [name, description, roleId]);
+        await db.query(`DELETE FROM role_permissions WHERE role_id = ?`, [roleId]);
+
+        if (permissions && permissions.length > 0) {
+            const permissionData = permissions.map(pId => [roleId, pId]);
+            await db.query(`INSERT INTO role_permissions (role_id, permission_id) VALUES ?`, [permissionData]);
+        }
+
+        res.json({ message: 'Peran dan izin berhasil diperbarui.' });
+    } catch (error) {
+        console.error('Error updating role:', error);
+        res.status(500).json({ message: 'Gagal memperbarui peran.' });
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
+// ... (sisa kode tidak berubah)
 module.exports = router;

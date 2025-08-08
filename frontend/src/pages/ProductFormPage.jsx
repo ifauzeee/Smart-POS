@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductFormPage.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import styled from 'styled-components';
@@ -382,6 +380,9 @@ function ProductFormPage() {
             if (selectedMaterial) {
                 newItems[index].raw_material_name = selectedMaterial.name;
                 newItems[index].raw_material_unit = selectedMaterial.unit;
+            } else {
+                newItems[index].raw_material_name = '';
+                newItems[index].raw_material_unit = '';
             }
         }
         setFormData({ ...formData, recipeItems: newItems });

@@ -3671,8 +3671,6 @@ EMAIL_PASS=sandi_aplikasi_16_digit_dari_google_disini
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\index.js =====
 
-// C:\Users\Ibnu\Project\smart-pos\backend\index.js
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -3717,6 +3715,7 @@ const stockRoutes = require('./routes/stockRoutes');
 const purchaseOrderRoutes = require('./routes/purchaseOrderRoutes');
 const rawMaterialRoutes = require('./routes/rawMaterialRoutes');
 const roleRoutes = require('./routes/roleRoutes');
+const rewardsRoutes = require('./routes/rewardsRoutes');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -3739,9 +3738,30 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
-app.use('/api/shifts', shiftRoutes); // Menggunakan variabel yang benar
+app.use('/api/shifts', shiftRoutes);
+app.use('/api/rewards', rewardsRoutes);
 
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
+
+// ============================= SARAN PENINGKATAN =============================
+// Middleware Penanganan Error Terpusat
+// Ini akan menangkap semua error yang dilempar dari route async Anda
+const errorHandler = (err, req, res, next) => {
+    console.error(`[GLOBAL ERROR HANDLER]: ${err.stack}`);
+    
+    // Default ke 500 jika tidak ada status code spesifik
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    
+    res.status(statusCode).json({
+        message: err.message || 'Terjadi kesalahan pada server.',
+        // Hanya tampilkan stack trace di mode development untuk keamanan
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+    });
+};
+
+app.use(errorHandler);
+// ===========================================================================
+
 
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`🚀 Backend server running at http://localhost:${port}`));
@@ -3765,9 +3785,10 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "csv-writer": "^1.6.0",
         "dotenv": "^16.4.5",
         "express": "^4.19.2",
+        "express-rate-limit": "^8.0.1",
         "express-validator": "^7.1.0",
         "jsonwebtoken": "^9.0.2",
-        "multer": "^1.4.5-lts.1",
+        "multer": "^1.4.5-lts.2",
         "mysql2": "^3.10.0",
         "nodemailer": "^6.9.14",
         "pdfkit": "^0.15.0"
@@ -4593,6 +4614,24 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
         "url": "https://opencollective.com/express"
       }
     },
+    "node_modules/express-rate-limit": {
+      "version": "8.0.1",
+      "resolved": "https://registry.npmjs.org/express-rate-limit/-/express-rate-limit-8.0.1.tgz",
+      "integrity": "sha512-aZVCnybn7TVmxO4BtlmnvX+nuz8qHW124KKJ8dumsBsmv5ZLxE0pYu7S2nwyRBGHHCAzdmnGyrc5U/rksSPO7Q==",
+      "license": "MIT",
+      "dependencies": {
+        "ip-address": "10.0.1"
+      },
+      "engines": {
+        "node": ">= 16"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/express-rate-limit"
+      },
+      "peerDependencies": {
+        "express": ">= 4.11"
+      }
+    },
     "node_modules/express-validator": {
       "version": "7.2.1",
       "resolved": "https://registry.npmjs.org/express-validator/-/express-validator-7.2.1.tgz",
@@ -5042,6 +5081,15 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
       },
       "engines": {
         "node": ">= 0.4"
+      }
+    },
+    "node_modules/ip-address": {
+      "version": "10.0.1",
+      "resolved": "https://registry.npmjs.org/ip-address/-/ip-address-10.0.1.tgz",
+      "integrity": "sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 12"
       }
     },
     "node_modules/ipaddr.js": {
@@ -6805,6 +6853,7 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
     "csv-writer": "^1.6.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.0.1",
     "express-validator": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.2",
@@ -6816,6 +6865,7 @@ app.listen(port, () => console.log(`🚀 Backend server running at http://localh
     "nodemon": "^3.1.2"
   }
 }
+
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\config\db.js =====
 
@@ -6849,55 +6899,50 @@ const jwt = require('jsonwebtoken');
 
 const protect = async (req, res, next) => {
     let token;
-    // PERBAIKAN: Logika dioptimalkan untuk tidak melakukan query database pada setiap request.
-    // Data pengguna diambil langsung dari payload token yang sudah diverifikasi.
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // PENJELASAN: Mengisi req.user dengan data dari token, ini jauh lebih efisien
-            // daripada melakukan query `SELECT * FROM users WHERE id = ?` setiap kali.
             req.user = {
                 id: decoded.id,
                 name: decoded.name,
                 email: decoded.email,
                 business_id: decoded.business_id,
                 role: decoded.role,
-                permissions: decoded.permissions || [] // Pastikan permissions selalu array
+                permissions: decoded.permissions || []
             };
 
             next();
         } catch (error) {
-            return res.status(401).json({ message: 'Token tidak valid atau kedaluwarsa.' });
+            return res.status(401).json({ message: 'Token not valid or expired.' });
         }
     }
     if (!token) {
-        return res.status(401).json({ message: 'Tidak ada token, otorisasi gagal.' });
+        return res.status(401).json({ message: 'No token, authorization failed.' });
     }
 };
 
 const isAdmin = (req, res, next) => {
-    // Menggunakan optional chaining (?.) untuk mencegah error jika req.user atau req.user.role tidak ada
-    if (req.user?.role?.toLowerCase() === 'admin') {
+    // Optional chaining '?.' prevents crash if req.user is not set
+    if (req.user && req.user.role?.toLowerCase() === 'admin') {
         next();
     } else {
-        return res.status(403).json({ 
-            message: "Akses ditolak. Memerlukan peran admin.",
-            receivedRole: req.user ? req.user.role : 'No role found' 
-        });
+        res.status(403).json({ message: 'Access denied. Admin role required.' });
     }
 };
 
-const hasPermission = (permission) => {
+// --- PENAMBAHAN: Middleware untuk memeriksa izin spesifik ---
+const hasPermission = (permissionName) => {
     return (req, res, next) => {
-        if (req.user && req.user.permissions && req.user.permissions.includes(permission)) {
+        if (req.user && req.user.permissions && req.user.permissions.includes(permissionName)) {
             next();
         } else {
-            return res.status(403).json({ message: 'Akses ditolak. Anda tidak memiliki izin yang diperlukan.' });
+            res.status(403).json({ message: `Akses ditolak. Izin '${permissionName}' diperlukan.` });
         }
     };
 };
+// --- AKHIR PENAMBAHAN ---
 
 module.exports = { protect, isAdmin, hasPermission };
 
@@ -6912,19 +6957,10 @@ const { getValidDateRange } = require('../utils/dateUtils');
 
 const router = express.Router();
 
-/**
- * Helper function to fetch various statistical data for a given business within a specified date range.
- * This function is used by the /stats endpoint.
- * @param {number} businessId - The ID of the business.
- * @param {string} startDate - The start date for the period (YYYY-MM-DD).
- * @param {string} endDate - The end date for the period (YYYY-MM-DD).
- * @returns {object} An object containing totalRevenue, totalTransactions, totalProfit, totalSoldUnits, newCustomers, and totalExpenses.
- */
 const getStatsForPeriod = async (businessId, startDate, endDate) => {
     if (!startDate || !endDate) {
         throw new Error("Invalid date range provided for stats query.");
     }
-
     const statsQuery = `
         SELECT
             (SELECT CAST(COALESCE(SUM(total_amount), 0) AS DECIMAL(15,2)) FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?) as totalRevenue,
@@ -6936,7 +6972,7 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
                     WHERE o2.business_id = ? AND o2.created_at BETWEEN ? AND ?)
                 , 0)
             AS DECIMAL(15,2)) as totalProfit,
-            COALESCE((
+             COALESCE((
                 SELECT SUM(oi.quantity)
                 FROM order_items oi JOIN orders o2 ON oi.order_id = o2.id
                 WHERE o2.business_id = ? AND created_at BETWEEN ? AND ?
@@ -6954,12 +6990,8 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         businessId, startDate, endDate,
         businessId
     ];
-
     const [[stats]] = await db.query(statsQuery, params);
-    
-    // Fetch default starting cash as a fallback
     const [[defaultCashSetting]] = await db.query('SELECT default_starting_cash FROM businesses WHERE id = ?', [businessId]);
-
     return {
         totalRevenue: Number(stats.totalRevenue),
         totalTransactions: Number(stats.totalTransactions),
@@ -6967,18 +6999,10 @@ const getStatsForPeriod = async (businessId, startDate, endDate) => {
         totalSoldUnits: Number(stats.totalSoldUnits),
         newCustomers: Number(stats.newCustomers),
         totalExpenses: Number(stats.totalExpenses) || 0,
-        // If there's no closed shift, use the default starting cash from settings
         cashInDrawer: Number(stats.cashInDrawer) || Number(defaultCashSetting.default_starting_cash),
     };
 };
 
-// --- Dashboard Statistics Endpoints ---
-
-/**
- * @route GET /api/admin/debug-token
- * @desc Debug endpoint - useful for checking token and user details during development
- * @access Private (Admin only)
- */
 router.get('/debug-token', protect, isAdmin, async (req, res) => {
     res.json({
         headers: req.headers,
@@ -6987,11 +7011,6 @@ router.get('/debug-token', protect, isAdmin, async (req, res) => {
     });
 });
 
-/**
- * @route GET /api/admin/stats
- * @desc Get various statistics for the current and optionally a comparison period.
- * @access Private (Admin only)
- */
 router.get('/stats', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -7023,11 +7042,6 @@ router.get('/stats', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/daily-revenue-profit
- * @desc Get daily revenue and profit data for a given period.
- * @access Private (Admin only)
- */
 router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7068,11 +7082,6 @@ router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/daily-sales
- * @desc Get daily sales data for a given period.
- * @access Private (Admin only)
- */
 router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7109,11 +7118,6 @@ router.get('/daily-sales', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/top-products
- * @desc Get top 5 selling products for a given period.
- * @access Private (Admin only)
- */
 router.get('/top-products', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7140,11 +7144,6 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/product-sales-performance
- * @desc Get sales performance for all products within a given period.
- * @access Private (Admin only)
- */
 router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7171,47 +7170,38 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/cashier-performance
- * @desc Get performance metrics for cashiers within a given period.
- * @access Private (Admin only)
- */
+// --- PERBAIKAN DI SINI ---
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-
+        // Kueri diperbarui untuk hanya mengambil pengguna yang aktif (is_active = 1)
         const query = `
             SELECT
-                u.id, u.name,
+                u.id, 
+                u.name,
                 COALESCE(COUNT(o.id), 0) as totalTransactions,
                 COALESCE(SUM(o.total_amount), 0) as totalSales
             FROM users u
             LEFT JOIN orders o ON u.id = o.user_id AND o.business_id = u.business_id AND o.created_at BETWEEN ? AND ?
-            WHERE u.business_id = ?
+            WHERE u.business_id = ? AND u.is_active = 1
             GROUP BY u.id, u.name
             ORDER BY totalSales DESC
         `;
         const [cashierPerformance] = await db.query(query, [startDate, endDate, businessId]);
-
         const formattedPerformance = cashierPerformance.map(item => ({
             ...item,
             totalTransactions: Number(item.totalTransactions),
             totalSales: Number(item.totalSales)
         }));
-
         res.json(formattedPerformance);
     } catch (error) {
         console.error("Error fetching cashier performance:", error);
         res.status(500).json({ message: "Failed to fetch cashier performance." });
     }
 });
+// --- AKHIR PERBAIKAN ---
 
-/**
- * @route GET /api/admin/notifications
- * @desc Get stock-related notifications (out of stock, low stock).
- * @access Private (Admin only)
- */
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -7251,11 +7241,6 @@ router.get('/notifications', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/stock-info
- * @desc Get all product stock information.
- * @access Private (Admin only)
- */
 router.get('/stock-info', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -7270,15 +7255,10 @@ router.get('/stock-info', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/stale-products
- * @desc Get products that haven't been sold for a specified number of days (stale products).
- * @access Private (Admin only)
- */
 router.get('/stale-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT
@@ -7300,15 +7280,10 @@ router.get('/stale-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/expired-products
- * @desc Get products that are expired or will expire within a specified number of days.
- * @access Private (Admin only)
- */
 router.get('/expired-products', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
-        const days = parseInt(req.query.days) || 30; // Default to 30 days
+        const days = parseInt(req.query.days) || 30;
 
         const query = `
             SELECT id, name, stock, expiration_date FROM products
@@ -7323,11 +7298,6 @@ router.get('/expired-products', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/top-customers
- * @desc Get top 5 customers based on total spent and total orders within a period.
- * @access Private (Admin only)
- */
 router.get('/top-customers', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7353,11 +7323,6 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/recent-suppliers
- * @desc Get a list of recent suppliers.
- * @access Private (Admin only)
- */
 router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
@@ -7377,20 +7342,13 @@ router.get('/recent-suppliers', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/insights
- * @desc Get various business insights (e.g., revenue target, top sales day, new customers).
- * @access Private (Admin only)
- */
 router.get('/insights', protect, isAdmin, async (req, res) => {
     try {
         const businessId = req.user.business_id;
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const insights = [];
 
-        // Fetch monthly revenue target
         const [[revenueTarget]] = await db.query('SELECT monthly_revenue_target FROM businesses WHERE id = ?', [businessId]);
-        // Fetch current month's sales
         const [[currentMonthSales]] = await db.query(
             `SELECT COALESCE(SUM(total_amount), 0) as totalSales FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?`,
             [businessId, startDate, endDate]
@@ -7407,7 +7365,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             }
         }
 
-        // Fetch top sales day
         const [[topDay]] = await db.query(
             `SELECT DATE(created_at) as date, SUM(total_amount) as sales
             FROM orders WHERE business_id = ? AND created_at BETWEEN ? AND ?
@@ -7418,7 +7375,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
             insights.push({ id: 'insight-high-sales-day', type: 'info', icon: 'FiDollarSign', text: `Hari penjualan tertinggi Anda adalah ${new Date(topDay.date).toLocaleDateString('id-ID')}: Rp ${new Intl.NumberFormat('id-ID').format(topDay.sales)}.` });
         }
 
-        // Check for new customers
         const [[newCustCount]] = await db.query(`SELECT COALESCE(COUNT(id), 0) as count FROM customers WHERE business_id = ? AND created_at BETWEEN ? AND ?`, [businessId, startDate, endDate]);
         if (newCustCount.count === 0) {
             insights.push({ id: 'insight-no-new-customers', type: 'info', icon: 'FiUsers', text: 'Tidak ada pelanggan baru dalam periode ini. Coba program loyalitas!' });
@@ -7431,11 +7387,6 @@ router.get('/insights', protect, isAdmin, async (req, res) => {
     }
 });
 
-/**
- * @route GET /api/admin/product-profitability
- * @desc Get a report on product profitability within a given period.
- * @access Private (Admin only)
- */
 router.get('/product-profitability', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
@@ -7443,8 +7394,7 @@ router.get('/product-profitability', protect, isAdmin, async (req, res) => {
 
         const profitabilityQuery = `
             SELECT
-                p.id,
-                p.name,
+                p.id, p.name,
                 COALESCE(SUM(oi.quantity), 0) as total_quantity_sold,
                 CAST(COALESCE(SUM(oi.quantity * oi.price), 0) AS DECIMAL(15,2)) as total_revenue,
                 CAST(COALESCE(SUM(oi.quantity * oi.cost_price), 0) AS DECIMAL(15,2)) as total_cost,
@@ -8135,6 +8085,69 @@ router.post('/:id/redeem', protect, async (req, res) => {
     }
 });
 
+// --- PENAMBAHAN: Endpoint untuk menukarkan hadiah dari katalog ---
+router.post('/:id/redeem-reward', protect, async (req, res) => {
+    const { id: customerId } = req.params;
+    const { reward_id } = req.body;
+    const { business_id: businessId, id: userId } = req.user;
+
+    if (!reward_id) {
+        return res.status(400).json({ message: 'ID Hadiah harus disertakan.' });
+    }
+
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        // 1. Ambil data pelanggan dan hadiah, lalu kunci barisnya untuk keamanan
+        const [[customer]] = await connection.query('SELECT points FROM customers WHERE id = ? AND business_id = ? FOR UPDATE', [customerId, businessId]);
+        const [[reward]] = await connection.query('SELECT name, points_cost FROM rewards WHERE id = ? AND business_id = ? AND is_active = TRUE', [reward_id, businessId]);
+
+        if (!customer) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Pelanggan tidak ditemukan.' });
+        }
+        if (!reward) {
+            await connection.rollback();
+            return res.status(404).json({ message: 'Hadiah tidak ditemukan atau tidak aktif.' });
+        }
+
+        // 2. Periksa apakah poin mencukupi
+        if (customer.points < reward.points_cost) {
+            await connection.rollback();
+            return res.status(400).json({ message: 'Poin pelanggan tidak mencukupi untuk menukarkan hadiah ini.' });
+        }
+
+        // 3. Kurangi poin pelanggan
+        await connection.query('UPDATE customers SET points = points - ? WHERE id = ?', [reward.points_cost, customerId]);
+
+        // 4. Catat di log poin (sebagai pengeluaran poin)
+        const logDescription = `Menukarkan Hadiah: ${reward.name}`;
+        await connection.query(
+            'INSERT INTO customer_points_log (customer_id, points_change, description, user_id) VALUES (?, ?, ?, ?)',
+            [customerId, -reward.points_cost, logDescription, userId]
+        );
+
+        // 5. Catat di tabel riwayat penukaran hadiah
+        await connection.query(
+            'INSERT INTO reward_redemptions (customer_id, reward_id, user_id, points_spent) VALUES (?, ?, ?, ?)',
+            [customerId, reward_id, userId, reward.points_cost]
+        );
+
+        await connection.commit();
+
+        await logActivity(businessId, userId, 'REDEEM_REWARD', `Pelanggan ID ${customerId} menukarkan ${reward.points_cost} poin untuk "${reward.name}".`);
+        res.status(200).json({ message: 'Hadiah berhasil ditukarkan!' });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error redeeming reward:", error);
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    } finally {
+        if (connection) connection.release();
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
 module.exports = router;
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\routes\expenseRoutes.js =====
@@ -8302,7 +8315,8 @@ module.exports = router;
 
 const express = require('express');
 const db = require('../config/db');
-const { protect, isAdmin } = require('../middleware/authMiddleware');
+// Impor middleware baru
+const { protect, isAdmin, hasPermission } = require('../middleware/authMiddleware');
 const { getValidDateRange } = require('../utils/dateUtils');
 const { sendReceiptEmail } = require('../utils/emailService');
 const { logActivity } = require('../utils/logUtils');
@@ -8310,54 +8324,10 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const fs = require('fs');
 
+// Impor fungsi handleStockUpdate dari service terpisah
+const { handleStockUpdate } = require('../services/stockService');
+
 const router = express.Router();
-
-// =================================================================
-// FUNGSI UTAMA: Pembaruan Stok
-// =================================================================
-
-/**
- * @description Fungsi ini mengelola pembaruan stok untuk produk jadi dan bahan baku.
- * Ini adalah bagian perbaikan utama yang memastikan konsistensi stok.
- * @param {object} connection - Koneksi database.
- * @param {Array<object>} items - Daftar item dalam pesanan.
- * @param {number} factor - Faktor pengali untuk stok (1 untuk pesanan baru, -1 untuk pembatalan).
- * @param {boolean} validateOnly - Jika true, hanya memeriksa stok tanpa melakukan pembaruan.
- */
-async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
-    for (const item of items) {
-        // Mendapatkan product_id dari variant_id
-        const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId || item.variant_id]);
-        if (!variant) {
-            throw new Error(`Varian produk dengan ID ${item.variantId || item.variant_id} tidak ditemukan.`);
-        }
-        const productId = variant.product_id;
-
-        // Langkah 1: SELALU periksa dan kurangi/tambah stok produk jadi
-        const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
-        if (factor > 0 && product.stock < item.quantity) {
-            throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
-        }
-        if (!validateOnly) {
-            await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity * factor, productId]);
-        }
-
-        // Langkah 2: JIKA produk memiliki resep, kurangi/tambah JUGA stok bahan bakunya
-        const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
-        if (recipeItems.length > 0) {
-            for (const recipeItem of recipeItems) {
-                const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
-                const requiredQuantity = recipeItem.quantity_used * item.quantity;
-                if (factor > 0 && material.stock_quantity < requiredQuantity) {
-                    throw new Error(`Stok bahan baku "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
-                }
-                if (!validateOnly) {
-                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity - ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
-                }
-            }
-        }
-    }
-}
 
 // =================================================================
 // ENDPOINTS
@@ -8367,12 +8337,6 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
  * @route   POST /api/orders
  * @desc    Membuat pesanan baru
  * @access  Private
- *
- * @comment
- * Menggunakan handleStockUpdate dua kali:
- * 1. Mode `validateOnly=true` untuk memeriksa ketersediaan stok produk dan bahan baku sebelum memulai transaksi.
- * 2. Mode `validateOnly=false` untuk benar-benar mengurangi stok setelah semua data pesanan berhasil dimasukkan ke database.
- * Ini memastikan transaksi hanya berjalan jika stok mencukupi.
  */
 router.post('/', protect, async (req, res) => {
     const { items, customer_id, payment_method, amount_paid, subtotal_amount, tax_amount, total_amount, promotion_id, discount_amount } = req.body;
@@ -8488,11 +8452,6 @@ router.get('/:id', protect, async (req, res) => {
  * @route   DELETE /api/orders/clear-history
  * @desc    Menghapus semua riwayat transaksi (hard reset)
  * @access  Private (hanya untuk Admin)
- *
- * @comment
- * Endpoint ini melakukan "hard reset" untuk riwayat transaksi,
- * termasuk menghapus log poin dan mengembalikan `AUTO_INCREMENT`.
- * Ini merupakan operasi berbahaya dan hanya bisa diakses oleh Admin.
  */
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
@@ -8528,14 +8487,9 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
  * @route   DELETE /api/orders/:id
  * @desc    Menghapus pesanan tunggal dan mengembalikan stok/poin
  * @access  Private (hanya untuk Admin)
- *
- * @comment
- * Ini adalah perbaikan penting untuk endpoint pembatalan pesanan.
- * Menggunakan `handleStockUpdate` dengan `factor = -1` untuk mengembalikan
- * stok produk dan bahan baku. Poin pelanggan juga dikembalikan dengan
- * mencatat log poin negatif.
  */
-router.delete('/:id', protect, isAdmin, async (req, res) => {
+// Menerapkan middleware hasPermission untuk izin 'delete_orders'
+router.delete('/:id', protect, hasPermission('delete_orders'), async (req, res) => {
     const connection = await db.getConnection();
     const businessId = req.user.business_id;
     const userId = req.user.id;
@@ -8868,8 +8822,31 @@ router.get('/', protect, async (req, res) => {
         let params = [];
 
         if (barcode) {
-            productsSql = `SELECT p.* FROM products p JOIN product_variants pv ON p.id = pv.product_id WHERE pv.barcode = ? AND p.business_id = ? AND p.is_archived = 0`;
-            params = [barcode, businessId];
+            productsSql = `
+                SELECT
+                    p.id, p.name, p.description, p.image_url, p.category_id, p.sub_category_id,
+                    p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold, p.created_at,
+                    c.name AS category_name,
+                    sc.name AS sub_category_name,
+                    s.name as supplier_name,
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', pv.id,
+                            'name', pv.name,
+                            'price', pv.price,
+                            'cost_price', pv.cost_price,
+                            'barcode', pv.barcode
+                        )
+                    ) as variants
+                FROM products AS p
+                LEFT JOIN categories AS c ON p.category_id = c.id
+                LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
+                LEFT JOIN suppliers AS s ON p.supplier_id = s.id
+                LEFT JOIN product_variants pv ON p.id = pv.product_id
+                WHERE p.business_id = ? AND pv.barcode = ? AND p.is_archived = 0
+                GROUP BY p.id
+            `;
+            params = [businessId, barcode];
         } else {
             productsSql = `
                 SELECT
@@ -8877,7 +8854,16 @@ router.get('/', protect, async (req, res) => {
                     p.supplier_id, p.stock, p.expiration_date, p.low_stock_threshold, p.created_at,
                     c.name AS category_name,
                     sc.name AS sub_category_name,
-                    s.name as supplier_name
+                    s.name as supplier_name,
+                    JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', pv.id,
+                            'name', pv.name,
+                            'price', pv.price,
+                            'cost_price', pv.cost_price,
+                            'barcode', pv.barcode
+                        )
+                    ) as variants
                 FROM products AS p
                 LEFT JOIN categories AS c ON p.category_id = c.id
                 LEFT JOIN sub_categories AS sc ON p.sub_category_id = sc.id
@@ -8888,32 +8874,17 @@ router.get('/', protect, async (req, res) => {
             params = [businessId];
 
             if (search && search.trim() !== '') {
-                productsSql += ' AND (p.name LIKE ? OR pv.barcode = ?)';
+                productsSql += ' AND (p.name LIKE ? OR EXISTS (SELECT 1 FROM product_variants pv_search WHERE pv_search.product_id = p.id AND pv_search.barcode = ?))';
                 const searchTerm = `%${search.trim()}%`;
                 params.push(searchTerm, search.trim());
             }
 
             productsSql += ' GROUP BY p.id ORDER BY p.created_at DESC';
         }
-        
-        const [products] = await db.query(productsSql, params);
 
-        if (products.length > 0) {
-            const productIds = products.map(p => p.id);
-            const variantsSql = `SELECT id, product_id, name, price, cost_price, barcode FROM product_variants WHERE product_id IN (?)`;
-            const [variants] = await db.query(variantsSql, [productIds]);
-            const variantsMap = new Map();
-            variants.forEach(v => {
-                if (!variantsMap.has(v.product_id)) {
-                    variantsMap.set(v.product_id, []);
-                }
-                variantsMap.get(v.product_id).push(v);
-            });
-            products.forEach(p => {
-                p.variants = variantsMap.get(p.id) || [];
-            });
-        }
+        const [products] = await db.query(productsSql, params);
         res.json(products);
+
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -8929,7 +8900,6 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
         if (!productName) {
             return res.status(404).json({ message: 'Produk tidak ditemukan atau Anda tidak punya akses.' });
         }
-        // FIXED: Removed the non-existent 'updated_at' column from the query
         const [result] = await db.query('UPDATE products SET is_archived = 1 WHERE id = ? AND business_id = ?', [productId, businessId]);
         if (result.affectedRows === 0) {
             throw new Error('Failed to archive product, possibly concurrency issue.');
@@ -9694,6 +9664,81 @@ router.get('/sales-summary', protect, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Error generating sales summary CSV:", error);
         res.status(500).json({ message: "Gagal membuat laporan.", error: error.message });
+    }
+});
+
+module.exports = router;
+
+===== C:\Users\Ibnu\Project\smart-pos\backend\routes\rewardsRoutes.js =====
+
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\rewardsRoutes.js
+
+const express = require('express');
+const db = require('../config/db');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
+const { logActivity } = require('../utils/logUtils');
+
+const router = express.Router();
+
+// GET /api/rewards - Mendapatkan semua hadiah aktif
+router.get('/', protect, async (req, res) => {
+    const businessId = req.user.business_id;
+    try {
+        const [rewards] = await db.query(
+            'SELECT * FROM rewards WHERE business_id = ? AND is_active = TRUE ORDER BY points_cost ASC',
+            [businessId]
+        );
+        res.json(rewards);
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal memuat hadiah.', error: error.message });
+    }
+});
+
+// POST /api/rewards - Membuat hadiah baru (Admin)
+router.post('/', protect, isAdmin, async (req, res) => {
+    const { name, description, points_cost, is_active } = req.body;
+    const businessId = req.user.business_id;
+    try {
+        const [result] = await db.query(
+            'INSERT INTO rewards (business_id, name, description, points_cost, is_active) VALUES (?, ?, ?, ?, ?)',
+            [businessId, name, description, points_cost, is_active]
+        );
+        await logActivity(businessId, req.user.id, 'CREATE_REWARD', `Membuat hadiah: ${name}`);
+        res.status(201).json({ message: 'Hadiah berhasil dibuat.', rewardId: result.insertId });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal membuat hadiah.', error: error.message });
+    }
+});
+
+// PUT /api/rewards/:id - Memperbarui hadiah (Admin)
+router.put('/:id', protect, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { name, description, points_cost, is_active } = req.body;
+    const businessId = req.user.business_id;
+    try {
+        const [result] = await db.query(
+            'UPDATE rewards SET name = ?, description = ?, points_cost = ?, is_active = ? WHERE id = ? AND business_id = ?',
+            [name, description, points_cost, is_active, id, businessId]
+        );
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Hadiah tidak ditemukan.' });
+        await logActivity(businessId, req.user.id, 'UPDATE_REWARD', `Memperbarui hadiah: ${name}`);
+        res.json({ message: 'Hadiah berhasil diperbarui.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal memperbarui hadiah.', error: error.message });
+    }
+});
+
+// DELETE /api/rewards/:id - Menghapus hadiah (Admin)
+router.delete('/:id', protect, isAdmin, async (req, res) => {
+    const { id } = req.params;
+    const businessId = req.user.business_id;
+    try {
+        const [result] = await db.query('DELETE FROM rewards WHERE id = ? AND business_id = ?', [id, businessId]);
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Hadiah tidak ditemukan.' });
+        await logActivity(businessId, req.user.id, 'DELETE_REWARD', `Menghapus hadiah ID: ${id}`);
+        res.json({ message: 'Hadiah berhasil dihapus.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Gagal menghapus hadiah.', error: error.message });
     }
 });
 
@@ -10568,7 +10613,7 @@ const resetPasswordValidationRules = [
     })
 ];
 
-// --- User Authentication & Profile Endpoints ---
+// --- Authentication & User Profile Endpoints ---
 
 router.post('/register', registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
@@ -10607,7 +10652,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
             await connection.query(`INSERT INTO roles (business_id, name, description) VALUES (?, 'kasir', 'Akses terbatas untuk operasional kasir.')`, [businessId]);
             await connection.query('INSERT INTO email_settings (business_id) VALUES (?)', [businessId]);
             
-            // Tambahkan semua permissions ke peran 'admin' yang baru dibuat
             const [allPermissions] = await connection.query('SELECT id FROM permissions');
             if (allPermissions.length > 0) {
                 const rolePermissionsData = allPermissions.map(p => [role_id, p.id]);
@@ -10629,7 +10673,6 @@ router.post('/register', registerValidationRules, async (req, res) => {
 
         await connection.commit();
         
-        // Ambil permissions yang baru dibuat untuk admin
         const [permissionsResult] = await connection.query(
             `SELECT p.name FROM permissions p
              JOIN role_permissions rp ON p.id = rp.permission_id
@@ -10687,7 +10730,6 @@ router.post('/login', loginValidationRules, async (req, res) => {
             return res.status(403).json({ message: 'Akun Anda tidak aktif. Silakan hubungi admin.' });
         }
 
-        // Ambil semua izin (permissions) yang dimiliki oleh peran pengguna ini
         const [permissions] = await db.query(
             `SELECT p.name FROM permissions p
              JOIN role_permissions rp ON p.id = rp.permission_id
@@ -10696,14 +10738,13 @@ router.post('/login', loginValidationRules, async (req, res) => {
         );
         const userPermissions = permissions.map(p => p.name);
 
-        // Buat payload token yang lebih lengkap
         const tokenPayload = {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role_name,
             business_id: user.business_id,
-            permissions: userPermissions // Simpan izin di dalam token
+            permissions: userPermissions
         };
         
         const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: '1d' });
@@ -10832,7 +10873,7 @@ router.get('/profile', protect, (req, res) => {
     res.json({ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role, business_id: req.user.business_id, permissions: req.user.permissions });
 });
 
-// --- Admin-managed User Endpoints ---
+// --- Admin-Managed User Endpoints ---
 
 router.get('/', protect, isAdmin, async (req, res) => {
     try {
@@ -11072,6 +11113,142 @@ router.delete('/:id', protect, isAdmin, userIdValidation, async (req, res) => {
 });
 
 module.exports = router;
+
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\userRoutes.js
+
+// ... (import lainnya)
+const { hasPermission } = require('../middleware/authMiddleware'); // <-- PENAMBAHAN
+
+// ... (kode validasi tidak berubah)
+
+// --- PENAMBAHAN: Rute untuk mendapatkan semua izin yang tersedia ---
+router.get('/permissions', protect, isAdmin, async (req, res) => {
+    try {
+        const [permissions] = await db.query('SELECT id, name, description FROM permissions ORDER BY name');
+        res.json(permissions);
+    } catch (error) {
+        console.error('Error fetching permissions:', error);
+        res.status(500).json({ message: 'Gagal mengambil daftar izin.' });
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
+// --- PENAMBAHAN: Rute untuk mengelola peran (roles) dan izinnya ---
+router.get('/roles', protect, isAdmin, async (req, res) => {
+    try {
+        const businessId = req.user.business_id;
+        const [roles] = await db.query(`SELECT id, name, description FROM roles WHERE business_id = ?`, [businessId]);
+        res.json(roles);
+    } catch (error) {
+        console.error('Error fetching roles:', error);
+        res.status(500).json({ message: 'Gagal mengambil daftar peran.' });
+    }
+});
+
+router.get('/roles/:id', protect, isAdmin, async (req, res) => {
+    try {
+        const roleId = req.params.id;
+        const businessId = req.user.business_id;
+
+        const [[role]] = await db.query(`SELECT id, name, description FROM roles WHERE id = ? AND business_id = ?`, [roleId, businessId]);
+        if (!role) {
+            return res.status(404).json({ message: 'Peran tidak ditemukan.' });
+        }
+
+        const [rolePermissions] = await db.query(`SELECT permission_id FROM role_permissions WHERE role_id = ?`, [roleId]);
+        const permissions = rolePermissions.map(p => p.permission_id);
+        res.json({ ...role, permissions });
+
+    } catch (error) {
+        console.error('Error fetching role details:', error);
+        res.status(500).json({ message: 'Gagal mengambil detail peran.' });
+    }
+});
+
+router.put('/roles/:id', protect, isAdmin, async (req, res) => {
+    try {
+        const roleId = req.params.id;
+        const { name, description, permissions } = req.body;
+        const businessId = req.user.business_id;
+
+        const [[role]] = await db.query(`SELECT id FROM roles WHERE id = ? AND business_id = ?`, [roleId, businessId]);
+        if (!role) {
+            return res.status(404).json({ message: 'Peran tidak ditemukan.' });
+        }
+
+        await db.query(`UPDATE roles SET name = ?, description = ? WHERE id = ?`, [name, description, roleId]);
+        await db.query(`DELETE FROM role_permissions WHERE role_id = ?`, [roleId]);
+
+        if (permissions && permissions.length > 0) {
+            const permissionData = permissions.map(pId => [roleId, pId]);
+            await db.query(`INSERT INTO role_permissions (role_id, permission_id) VALUES ?`, [permissionData]);
+        }
+
+        res.json({ message: 'Peran dan izin berhasil diperbarui.' });
+    } catch (error) {
+        console.error('Error updating role:', error);
+        res.status(500).json({ message: 'Gagal memperbarui peran.' });
+    }
+});
+// --- AKHIR PENAMBAHAN ---
+
+// ... (sisa kode tidak berubah)
+module.exports = router;
+
+===== C:\Users\Ibnu\Project\smart-pos\backend\services\stockService.js =====
+
+// C:\Users\Ibnu\Project\smart-pos\backend\services\stockService.js
+
+/**
+ * @description Fungsi ini mengelola pembaruan stok untuk produk jadi dan bahan baku.
+ * Ini adalah bagian perbaikan utama yang memastikan konsistensi stok.
+ * @param {object} connection - Koneksi database.
+ * @param {Array<object>} items - Daftar item dalam pesanan.
+ * @param {number} factor - Faktor pengali untuk stok (1 untuk pesanan baru, -1 untuk pembatalan).
+ * @param {boolean} validateOnly - Jika true, hanya memeriksa stok tanpa melakukan pembaruan.
+ */
+async function handleStockUpdate(connection, items, factor = 1, validateOnly = false) {
+    for (const item of items) {
+        // Mendapatkan product_id dari variant_id
+        const [[variant]] = await connection.query('SELECT product_id FROM product_variants WHERE id = ?', [item.variantId || item.variant_id]);
+        if (!variant) {
+            throw new Error(`Varian produk dengan ID ${item.variantId || item.variant_id} tidak ditemukan.`);
+        }
+        const productId = variant.product_id;
+
+        // Langkah 1: SELALU periksa dan kurangi/tambah stok produk jadi
+        const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
+        if (!product) {
+            throw new Error(`Produk dengan ID ${productId} tidak ditemukan.`);
+        }
+        if (factor > 0 && product.stock < item.quantity) {
+            throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
+        }
+        if (!validateOnly) {
+            await connection.execute('UPDATE products SET stock = stock - ? WHERE id = ?', [item.quantity * factor, productId]);
+        }
+
+        // Langkah 2: JIKA produk memiliki resep, kurangi/tambah JUGA stok bahan bakunya
+        const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
+        if (recipeItems.length > 0) {
+            for (const recipeItem of recipeItems) {
+                const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
+                if (!material) {
+                    throw new Error(`Bahan baku dengan ID ${recipeItem.raw_material_id} tidak ditemukan.`);
+                }
+                const requiredQuantity = recipeItem.quantity_used * item.quantity;
+                if (factor > 0 && material.stock_quantity < requiredQuantity) {
+                    throw new Error(`Stok bahan baku "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
+                }
+                if (!validateOnly) {
+                    await connection.execute('UPDATE raw_materials SET stock_quantity = stock_quantity - ? WHERE id = ?', [requiredQuantity * factor, recipeItem.raw_material_id]);
+                }
+            }
+        }
+    }
+}
+
+module.exports = { handleStockUpdate };
 
 ===== C:\Users\Ibnu\Project\smart-pos\backend\utils\dateUtils.js =====
 
@@ -11372,7 +11549,7 @@ export default defineConfig([
         "react-router-dom": "^6.27.0",
         "react-to-print": "^2.15.1",
         "react-toastify": "^10.0.6",
-        "recharts": "^2.13.0",
+        "recharts": "^3.1.2",
         "styled-components": "^6.1.13"
       },
       "devDependencies": {
@@ -12955,6 +13132,7 @@ export default defineConfig([
       "version": "7.28.2",
       "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.2.tgz",
       "integrity": "sha512-KHp2IflsnGywDjBWDkR9iEqiWSpc8GIi0lgTT3mOElT0PP1tG26P4tmFI2YvAdzgq9RGyoHZQEIEdZy6Ec5xCA==",
+      "dev": true,
       "license": "MIT",
       "engines": {
         "node": ">=6.9.0"
@@ -13896,6 +14074,32 @@ export default defineConfig([
         "@jridgewell/sourcemap-codec": "^1.4.14"
       }
     },
+    "node_modules/@reduxjs/toolkit": {
+      "version": "2.8.2",
+      "resolved": "https://registry.npmjs.org/@reduxjs/toolkit/-/toolkit-2.8.2.tgz",
+      "integrity": "sha512-MYlOhQ0sLdw4ud48FoC5w0dH9VfWQjtCjreKwYTT3l+r427qYC5Y8PihNutepr8XrNaBUDQo9khWUwQxZaqt5A==",
+      "license": "MIT",
+      "dependencies": {
+        "@standard-schema/spec": "^1.0.0",
+        "@standard-schema/utils": "^0.3.0",
+        "immer": "^10.0.3",
+        "redux": "^5.0.1",
+        "redux-thunk": "^3.1.0",
+        "reselect": "^5.1.0"
+      },
+      "peerDependencies": {
+        "react": "^16.9.0 || ^17.0.0 || ^18 || ^19",
+        "react-redux": "^7.2.1 || ^8.1.3 || ^9.0.0"
+      },
+      "peerDependenciesMeta": {
+        "react": {
+          "optional": true
+        },
+        "react-redux": {
+          "optional": true
+        }
+      }
+    },
     "node_modules/@remix-run/router": {
       "version": "1.23.0",
       "resolved": "https://registry.npmjs.org/@remix-run/router/-/router-1.23.0.tgz",
@@ -14291,6 +14495,18 @@ export default defineConfig([
         "win32"
       ]
     },
+    "node_modules/@standard-schema/spec": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.0.0.tgz",
+      "integrity": "sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==",
+      "license": "MIT"
+    },
+    "node_modules/@standard-schema/utils": {
+      "version": "0.3.0",
+      "resolved": "https://registry.npmjs.org/@standard-schema/utils/-/utils-0.3.0.tgz",
+      "integrity": "sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==",
+      "license": "MIT"
+    },
     "node_modules/@surma/rollup-plugin-off-main-thread": {
       "version": "2.2.3",
       "resolved": "https://registry.npmjs.org/@surma/rollup-plugin-off-main-thread/-/rollup-plugin-off-main-thread-2.2.3.tgz",
@@ -14556,6 +14772,12 @@ export default defineConfig([
       "resolved": "https://registry.npmjs.org/@types/trusted-types/-/trusted-types-2.0.7.tgz",
       "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==",
       "dev": true,
+      "license": "MIT"
+    },
+    "node_modules/@types/use-sync-external-store": {
+      "version": "0.0.6",
+      "resolved": "https://registry.npmjs.org/@types/use-sync-external-store/-/use-sync-external-store-0.0.6.tgz",
+      "integrity": "sha512-zFDAD+tlpf2r4asuHEj0XH6pY6i0g5NeAHPn+15wk3BV6JA69eERFXC1gyGThDkVa1zCyKr5jox1+2LbV/AMLg==",
       "license": "MIT"
     },
     "node_modules/@vitejs/plugin-react": {
@@ -15736,16 +15958,6 @@ export default defineConfig([
       "license": "MIT",
       "peer": true
     },
-    "node_modules/dom-helpers": {
-      "version": "5.2.1",
-      "resolved": "https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz",
-      "integrity": "sha512-nRCa7CK3VTrM2NmGkIy4cbK7IZlgBE/PYMn55rrXefr5xXDP0LdtfPnblFDoVdcAfslJ7or6iqAUnx0CCGIWQA==",
-      "license": "MIT",
-      "dependencies": {
-        "@babel/runtime": "^7.8.7",
-        "csstype": "^3.0.2"
-      }
-    },
     "node_modules/dunder-proto": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/dunder-proto/-/dunder-proto-1.0.1.tgz",
@@ -15975,6 +16187,16 @@ export default defineConfig([
       "funding": {
         "url": "https://github.com/sponsors/ljharb"
       }
+    },
+    "node_modules/es-toolkit": {
+      "version": "1.39.8",
+      "resolved": "https://registry.npmjs.org/es-toolkit/-/es-toolkit-1.39.8.tgz",
+      "integrity": "sha512-A8QO9TfF+rltS8BXpdu8OS+rpGgEdnRhqIVxO/ZmNvnXBYgOdSsxukT55ELyP94gZIntWJ+Li9QRrT2u1Kitpg==",
+      "license": "MIT",
+      "workspaces": [
+        "docs",
+        "benchmarks"
+      ]
     },
     "node_modules/esbuild": {
       "version": "0.25.8",
@@ -16263,9 +16485,9 @@ export default defineConfig([
       }
     },
     "node_modules/eventemitter3": {
-      "version": "4.0.7",
-      "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz",
-      "integrity": "sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==",
+      "version": "5.0.1",
+      "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-5.0.1.tgz",
+      "integrity": "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA==",
       "license": "MIT"
     },
     "node_modules/expect-type": {
@@ -16284,15 +16506,6 @@ export default defineConfig([
       "integrity": "sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==",
       "dev": true,
       "license": "MIT"
-    },
-    "node_modules/fast-equals": {
-      "version": "5.2.2",
-      "resolved": "https://registry.npmjs.org/fast-equals/-/fast-equals-5.2.2.tgz",
-      "integrity": "sha512-V7/RktU11J3I36Nwq2JnZEM7tNm17eBJz+u25qdxBZeCKiX6BkVSZQjwWIr+IobgnZy+ag73tTZgZi7tr0LrBw==",
-      "license": "MIT",
-      "engines": {
-        "node": ">=6.0.0"
-      }
     },
     "node_modules/fast-json-stable-stringify": {
       "version": "2.1.0",
@@ -16897,6 +17110,16 @@ export default defineConfig([
       "license": "MIT",
       "engines": {
         "node": ">= 4"
+      }
+    },
+    "node_modules/immer": {
+      "version": "10.1.1",
+      "resolved": "https://registry.npmjs.org/immer/-/immer-10.1.1.tgz",
+      "integrity": "sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==",
+      "license": "MIT",
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/immer"
       }
     },
     "node_modules/import-fresh": {
@@ -17672,6 +17895,7 @@ export default defineConfig([
       "version": "4.17.21",
       "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
       "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==",
+      "dev": true,
       "license": "MIT"
     },
     "node_modules/lodash.debounce": {
@@ -17863,6 +18087,7 @@ export default defineConfig([
       "version": "4.1.1",
       "resolved": "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz",
       "integrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==",
+      "dev": true,
       "license": "MIT",
       "engines": {
         "node": ">=0.10.0"
@@ -18260,6 +18485,7 @@ export default defineConfig([
       "version": "15.8.1",
       "resolved": "https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz",
       "integrity": "sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==",
+      "dev": true,
       "license": "MIT",
       "dependencies": {
         "loose-envify": "^1.4.0",
@@ -18271,6 +18497,7 @@ export default defineConfig([
       "version": "16.13.1",
       "resolved": "https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz",
       "integrity": "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==",
+      "dev": true,
       "license": "MIT"
     },
     "node_modules/proxy-from-env": {
@@ -18352,7 +18579,6 @@ export default defineConfig([
       "version": "17.0.2",
       "resolved": "https://registry.npmjs.org/react-is/-/react-is-17.0.2.tgz",
       "integrity": "sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==",
-      "dev": true,
       "license": "MIT",
       "peer": true
     },
@@ -18363,6 +18589,29 @@ export default defineConfig([
       "license": "MIT",
       "peerDependencies": {
         "react": ">=16.8.0"
+      }
+    },
+    "node_modules/react-redux": {
+      "version": "9.2.0",
+      "resolved": "https://registry.npmjs.org/react-redux/-/react-redux-9.2.0.tgz",
+      "integrity": "sha512-ROY9fvHhwOD9ySfrF0wmvu//bKCQ6AeZZq1nJNtbDC+kk5DuSuNX/n6YWYF/SYy7bSba4D4FSz8DJeKY/S/r+g==",
+      "license": "MIT",
+      "dependencies": {
+        "@types/use-sync-external-store": "^0.0.6",
+        "use-sync-external-store": "^1.4.0"
+      },
+      "peerDependencies": {
+        "@types/react": "^18.2.25 || ^19",
+        "react": "^18.0 || ^19",
+        "redux": "^5.0.0"
+      },
+      "peerDependenciesMeta": {
+        "@types/react": {
+          "optional": true
+        },
+        "redux": {
+          "optional": true
+        }
       }
     },
     "node_modules/react-refresh": {
@@ -18407,21 +18656,6 @@ export default defineConfig([
         "react-dom": ">=16.8"
       }
     },
-    "node_modules/react-smooth": {
-      "version": "4.0.4",
-      "resolved": "https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz",
-      "integrity": "sha512-gnGKTpYwqL0Iii09gHobNolvX4Kiq4PKx6eWBCYYix+8cdw+cGo3do906l1NBPKkSWx1DghC1dlWG9L2uGd61Q==",
-      "license": "MIT",
-      "dependencies": {
-        "fast-equals": "^5.0.1",
-        "prop-types": "^15.8.1",
-        "react-transition-group": "^4.4.5"
-      },
-      "peerDependencies": {
-        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-        "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
-      }
-    },
     "node_modules/react-to-print": {
       "version": "2.15.1",
       "resolved": "https://registry.npmjs.org/react-to-print/-/react-to-print-2.15.1.tgz",
@@ -18445,59 +18679,32 @@ export default defineConfig([
         "react-dom": ">=18"
       }
     },
-    "node_modules/react-transition-group": {
-      "version": "4.4.5",
-      "resolved": "https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz",
-      "integrity": "sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==",
-      "license": "BSD-3-Clause",
-      "dependencies": {
-        "@babel/runtime": "^7.5.5",
-        "dom-helpers": "^5.0.1",
-        "loose-envify": "^1.4.0",
-        "prop-types": "^15.6.2"
-      },
-      "peerDependencies": {
-        "react": ">=16.6.0",
-        "react-dom": ">=16.6.0"
-      }
-    },
     "node_modules/recharts": {
-      "version": "2.15.4",
-      "resolved": "https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz",
-      "integrity": "sha512-UT/q6fwS3c1dHbXv2uFgYJ9BMFHu3fwnd7AYZaEQhXuYQ4hgsxLvsUXzGdKeZrW5xopzDCvuA2N41WJ88I7zIw==",
+      "version": "3.1.2",
+      "resolved": "https://registry.npmjs.org/recharts/-/recharts-3.1.2.tgz",
+      "integrity": "sha512-vhNbYwaxNbk/IATK0Ki29k3qvTkGqwvCgyQAQ9MavvvBwjvKnMTswdbklJpcOAoMPN/qxF3Lyqob0zO+ZXkZ4g==",
       "license": "MIT",
       "dependencies": {
-        "clsx": "^2.0.0",
-        "eventemitter3": "^4.0.1",
-        "lodash": "^4.17.21",
-        "react-is": "^18.3.1",
-        "react-smooth": "^4.0.4",
-        "recharts-scale": "^0.4.4",
-        "tiny-invariant": "^1.3.1",
-        "victory-vendor": "^36.6.8"
+        "@reduxjs/toolkit": "1.x.x || 2.x.x",
+        "clsx": "^2.1.1",
+        "decimal.js-light": "^2.5.1",
+        "es-toolkit": "^1.39.3",
+        "eventemitter3": "^5.0.1",
+        "immer": "^10.1.1",
+        "react-redux": "8.x.x || 9.x.x",
+        "reselect": "5.1.1",
+        "tiny-invariant": "^1.3.3",
+        "use-sync-external-store": "^1.2.2",
+        "victory-vendor": "^37.0.2"
       },
       "engines": {
-        "node": ">=14"
+        "node": ">=18"
       },
       "peerDependencies": {
-        "react": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-        "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-dom": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+        "react-is": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
       }
-    },
-    "node_modules/recharts-scale": {
-      "version": "0.4.5",
-      "resolved": "https://registry.npmjs.org/recharts-scale/-/recharts-scale-0.4.5.tgz",
-      "integrity": "sha512-kivNFO+0OcUNu7jQquLXAxz1FIwZj8nrj+YkOKc5694NbjCvcT6aSZiIzNzd2Kul4o4rTto8QVR9lMNtxD4G1w==",
-      "license": "MIT",
-      "dependencies": {
-        "decimal.js-light": "^2.4.1"
-      }
-    },
-    "node_modules/recharts/node_modules/react-is": {
-      "version": "18.3.1",
-      "resolved": "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz",
-      "integrity": "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==",
-      "license": "MIT"
     },
     "node_modules/redent": {
       "version": "3.0.0",
@@ -18511,6 +18718,21 @@ export default defineConfig([
       },
       "engines": {
         "node": ">=8"
+      }
+    },
+    "node_modules/redux": {
+      "version": "5.0.1",
+      "resolved": "https://registry.npmjs.org/redux/-/redux-5.0.1.tgz",
+      "integrity": "sha512-M9/ELqF6fy8FwmkpnF0S3YKOqMyoWJ4+CS5Efg2ct3oY9daQvd/Pc71FpGZsVsbl3Cpb+IIcjBDUnnyBdQbq4w==",
+      "license": "MIT"
+    },
+    "node_modules/redux-thunk": {
+      "version": "3.1.0",
+      "resolved": "https://registry.npmjs.org/redux-thunk/-/redux-thunk-3.1.0.tgz",
+      "integrity": "sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw==",
+      "license": "MIT",
+      "peerDependencies": {
+        "redux": "^5.0.0"
       }
     },
     "node_modules/reflect.getprototypeof": {
@@ -18637,6 +18859,12 @@ export default defineConfig([
       "engines": {
         "node": ">=0.10.0"
       }
+    },
+    "node_modules/reselect": {
+      "version": "5.1.1",
+      "resolved": "https://registry.npmjs.org/reselect/-/reselect-5.1.1.tgz",
+      "integrity": "sha512-K/BG6eIky/SBpzfHZv/dd+9JBFiS4SWV7FIujVyJRux6e45+73RaUHXLmIR1f7WOMaQ0U1km6qwklRQxpJJY0w==",
+      "license": "MIT"
     },
     "node_modules/resolve": {
       "version": "2.0.0-next.5",
@@ -19772,10 +20000,19 @@ export default defineConfig([
         "punycode": "^2.1.0"
       }
     },
+    "node_modules/use-sync-external-store": {
+      "version": "1.5.0",
+      "resolved": "https://registry.npmjs.org/use-sync-external-store/-/use-sync-external-store-1.5.0.tgz",
+      "integrity": "sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==",
+      "license": "MIT",
+      "peerDependencies": {
+        "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+      }
+    },
     "node_modules/victory-vendor": {
-      "version": "36.9.2",
-      "resolved": "https://registry.npmjs.org/victory-vendor/-/victory-vendor-36.9.2.tgz",
-      "integrity": "sha512-PnpQQMuxlwYdocC8fIJqVXvkeViHYzotI+NJrCuav0ZYFoq912ZHBk3mCeuj+5/VpodOjPe1z0Fk2ihgzlXqjQ==",
+      "version": "37.3.6",
+      "resolved": "https://registry.npmjs.org/victory-vendor/-/victory-vendor-37.3.6.tgz",
+      "integrity": "sha512-SbPDPdDBYp+5MJHhBCAyI7wKM3d5ivekigc2Dk2s7pgbZ9wIgIBYGVw4zGHBml/qTFbexrofXW6Gu4noGxrOwQ==",
       "license": "MIT AND ISC",
       "dependencies": {
         "@types/d3-array": "^3.0.3",
@@ -20686,7 +20923,7 @@ export default defineConfig([
     "react-router-dom": "^6.27.0",
     "react-to-print": "^2.15.1",
     "react-toastify": "^10.0.6",
-    "recharts": "^2.13.0",
+    "recharts": "^3.1.2",
     "styled-components": "^6.1.13"
   },
   "devDependencies": {
@@ -20748,8 +20985,6 @@ export default defineConfig({
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx
-
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
@@ -20796,11 +21031,13 @@ import PurchaseOrderForm from './pages/PurchaseOrderForm';
 import PurchaseOrderDetailPage from './pages/PurchaseOrderDetailPage';
 import RawMaterialsPage from './pages/RawMaterialsPage';
 import RolesPage from './pages/RolesPage';
+import AdminRewardsPage from './pages/AdminRewardsPage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
+import SyncManager from './components/SyncManager';
 
 // --- Global Styles for UI/UX Improvements ---
 const GlobalStyle = createGlobalStyle`
@@ -20809,7 +21046,7 @@ const GlobalStyle = createGlobalStyle`
         --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         
         /* Primary Colors */
-        --primary-color: #8E44AD; /* A slightly deeper purple */
+        --primary-color: #8E44AD;
         --primary-hover: #9B59B6;
         --primary-dark: #7D3C98;
 
@@ -20828,21 +21065,21 @@ const GlobalStyle = createGlobalStyle`
 
     body {
         /* Light Theme */
-        --bg-main: #F4F7FC; /* A softer off-white */
-        --bg-surface: #FFFFFF; /* Clean white for cards */
-        --border-color: #EAECEF; /* A softer border */
-        --text-primary: #2C3E50; /* A dark blue for main text */
-        --text-secondary: #808B96; /* A grey for secondary text */
+        --bg-main: #F4F7FC;
+        --bg-surface: #FFFFFF;
+        --border-color: #EAECEF;
+        --text-primary: #2C3E50;
+        --text-secondary: #808B96;
         --text-placeholder: #ABB2B9;
     }
 
     body[data-theme='dark'] {
         /* Dark Theme */
-        --bg-main: #171A21; /* A bluish-black */
-        --bg-surface: #232834; /* Dark grey for cards */
-        --border-color: #3A4151; /* A more contrasting border */
-        --text-primary: #FDFEFE; /* Clean white */
-        --text-secondary: #A6ACAF; /* Light grey */
+        --bg-main: #171A21;
+        --bg-surface: #232834;
+        --border-color: #3A4151;
+        --text-primary: #FDFEFE;
+        --text-secondary: #A6ACAF;
         --text-placeholder: #797D7F;
     }
 
@@ -20978,6 +21215,7 @@ function AppContent() {
             <BrowserRouter>
                 {/* A component that conditionally redirects mobile users */}
                 <MobileRedirectHandler />
+                <SyncManager />
 
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
@@ -21023,6 +21261,7 @@ function AppContent() {
                                 <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
                                 <Route path="/raw-materials" element={<RawMaterialsPage />} />
                                 <Route path="/roles" element={<RolesPage />} />
+                                <Route path="/rewards" element={<AdminRewardsPage />} />
                             </Route>
                         </Route>
                     </Route>
@@ -21715,6 +21954,7 @@ import { getCustomers } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
 import CustomerFormModal from './CustomerFormModal';
+import { useDebounce } from '../hooks/useDebounce'; // <-- PERUBAHAN: Impor hook
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -21755,16 +21995,20 @@ const AddCustomerButton = styled.button`
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300); // <-- PERUBAHAN: Gunakan hook
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
+    // <-- PERUBAHAN: Logika useEffect disederhanakan -->
     useEffect(() => {
         if (!isOpen || isFormOpen) return;
+
         const fetchCustomers = async () => {
             setLoading(true);
             try {
-                const res = await getCustomers(searchTerm);
+                // Gunakan nilai yang sudah di-debounce
+                const res = await getCustomers(debouncedSearchTerm);
                 setCustomers(res.data);
             } catch (error) {
                 toast.error("Gagal memuat daftar pelanggan.");
@@ -21772,9 +22016,10 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
                 setLoading(false);
             }
         };
-        const timer = setTimeout(() => fetchCustomers(), 300);
-        return () => clearTimeout(timer);
-    }, [searchTerm, isOpen, isFormOpen]);
+
+        fetchCustomers();
+        // Hapus timeout manual dan hanya bergantung pada perubahan debouncedSearchTerm
+    }, [debouncedSearchTerm, isOpen, isFormOpen]);
     
     const handleCustomerCreated = (newCustomer) => {
         setIsFormOpen(false);
@@ -21802,7 +22047,6 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
                         {loading ? <p>Mencari...</p> : customers.map(customer => (
                             <CustomerItem key={customer.id} onClick={() => onSelectCustomer(customer)}>
                                 <p style={{margin: 0, fontWeight: '600'}}>{customer.name}</p>
-                                {/* FIXED: Correctly reference the 'phone' property */}
                                 <p style={{margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem'}}>
                                     {customer.phone}
                                 </p>
@@ -23268,6 +23512,209 @@ Receipt.propTypes = {
 
 export default Receipt;
 
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RedeemRewardModal.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RedeemRewardModal.jsx
+
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiX, FiGift } from 'react-icons/fi';
+import { getRewards, redeemRewardForCustomer } from '../services/api';
+import { toast } from 'react-toastify';
+
+const ModalBackdrop = styled(motion.div)` /* ... (salin dari modal lain) */ `;
+const ModalContainer = styled(motion.div)` /* ... (salin dari modal lain, buat max-width: 500px) */ `;
+const ModalHeader = styled.div` /* ... (salin dari modal lain) */ `;
+const ModalTitle = styled.h3` /* ... (salin dari modal lain) */ `;
+const CloseButton = styled.button` /* ... (salin dari modal lain) */ `;
+const ModalBody = styled.div` padding: 25px; max-height: 60vh; overflow-y: auto; `;
+const RewardList = styled.ul` list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; `;
+const RewardItem = styled.li`
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+    opacity: ${props => props.disabled ? 0.5 : 1};
+    transition: all 0.2s ease;
+    &:hover {
+        border-color: ${props => props.disabled ? 'var(--border-color)' : 'var(--primary-color)'};
+        background-color: ${props => props.disabled ? 'transparent' : 'var(--bg-main)'};
+    }
+`;
+const RewardInfo = styled.div` font-weight: 500; `;
+const PointsCost = styled.div` font-weight: 600; color: var(--primary-color); `;
+
+function RedeemRewardModal({ isOpen, onClose, customer, onRedemptionSuccess }) {
+    const [rewards, setRewards] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (isOpen) {
+            setLoading(true);
+            getRewards()
+                .then(res => setRewards(res.data))
+                .catch(() => toast.error("Gagal memuat daftar hadiah."))
+                .finally(() => setLoading(false));
+        }
+    }, [isOpen]);
+
+    const handleRedeem = async (reward) => {
+        if (window.confirm(`Yakin ingin menukarkan ${reward.points_cost} poin untuk "${reward.name}"?`)) {
+            try {
+                await toast.promise(
+                    redeemRewardForCustomer(customer.id, reward.id),
+                    {
+                        pending: 'Memproses penukaran...',
+                        success: 'Hadiah berhasil ditukarkan!',
+                        error: (err) => err.response?.data?.message || 'Gagal menukarkan hadiah.'
+                    }
+                );
+                onRedemptionSuccess(); // Panggil fungsi untuk merefresh data di halaman detail
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} exit={{ y: 50 }}>
+                        <ModalHeader>
+                            <ModalTitle>Tukarkan Poin - {customer.name}</ModalTitle>
+                            <CloseButton onClick={onClose}><FiX size={24} /></CloseButton>
+                        </ModalHeader>
+                        <ModalBody>
+                            {loading ? <p>Memuat hadiah...</p> : (
+                                <RewardList>
+                                    {rewards.map(reward => (
+                                        <RewardItem
+                                            key={reward.id}
+                                            disabled={customer.points < reward.points_cost}
+                                            onClick={() => customer.points >= reward.points_cost && handleRedeem(reward)}
+                                        >
+                                            <RewardInfo>{reward.name}</RewardInfo>
+                                            <PointsCost>{reward.points_cost.toLocaleString('id-ID')} Poin</PointsCost>
+                                        </RewardItem>
+                                    ))}
+                                </RewardList>
+                            )}
+                        </ModalBody>
+                    </ModalContainer>
+                </ModalBackdrop>
+            )}
+        </AnimatePresence>
+    );
+}
+
+RedeemRewardModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    customer: PropTypes.object.isRequired,
+    onRedemptionSuccess: PropTypes.func.isRequired,
+};
+
+export default RedeemRewardModal;
+
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RewardFormModal.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RewardFormModal.jsx
+
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import styled from 'styled-components';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiX } from 'react-icons/fi';
+
+const ModalBackdrop = styled(motion.div)` /* ... (salin dari modal form lain) */ `;
+const ModalContainer = styled(motion.div)` /* ... (salin dari modal form lain) */ `;
+const ModalHeader = styled.div` /* ... (salin dari modal form lain) */ `;
+const ModalTitle = styled.h3` /* ... (salin dari modal form lain) */ `;
+const CloseButton = styled.button` /* ... (salin dari modal form lain) */ `;
+const ModalBody = styled.div` padding: 25px; display: flex; flex-direction: column; gap: 20px; `;
+const InputGroup = styled.div` /* ... (salin dari modal form lain) */ `;
+const Label = styled.label` /* ... (salin dari modal form lain) */ `;
+const Input = styled.input` /* ... (salin dari modal form lain) */ `;
+const CheckboxContainer = styled.div` display: flex; align-items: center; gap: 10px; `;
+const ModalFooter = styled.div` /* ... (salin dari modal form lain) */ `;
+const Button = styled.button` /* ... (salin dari modal form lain) */ `;
+
+function RewardFormModal({ isOpen, onClose, onSave, reward, isSubmitting }) {
+    const [formData, setFormData] = useState({ name: '', description: '', points_cost: '', is_active: true });
+    const isEditing = Boolean(reward);
+
+    useEffect(() => {
+        if (isOpen) {
+            setFormData(reward || { name: '', description: '', points_cost: '', is_active: true });
+        }
+    }, [reward, isOpen]);
+
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave({ ...formData, points_cost: parseInt(formData.points_cost, 10) });
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <ModalBackdrop initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <ModalContainer initial={{ y: -50 }} animate={{ y: 0 }} exit={{ y: 50 }}>
+                        <form onSubmit={handleSubmit}>
+                            <ModalHeader>
+                                <ModalTitle>{isEditing ? 'Edit Hadiah' : 'Tambah Hadiah Baru'}</ModalTitle>
+                                <CloseButton type="button" onClick={onClose}><FiX size={24} /></CloseButton>
+                            </ModalHeader>
+                            <ModalBody>
+                                <InputGroup>
+                                    <Label>Nama Hadiah</Label>
+                                    <Input name="name" value={formData.name} onChange={handleChange} required autoFocus />
+                                </InputGroup>
+                                <InputGroup>
+                                    <Label>Deskripsi (Opsional)</Label>
+                                    <Input as="textarea" rows="3" name="description" value={formData.description} onChange={handleChange} />
+                                </InputGroup>
+                                <InputGroup>
+                                    <Label>Biaya Poin</Label>
+                                    <Input type="number" name="points_cost" value={formData.points_cost} onChange={handleChange} required min="1" />
+                                </InputGroup>
+                                <CheckboxContainer>
+                                    <input type="checkbox" id="is_active" name="is_active" checked={formData.is_active} onChange={handleChange} />
+                                    <Label htmlFor="is_active" style={{ marginBottom: 0 }}>Aktifkan Hadiah</Label>
+                                </CheckboxContainer>
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button type="button" onClick={onClose}>Batal</Button>
+                                <Button type="submit" $primary disabled={isSubmitting}>{isSubmitting ? 'Menyimpan...' : 'Simpan'}</Button>
+                            </ModalFooter>
+                        </form>
+                    </ModalContainer>
+                </ModalBackdrop>
+            )}
+        </AnimatePresence>
+    );
+}
+
+RewardFormModal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onSave: PropTypes.func.isRequired,
+    reward: PropTypes.object,
+    isSubmitting: PropTypes.bool.isRequired,
+};
+
+export default RewardFormModal;
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\RoleFormModal.jsx =====
 
 import React, { useState, useEffect } from 'react';
@@ -23335,6 +23782,9 @@ const ModalBody = styled.div`
 const FormRow = styled.div`
   display: flex;
   gap: 20px;
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
 `;
 
 const InputGroup = styled.div`
@@ -23361,7 +23811,7 @@ const Input = styled.input`
 
 const PermissionGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 15px;
   margin-top: 10px;
 `;
@@ -23476,16 +23926,15 @@ function RoleFormModal({ isOpen, onClose, onSave, role, permissionsList, isSubmi
 }
 
 RoleFormModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSave: PropTypes.func.isRequired,
-  role: PropTypes.object,
-  permissionsList: PropTypes.array.isRequired,
-  isSubmitting: PropTypes.bool.isRequired,
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    onSave: PropTypes.func.isRequired,
+    role: PropTypes.object,
+    permissionsList: PropTypes.array.isRequired,
+    isSubmitting: PropTypes.bool.isRequired,
 };
 
 export default RoleFormModal;
-
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\Sidebar.jsx =====
 
@@ -24036,6 +24485,62 @@ SupplierFormModal.propTypes = {
   isSubmitting: PropTypes.bool.isRequired,
 };
 
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\SyncManager.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\components\SyncManager.jsx
+
+import { useEffect, useState } from 'react';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { getAllOfflineOrders, deleteOfflineOrder } from '../utils/offlineDb';
+import { createOrder } from '../services/api';
+import { toast } from 'react-toastify';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db as offlineDB } from '../utils/offlineDb';
+
+function SyncManager() {
+  const isOnline = useOnlineStatus();
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Hook ini akan memantau jumlah order di Dexie secara real-time
+  const offlineOrderCount = useLiveQuery(() => offlineDB.offlineOrders.count(), []);
+
+  useEffect(() => {
+    const syncOfflineOrders = async () => {
+      if (isOnline && !isSyncing && offlineOrderCount > 0) {
+        setIsSyncing(true);
+        const toastId = toast.info(`Sinkronisasi dimulai: ${offlineOrderCount} transaksi tertunda...`, { autoClose: false });
+
+        const ordersToSync = await getAllOfflineOrders();
+        let successCount = 0;
+
+        for (const order of ordersToSync.data) {
+          try {
+            await createOrder(order.orderData);
+            await deleteOfflineOrder(order.id);
+            successCount++;
+          } catch (error) {
+            console.error(`Gagal sinkronisasi order ID lokal ${order.id}:`, error);
+            // Hentikan jika ada error, coba lagi nanti
+            toast.update(toastId, { render: `Sinkronisasi gagal pada satu transaksi. Mencoba lagi nanti.`, type: 'error', autoClose: 5000 });
+            setIsSyncing(false);
+            return;
+          }
+        }
+        
+        toast.update(toastId, { render: `${successCount} transaksi berhasil disinkronkan!`, type: 'success', autoClose: 5000 });
+        setIsSyncing(false);
+      }
+    };
+
+    syncOfflineOrders();
+  }, [isOnline, isSyncing, offlineOrderCount]);
+
+  // Komponen ini tidak me-render apapun ke UI
+  return null;
+}
+
+export default SyncManager;
+
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\components\TargetChart.jsx =====
 
 // frontend/src/pages/Dashboard/components/TargetChart.jsx
@@ -24489,6 +24994,8 @@ export const ThemeProvider = ({ children }) => {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\hooks\useDebounce.js =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\hooks\useDebounce.js
+
 import { useState, useEffect } from 'react';
 
 // Custom hook untuk debouncing
@@ -24510,6 +25017,189 @@ export function useDebounce(value, delay) {
 
   return debouncedValue;
 }
+
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\hooks\useOnlineStatus.js =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\hooks\useOnlineStatus.js
+
+import { useState, useEffect } from 'react';
+
+export function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
+===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\AdminRewardsPage.jsx =====
+
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\AdminRewardsPage.jsx
+
+import React, { useState, useEffect, useCallback } from 'react';
+import styled from 'styled-components';
+import { getRewards, createReward, updateReward, deleteReward } from '../services/api';
+import { toast } from 'react-toastify';
+import { FiPlus, FiEdit, FiTrash2, FiGift } from 'react-icons/fi';
+import PageWrapper from '../components/PageWrapper';
+import ConfirmationModal from '../components/ConfirmationModal';
+import RewardFormModal from '../components/RewardFormModal';
+
+const PageContainer = styled.div` /* ... (salin dari halaman lain seperti UsersPage) */ `;
+const PageHeader = styled.header` /* ... (salin) */ `;
+const Title = styled.h1` /* ... (salin) */ `;
+const AddButton = styled.button` /* ... (salin) */ `;
+const TableContainer = styled.div` /* ... (salin) */ `;
+const TableWrapper = styled.div` /* ... (salin) */ `;
+const Table = styled.table` /* ... (salin) */ `;
+const Th = styled.th` /* ... (salin) */ `;
+const Td = styled.td` /* ... (salin) */ `;
+const Tr = styled.tr` /* ... (salin) */ `;
+const ActionButton = styled.button` /* ... (salin) */ `;
+const EmptyStateContainer = styled.div` /* ... (salin) */ `;
+
+function AdminRewardsPage() {
+    const [rewards, setRewards] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingReward, setEditingReward] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [rewardToDelete, setRewardToDelete] = useState(null);
+
+    const fetchRewards = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await getRewards();
+            setRewards(res.data);
+        } catch (error) {
+            toast.error("Gagal memuat data hadiah.");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchRewards(); }, [fetchRewards]);
+
+    const handleOpenModal = (reward = null) => {
+        setEditingReward(reward);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingReward(null);
+    };
+
+    const handleSaveReward = async (rewardData) => {
+        setIsSubmitting(true);
+        const promise = editingReward
+            ? updateReward(editingReward.id, rewardData)
+            : createReward(rewardData);
+        try {
+            await toast.promise(promise, {
+                pending: 'Menyimpan hadiah...',
+                success: 'Hadiah berhasil disimpan!',
+                error: 'Gagal menyimpan hadiah.'
+            });
+            fetchRewards();
+            handleCloseModal();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openDeleteConfirmation = (reward) => {
+        setRewardToDelete(reward);
+        setIsConfirmOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!rewardToDelete) return;
+        try {
+            await toast.promise(deleteReward(rewardToDelete.id), {
+                pending: 'Menghapus hadiah...',
+                success: 'Hadiah berhasil dihapus!',
+                error: 'Gagal menghapus hadiah.'
+            });
+            fetchRewards();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsConfirmOpen(false);
+            setRewardToDelete(null);
+        }
+    };
+
+    return (
+        <>
+            <PageWrapper loading={loading}>
+                <PageContainer>
+                    <PageHeader>
+                        <Title><FiGift /> Manajemen Hadiah</Title>
+                        <AddButton onClick={() => handleOpenModal()}><FiPlus /> Tambah Hadiah</AddButton>
+                    </PageHeader>
+                    <TableContainer>
+                        <TableWrapper>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <Th>Nama Hadiah</Th>
+                                        <Th>Biaya Poin</Th>
+                                        <Th>Status</Th>
+                                        <Th>Aksi</Th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rewards.map(reward => (
+                                        <Tr key={reward.id}>
+                                            <Td>{reward.name}</Td>
+                                            <Td>{reward.points_cost.toLocaleString('id-ID')}</Td>
+                                            <Td>{reward.is_active ? 'Aktif' : 'Tidak Aktif'}</Td>
+                                            <Td>
+                                                <ActionButton onClick={() => handleOpenModal(reward)}><FiEdit size={18} /></ActionButton>
+                                                <ActionButton $danger onClick={() => openDeleteConfirmation(reward)}><FiTrash2 size={18} /></ActionButton>
+                                            </Td>
+                                        </Tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </TableWrapper>
+                    </TableContainer>
+                </PageContainer>
+            </PageWrapper>
+            <RewardFormModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                onSave={handleSaveReward}
+                reward={editingReward}
+                isSubmitting={isSubmitting}
+            />
+            <ConfirmationModal
+                isOpen={isConfirmOpen}
+                onClose={() => setIsConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Konfirmasi Hapus Hadiah"
+                message={`Yakin ingin menghapus hadiah "${rewardToDelete?.name}"?`}
+            />
+        </>
+    );
+}
+
+export default AdminRewardsPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\AppPasswordTutorialPage.jsx =====
 
@@ -24895,10 +25585,11 @@ export default CategoryPage;
 import React, { useState, useEffect, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useParams, Link } from 'react-router-dom';
-import { getCustomerById, getCustomerHistory, getCustomerStats, redeemCustomerPoints } from '../services/api';
+import { getCustomerById, getCustomerHistory, getCustomerStats, redeemCustomerPoints, getRewards } from '../services/api';
 import { toast } from 'react-toastify';
 import Skeleton from 'react-loading-skeleton';
 import { FiArrowLeft, FiUser, FiAward, FiShoppingBag, FiGift, FiCalendar, FiTrendingUp, FiStar, FiRefreshCw } from 'react-icons/fi';
+import RedeemRewardModal from '../components/RedeemRewardModal';
 
 // --- Animations ---
 const fadeIn = keyframes` from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }`;
@@ -24923,6 +25614,12 @@ const PointsDisplay = styled.div` margin: 15px 0; position: relative; z-index: 1
 const RedeemForm = styled.form` display: flex; flex-direction: column; gap: 10px; margin-top: 20px; position: relative; z-index: 1; `;
 const RedeemInput = styled.input` width: 100%; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-main); color: var(--text-primary); font-size: 0.9rem; transition: all 0.2s ease; &::placeholder { color: var(--text-secondary); } &:focus { outline: none; border-color: var(--primary-color); background: var(--bg-surface); }`;
 const RedeemButton = styled.button` padding: 10px 18px; border-radius: 8px; border: 1px solid var(--primary-color); background: var(--primary-color); color: white; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; backdrop-filter: none; &:hover:not(:disabled) { background: #4f46e5; border-color: #4f46e5; transform: translateY(-1px); } &:disabled { opacity: 0.5; cursor: not-allowed; }`;
+const RedeemRewardButton = styled(RedeemButton)`
+    background: #0DCAF0;
+    border-color: #0DCAF0;
+    &:hover:not(:disabled) { background: #0AAACF; border-color: #0AAACF; }
+    margin-bottom: 10px;
+`;
 const StatsGrid = styled.div` display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; `;
 const StatCard = styled.div` background: var(--bg-surface); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px; text-align: center; transition: all 0.3s ease; &:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); }`;
 const StatIcon = styled.div` width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--primary-color), #4f46e5); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; color: white; font-size: 1rem; `;
@@ -24943,20 +25640,23 @@ function CustomerDetailPage() {
     const [customer, setCustomer] = useState(null);
     const [history, setHistory] = useState([]);
     const [stats, setStats] = useState(null);
+    const [rewards, setRewards] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [redeemAmount, setRedeemAmount] = useState('');
     const [redeemDesc, setRedeemDesc] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
     const fetchData = useCallback(async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true); else setLoading(true);
         try {
-            const [customerRes, historyRes, statsRes] = await Promise.all([ getCustomerById(id), getCustomerHistory(id), getCustomerStats(id) ]);
+            const [customerRes, historyRes, statsRes, rewardsRes] = await Promise.all([ getCustomerById(id), getCustomerHistory(id), getCustomerStats(id), getRewards() ]);
             setCustomer(customerRes.data);
             setHistory(historyRes.data);
             setStats(statsRes.data);
+            setRewards(rewardsRes.data);
         } catch (error) { toast.error("Gagal memuat data pelanggan."); } finally { setLoading(false); setRefreshing(false); }
     }, [id]);
 
@@ -24984,130 +25684,149 @@ function CustomerDetailPage() {
     if (!customer) { return ( <PageContainer> <EmptyState> <FiUser /> <h3>Pelanggan Tidak Ditemukan</h3> <p>Pelanggan dengan ID tersebut tidak ditemukan dalam sistem.</p> </EmptyState> </PageContainer> ); }
 
     return (
-        <PageContainer>
-            <BackLink to="/customers"><FiArrowLeft /> Kembali ke Daftar Pelanggan</BackLink>
-            <Header>
-                <div>
-                    <CustomerName>
-                        <FiUser /> {customer.name} <StatusBadge>Pelanggan Aktif</StatusBadge>
-                    </CustomerName>
-                </div>
-                <RefreshButton onClick={handleRefresh} disabled={refreshing}>
-                    <FiRefreshCw /> {refreshing ? 'Memuat...' : 'Refresh'}
-                </RefreshButton>
-            </Header>
-            <StatsGrid>
-                <StatCard>
-                    <StatIcon><FiShoppingBag /></StatIcon>
-                    <StatLabel>Total Pesanan</StatLabel>
-                    <StatValue>{stats?.totalOrders || 0}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiTrendingUp /></StatIcon>
-                    <StatLabel>Total Belanja</StatLabel>
-                    <StatValue>Rp {new Intl.NumberFormat('id-ID').format(stats?.totalSpent || 0)}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiStar /></StatIcon>
-                    <StatLabel>Total Poin Diperoleh</StatLabel>
-                    <StatValue>{stats?.totalPointsEarned || 0}</StatValue>
-                </StatCard>
-                <StatCard>
-                    <StatIcon><FiGift /></StatIcon>
-                    <StatLabel>Rata-rata Belanja</StatLabel>
-                    <StatValue>Rp {new Intl.NumberFormat('id-ID').format(Math.round(stats?.avgOrderValue || 0))}</StatValue>
-                </StatCard>
-            </StatsGrid>
-            <TopCardsGrid>
-                <div>
-                    <InfoCard>
-                        <CardTitle><FiUser /> Detail Pelanggan</CardTitle>
-                        <InfoGrid>
-                            <InfoItem>
-                                <InfoLabel>Nama</InfoLabel>
-                                <InfoValue>{customer.name}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Telepon</InfoLabel>
-                                <InfoValue>{customer.phone || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Email</InfoLabel>
-                                <InfoValue>{customer.email || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Alamat</InfoLabel>
-                                <InfoValue>{customer.address || '-'}</InfoValue>
-                            </InfoItem>
-                            <InfoItem>
-                                <InfoLabel>Bergabung</InfoLabel>
-                                <InfoValue>{customer.created_at ? new Date(customer.created_at).toLocaleDateString('id-ID') : '-'}</InfoValue>
-                            </InfoItem>
-                        </InfoGrid>
-                    </InfoCard>
-                </div>
-                <div>
-                    <PointsCard>
-                        <CardTitle><FiAward /> Poin Loyalitas</CardTitle>
-                        <PointsDisplay>
-                            <p>Total Poin Saat Ini</p>
-                            <h2>{customer.points.toLocaleString('id-ID')}</h2>
-                        </PointsDisplay>
-                        <RedeemForm onSubmit={handleRedeem}>
-                            <RedeemInput type="number" value={redeemAmount} onChange={(e) => setRedeemAmount(e.target.value)} placeholder="Jumlah poin" max={customer.points} required />
-                            <RedeemInput value={redeemDesc} onChange={(e) => setRedeemDesc(e.target.value)} placeholder="Deskripsi (cth: Tukar Merchandise)" required />
-                            <RedeemButton type="submit" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Tukarkan Poin'}</RedeemButton>
-                        </RedeemForm>
-                    </PointsCard>
-                </div>
-            </TopCardsGrid>
-            <HistoryTableContainer>
-                <TableControls>
-                    <CardTitle style={{ margin: 0, padding: 0 }}><FiShoppingBag /> Riwayat Aktivitas ({filteredHistory.length})</CardTitle>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <SearchInput type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        <>
+            <PageContainer>
+                <BackLink to="/customers"><FiArrowLeft /> Kembali ke Daftar Pelanggan</BackLink>
+                <Header>
+                    <div>
+                        <CustomerName>
+                            <FiUser /> {customer.name} <StatusBadge>Pelanggan Aktif</StatusBadge>
+                        </CustomerName>
                     </div>
-                </TableControls>
-                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                    <Table>
-                        <thead>
-                            <tr>
-                                <Th><FiCalendar style={{ marginRight: '8px' }} />Tanggal</Th>
-                                <Th>Deskripsi</Th>
-                                <Th>Total Belanja</Th>
-                                <Th>Perubahan Poin</Th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredHistory.length > 0 ? filteredHistory.map(item => (
-                                <Tr key={`${item.type}-${item.id}`}>
-                                    <Td>{new Date(item.created_at).toLocaleString('id-ID')}</Td>
-                                    <Td>{item.description}</Td>
-                                    <Td style={{ fontWeight: '600' }}>
-                                        {item.total_amount ? new Intl.NumberFormat('id-ID').format(item.total_amount) : '-'}
-                                    </Td>
-                                    <Td>
-                                        <PointsBadge $positive={item.points_change > 0}>
-                                            {item.points_change > 0 ? `+${item.points_change}` : item.points_change}
-                                        </PointsBadge>
-                                    </Td>
-                                </Tr>
-                            )) : (
-                                <Tr>
-                                    <Td colSpan="4">
-                                        <EmptyState>
-                                            <FiShoppingBag />
-                                            <h3>Belum Ada Aktivitas</h3>
-                                            <p>Pelanggan ini belum melakukan transaksi atau aktivitas poin.</p>
-                                        </EmptyState>
-                                    </Td>
-                                </Tr>
-                            )}
-                        </tbody>
-                    </Table>
-                </div>
-            </HistoryTableContainer>
-        </PageContainer>
+                    <RefreshButton onClick={handleRefresh} disabled={refreshing}>
+                        <FiRefreshCw /> {refreshing ? 'Memuat...' : 'Refresh'}
+                    </RefreshButton>
+                </Header>
+                <StatsGrid>
+                    <StatCard>
+                        <StatIcon><FiShoppingBag /></StatIcon>
+                        <StatLabel>Total Pesanan</StatLabel>
+                        <StatValue>{stats?.totalOrders || 0}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiTrendingUp /></StatIcon>
+                        <StatLabel>Total Belanja</StatLabel>
+                        <StatValue>Rp {new Intl.NumberFormat('id-ID').format(stats?.totalSpent || 0)}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiStar /></StatIcon>
+                        <StatLabel>Total Poin Diperoleh</StatLabel>
+                        <StatValue>{stats?.totalPointsEarned || 0}</StatValue>
+                    </StatCard>
+                    <StatCard>
+                        <StatIcon><FiGift /></StatIcon>
+                        <StatLabel>Rata-rata Belanja</StatLabel>
+                        <StatValue>Rp {new Intl.NumberFormat('id-ID').format(Math.round(stats?.avgOrderValue || 0))}</StatValue>
+                    </StatCard>
+                </StatsGrid>
+                <TopCardsGrid>
+                    <div>
+                        <InfoCard>
+                            <CardTitle><FiUser /> Detail Pelanggan</CardTitle>
+                            <InfoGrid>
+                                <InfoItem>
+                                    <InfoLabel>Nama</InfoLabel>
+                                    <InfoValue>{customer.name}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Telepon</InfoLabel>
+                                    <InfoValue>{customer.phone || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Email</InfoLabel>
+                                    <InfoValue>{customer.email || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Alamat</InfoLabel>
+                                    <InfoValue>{customer.address || '-'}</InfoValue>
+                                </InfoItem>
+                                <InfoItem>
+                                    <InfoLabel>Bergabung</InfoLabel>
+                                    <InfoValue>{customer.created_at ? new Date(customer.created_at).toLocaleDateString('id-ID') : '-'}</InfoValue>
+                                </InfoItem>
+                            </InfoGrid>
+                        </InfoCard>
+                    </div>
+                    <div>
+                        <PointsCard>
+                            <CardTitle><FiAward /> Poin Loyalitas</CardTitle>
+                            <PointsDisplay>
+                                <p>Total Poin Saat Ini</p>
+                                <h2>{customer.points.toLocaleString('id-ID')}</h2>
+                            </PointsDisplay>
+                            
+                            <RedeemRewardButton onClick={() => setIsRedeemModalOpen(true)} disabled={rewards.length === 0}>
+                                <FiGift /> Tukarkan Hadiah
+                            </RedeemRewardButton>
+
+                            <RedeemForm onSubmit={handleRedeem}>
+                                <p style={{textAlign: 'center', fontWeight: 500, color: 'var(--text-secondary)'}}>- atau -</p>
+                                <RedeemInput type="number" value={redeemAmount} onChange={(e) => setRedeemAmount(e.target.value)} placeholder="Tukar Poin Manual (cth: 1000)" max={customer.points} required />
+                                <RedeemInput value={redeemDesc} onChange={(e) => setRedeemDesc(e.target.value)} placeholder="Deskripsi (cth: Potongan Harga)" required />
+                                <RedeemButton type="submit" disabled={isSubmitting}>{isSubmitting ? 'Memproses...' : 'Tukar Poin Manual'}</RedeemButton>
+                            </RedeemForm>
+                        </PointsCard>
+                    </div>
+                </TopCardsGrid>
+                <HistoryTableContainer>
+                    <TableControls>
+                        <CardTitle style={{ margin: 0, padding: 0 }}><FiShoppingBag /> Riwayat Aktivitas ({filteredHistory.length})</CardTitle>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <SearchInput type="text" placeholder="Cari..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                    </TableControls>
+                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <Th><FiCalendar style={{ marginRight: '8px' }} />Tanggal</Th>
+                                    <Th>Deskripsi</Th>
+                                    <Th>Total Belanja</Th>
+                                    <Th>Perubahan Poin</Th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredHistory.length > 0 ? filteredHistory.map(item => (
+                                    <Tr key={`${item.type}-${item.id}`}>
+                                        <Td>{new Date(item.created_at).toLocaleString('id-ID')}</Td>
+                                        <Td>{item.description}</Td>
+                                        <Td style={{ fontWeight: '600' }}>
+                                            {item.total_amount ? new Intl.NumberFormat('id-ID').format(item.total_amount) : '-'}
+                                        </Td>
+                                        <Td>
+                                            <PointsBadge $positive={item.points_change > 0}>
+                                                {item.points_change > 0 ? `+${item.points_change}` : item.points_change}
+                                            </PointsBadge>
+                                        </Td>
+                                    </Tr>
+                                )) : (
+                                    <Tr>
+                                        <Td colSpan="4">
+                                            <EmptyState>
+                                                <FiShoppingBag />
+                                                <h3>Belum Ada Aktivitas</h3>
+                                                <p>Pelanggan ini belum melakukan transaksi atau aktivitas poin.</p>
+                                            </EmptyState>
+                                        </Td>
+                                    </Tr>
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+                </HistoryTableContainer>
+            </PageContainer>
+            
+            <RedeemRewardModal
+                isOpen={isRedeemModalOpen}
+                onClose={() => setIsRedeemModalOpen(false)}
+                customer={customer}
+                rewardsList={rewards}
+                onRedemptionSuccess={() => {
+                    setIsRedeemModalOpen(false);
+                    fetchData(true);
+                }}
+            />
+        </>
     );
 }
 
@@ -25817,8 +26536,6 @@ export default ForgotPasswordPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\HistoryPage.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\HistoryPage.jsx
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { getOrders, getOrderById, deleteOrder, exportOrders, clearOrderHistory } from '../services/api';
@@ -25830,10 +26547,42 @@ import Receipt from '../components/Receipt';
 import ConfirmationModal from '../components/ConfirmationModal';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
+// --- PENAMBAHAN: Import fungsi dari date-fns ---
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
-// --- Styled Components ---
+// --- Styled Components (tambahkan ini) ---
+const QuickFilterButtons = styled.div`
+    display: flex;
+    gap: 10px;
+    margin-left: 20px;
+    
+    @media (max-width: 768px) {
+        margin-left: 0;
+        margin-top: 15px;
+        width: 100%;
+        justify-content: space-between;
+    }
+`;
+
+const FilterButton = styled.button`
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    background-color: ${props => props.$active ? 'var(--primary-color)' : 'var(--bg-main)'};
+    color: ${props => props.$active ? 'white' : 'var(--text-primary)'};
+    border: 1px solid ${props => props.$active ? 'var(--primary-color)' : 'var(--border-color)'};
+    transition: all 0.2s ease;
+
+    &:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+`;
+// --- (Styled-components lainnya tidak berubah) ---
+
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -25950,7 +26699,6 @@ const DatePickerWrapper = styled.div`
         font-weight: 500; width: 130px; cursor: pointer; text-align: center;
     }
 `;
-// --- End of Styled Components ---
 
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
@@ -25975,6 +26723,7 @@ function HistoryPage() {
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [confirmAction, setConfirmAction] = useState({ action: null, id: null });
     const [modalContent, setModalContent] = useState({ title: '', message: '' });
+    const [activeFilter, setActiveFilter] = useState('');
 
     const receiptRef = useRef();
     const handlePrint = useReactToPrint({
@@ -26002,8 +26751,36 @@ function HistoryPage() {
         }
     }, [orderToPrint, handlePrint]);
     
+    const handleQuickFilterChange = (filter) => {
+        const now = new Date();
+        setActiveFilter(filter);
+        switch (filter) {
+            case 'today':
+                setStartDate(startOfDay(now));
+                setEndDate(endOfDay(now));
+                break;
+            case 'last7':
+                setStartDate(startOfDay(subDays(now, 6)));
+                setEndDate(endOfDay(now));
+                break;
+            case 'thisMonth':
+                setStartDate(startOfMonth(now));
+                setEndDate(endOfMonth(now));
+                break;
+            default:
+                setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+                setEndDate(new Date());
+        }
+    };
+
     const fetchOrders = useCallback(async () => {
         setLoading(true);
+        // Setiap kali fetch, reset activeFilter jika tanggal diubah manual
+        if (activeFilter === '' || activeFilter === null) {
+            // Jika filter diubah manual, jangan aktifkan tombol mana pun
+            setActiveFilter('');
+        }
+        
         try {
             const res = await getOrders(startDate, endDate);
             setOrders(res.data);
@@ -26013,7 +26790,7 @@ function HistoryPage() {
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate]);
+    }, [startDate, endDate, activeFilter]);
 
     useEffect(() => {
         fetchOrders();
@@ -26094,12 +26871,17 @@ function HistoryPage() {
                     <FilterContainer>
                         <span style={{fontWeight: 500}}>Filter Tanggal:</span>
                         <DatePickerWrapper>
-                            <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} dateFormat="dd/MM/yyyy" maxDate={endDate} />
+                            <DatePicker selected={startDate} onChange={(date) => { setStartDate(date); setActiveFilter(''); }} dateFormat="dd/MM/yyyy" maxDate={endDate} />
                         </DatePickerWrapper>
                         <span>sampai</span>
                         <DatePickerWrapper>
-                            <DatePicker selected={endDate} onChange={(date) => setEndDate(date)} dateFormat="dd/MM/yyyy" minDate={startDate} />
+                            <DatePicker selected={endDate} onChange={(date) => { setEndDate(date); setActiveFilter(''); }} dateFormat="dd/MM/yyyy" minDate={startDate} />
                         </DatePickerWrapper>
+                        <QuickFilterButtons>
+                            <FilterButton onClick={() => handleQuickFilterChange('today')} $active={activeFilter === 'today'}>Hari Ini</FilterButton>
+                            <FilterButton onClick={() => handleQuickFilterChange('last7')} $active={activeFilter === 'last7'}>7 Hari</FilterButton>
+                            <FilterButton onClick={() => handleQuickFilterChange('thisMonth')} $active={activeFilter === 'thisMonth'}>Bulan Ini</FilterButton>
+                        </QuickFilterButtons>
                         <ExportButton onClick={handleExport}><FiDownload size={16}/> Ekspor CSV</ExportButton>
                         <ClearHistoryButton onClick={() => openConfirmation('clearAll')}><FiAlertTriangle size={16}/> Hapus Riwayat</ClearHistoryButton>
                     </FilterContainer>
@@ -26119,32 +26901,34 @@ function HistoryPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {orders.length > 0 ? (
-                                        orders.map((order, i) => (
-                                            <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                                <Td>#{order.id}</Td>
-                                                <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
-                                                <Td>{order.cashier_name}</Td>
-                                                <Td>{order.customer_name || '-'}</Td>
-                                                <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
-                                                <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
-                                                <Td style={{textAlign: 'center'}}>
-                                                    <ActionButton onClick={() => handleViewDetail(order.id)}>
-                                                        <FiEye size={18} />
-                                                    </ActionButton>
-                                                    <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
-                                                        <FiTrash2 size={18} />
-                                                    </ActionButton>
+                                    <AnimatePresence>
+                                        {orders.length > 0 ? (
+                                            orders.map((order, i) => (
+                                                <Tr key={order.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                                    <Td>#{order.id}</Td>
+                                                    <Td>{new Date(order.created_at).toLocaleString('id-ID')}</Td>
+                                                    <Td>{order.cashier_name}</Td>
+                                                    <Td>{order.customer_name || '-'}</Td>
+                                                    <Td style={{textAlign: 'center'}}>{order.payment_method}</Td>
+                                                    <Td style={{textAlign: 'right', fontWeight: 600}}>Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</Td>
+                                                    <Td style={{textAlign: 'center'}}>
+                                                        <ActionButton onClick={() => handleViewDetail(order.id)}>
+                                                            <FiEye size={18} />
+                                                        </ActionButton>
+                                                        <ActionButton $danger onClick={() => openConfirmation('delete', order.id)}>
+                                                            <FiTrash2 size={18} />
+                                                        </ActionButton>
+                                                    </Td>
+                                                </Tr>
+                                            ))
+                                        ) : (
+                                            <Tr>
+                                                <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
+                                                    Tidak ada riwayat transaksi pada rentang tanggal ini.
                                                 </Td>
                                             </Tr>
-                                        ))
-                                    ) : (
-                                        <Tr>
-                                            <Td colSpan="7" style={{textAlign: 'center', padding: '50px 0'}}>
-                                                Tidak ada riwayat transaksi pada rentang tanggal ini.
-                                            </Td>
-                                        </Tr>
-                                    )}
+                                        )}
+                                    </AnimatePresence>
                                 </tbody>
                             </Table>
                         </TableWrapper>
@@ -26429,9 +27213,7 @@ describe('LoginPage', () => {
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PosPage.jsx =====
 
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PosPage.jsx
-
-import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback, useReducer } from 'react';
 import styled from 'styled-components';
 import { getProducts, createOrder, getOrderById, validateCoupon } from '../services/api';
 import { FiPlus, FiMinus, FiSearch, FiTrash2, FiUser, FiPause, FiGrid, FiTag, FiShoppingCart } from 'react-icons/fi';
@@ -26451,6 +27233,8 @@ import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
 import PageWrapper from '../components/PageWrapper';
 import { jwtDecode } from 'jwt-decode';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { addOfflineOrder } from '../utils/offlineDb';
 
 // --- Styled Components dengan Desain Baru ---
 const PageGrid = styled.div`
@@ -26647,16 +27431,74 @@ const getPriceDisplay = (variants) => {
     return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
 };
 
+// --- useReducer setup ---
+const cartInitialState = {
+    items: [],
+    selectedCustomer: null,
+    appliedDiscount: null,
+};
+
+function cartReducer(state, action) {
+    switch (action.type) {
+        case 'ADD_ITEM': {
+            const { product, variant } = action.payload;
+            const cartItemId = `${product.id}-${variant.id}`;
+            const existingItemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
+            
+            if (existingItemIndex > -1) {
+                const newItems = [...state.items];
+                newItems[existingItemIndex].quantity += 1;
+                return { ...state, items: newItems };
+            } else {
+                const newItem = {
+                    cartItemId,
+                    productId: product.id,
+                    variantId: variant.id,
+                    name: `${product.name} (${variant.name})`,
+                    price: variant.price,
+                    image_url: product.image_url,
+                    quantity: 1,
+                };
+                return { ...state, items: [...state.items, newItem] };
+            }
+        }
+        case 'UPDATE_QUANTITY': {
+            const { cartItemId, change } = action.payload;
+            const itemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
+            if (itemIndex < 0) return state;
+
+            const newItems = [...state.items];
+            newItems[itemIndex].quantity += change;
+
+            if (newItems[itemIndex].quantity <= 0) {
+                return { ...state, items: newItems.filter(item => item.cartItemId !== cartItemId) };
+            }
+
+            return { ...state, items: newItems };
+        }
+        case 'REMOVE_ITEM': {
+            const { cartItemId } = action.payload;
+            return { ...state, items: state.items.filter(item => item.cartItemId !== cartItemId) };
+        }
+        case 'SET_CUSTOMER':
+            return { ...state, selectedCustomer: action.payload };
+        case 'SET_DISCOUNT':
+            return { ...state, appliedDiscount: action.payload };
+        case 'CLEAR_CART':
+            return cartInitialState;
+        default:
+            return state;
+    }
+}
+
 function PosPage() {
     const [products, setProducts] = useState([]);
-    const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastOrderId, setLastOrderId] = useState(null);
     const [isPostCheckoutOpen, setIsPostCheckoutOpen] = useState(false);
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
     const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
     const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
@@ -26664,8 +27506,11 @@ function PosPage() {
     const { activeShift, isLoadingShift, refreshShiftStatus } = useContext(ShiftContext);
     const [heldCarts, setHeldCarts] = useState(() => { const saved = localStorage.getItem('heldCarts'); return saved ? JSON.parse(saved) : []; });
     const [couponCode, setCouponCode] = useState('');
-    const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [userRole, setUserRole] = useState(null);
+
+    const [cartState, dispatch] = useReducer(cartReducer, cartInitialState);
+    const { items: cart, selectedCustomer, appliedDiscount } = cartState;
+    const isOnline = useOnlineStatus();
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -26733,23 +27578,8 @@ function PosPage() {
     }, []);
 
     const addToCart = useCallback((product, variant) => {
-        const cartItemId = `${product.id}-${variant.id}`;
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        if (existingItem) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-        } else {
-            const newItem = {
-                cartItemId,
-                productId: product.id,
-                variantId: variant.id,
-                name: `${product.name} (${variant.name})`,
-                price: variant.price,
-                image_url: product.image_url,
-                quantity: 1,
-            };
-            setCart(prevCart => [...prevCart, newItem]);
-        }
-    }, [cart]);
+        dispatch({ type: 'ADD_ITEM', payload: { product, variant } });
+    }, []);
 
     const handleProductClick = useCallback((product) => {
         if (!product.variants || product.variants.length === 0) {
@@ -26773,37 +27603,20 @@ function PosPage() {
         setIsVariantModalOpen(false);
     };
 
-    const decreaseQuantity = (cartItemId) => {
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        if (existingItem && existingItem.quantity > 1) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item)));
-        } else {
-            removeFromCart(cartItemId);
-        }
-    };
-
-    const increaseQuantity = (cartItemId) => {
-        setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-    };
-
-    const removeFromCart = (cartItemId) => {
-        setCart(cart.filter((item) => item.cartItemId !== cartItemId));
-    };
-
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return toast.warn("Masukkan kode promo.");
         try {
             const res = await validateCoupon(couponCode);
-            setAppliedDiscount(res.data);
+            dispatch({ type: 'SET_DISCOUNT', payload: res.data });
             toast.success(`Promo "${res.data.name}" berhasil diterapkan!`);
         } catch (error) {
-            setAppliedDiscount(null);
+            dispatch({ type: 'SET_DISCOUNT', payload: null });
             toast.error(error.response?.data?.message || "Gagal menerapkan promo.");
         }
     };
 
     const removeDiscount = () => {
-        setAppliedDiscount(null);
+        dispatch({ type: 'SET_DISCOUNT', payload: null });
         setCouponCode('');
         toast.info("Promo dibatalkan.");
     };
@@ -26843,47 +27656,70 @@ function PosPage() {
             shift_id: activeShift?.id || null, // Tambahkan shift_id ke order data
         };
 
-        try {
-            const res = await toast.promise(createOrder(orderData), {
-                pending: 'Memproses transaksi...',
-                success: 'Transaksi berhasil!',
-                error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
-            });
-            setLastOrderId(res.data.orderId);
-            setIsPostCheckoutOpen(true);
-            setIsCheckoutModalOpen(false);
-            setAppliedDiscount(null);
-            setCouponCode('');
-        } catch (err) {
-            console.error('Checkout error:', err);
+        if (isOnline) {
+            // --- LOGIKA SAAT ONLINE ---
+            try {
+                const res = await toast.promise(createOrder(orderData), {
+                    pending: 'Memproses transaksi...',
+                    success: 'Transaksi berhasil!',
+                    error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
+                });
+                setLastOrderId(res.data.orderId);
+                setIsPostCheckoutOpen(true);
+                setIsCheckoutModalOpen(false);
+                dispatch({ type: 'CLEAR_CART' });
+                setCouponCode('');
+            } catch (err) {
+                console.error('Checkout error:', err);
+                toast.error(err.response?.data?.message || 'Gagal checkout: Server error');
+            }
+        } else {
+            // --- LOGIKA BARU SAAT OFFLINE ---
+            try {
+                const offlineOrderData = {
+                    ...orderData,
+                    createdAt: new Date().toISOString(),
+                    syncStatus: 'pending' // Tambahkan status sinkronisasi
+                };
+                await addOfflineOrder(offlineOrderData);
+                toast.warn('Koneksi terputus. Transaksi disimpan lokal dan akan disinkronkan nanti.', { autoClose: 5000 });
+                dispatch({ type: 'CLEAR_CART' });
+                setIsCheckoutModalOpen(false);
+            } catch (error) {
+                console.error('Offline checkout error:', error);
+                toast.error('Gagal menyimpan transaksi offline.');
+            }
         }
     };
 
     const handleClosePostCheckoutModal = () => {
         setIsPostCheckoutOpen(false);
-        setCart([]);
-        setSelectedCustomer(null);
+        dispatch({ type: 'CLEAR_CART' });
     };
 
     const handleSelectCustomer = (customer) => {
-        setSelectedCustomer(customer);
+        dispatch({ type: 'SET_CUSTOMER', payload: customer });
         setIsCustomerModalOpen(false);
     };
 
     const handleHoldCart = () => {
         if (cart.length === 0) return;
-        const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer };
+        const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer, discount: appliedDiscount };
         setHeldCarts((prev) => [...prev, newHeldCart]);
-        setCart([]);
-        setSelectedCustomer(null);
+        dispatch({ type: 'CLEAR_CART' });
+        setCouponCode('');
         toast.info('Keranjang berhasil ditahan.');
     };
 
     const handleResumeCart = (cartId) => {
         const cartToResume = heldCarts.find((c) => c.id === cartId);
         if (cartToResume) {
-            setCart(cartToResume.items);
-            setSelectedCustomer(cartToResume.customer);
+            dispatch({ type: 'SET_CUSTOMER', payload: cartToResume.customer });
+            dispatch({ type: 'SET_DISCOUNT', payload: cartToResume.discount });
+            // Mengatur kembali item di keranjang dengan dispatch
+            // Note: Metode ini mungkin perlu disesuaikan tergantung struktur `heldCarts.items`
+            dispatch({ type: 'RESTORE_ITEMS', payload: cartToResume.items });
+            
             setHeldCarts(heldCarts.filter((c) => c.id !== cartId));
             setIsHeldCartsModalOpen(false);
             toast.success('Keranjang berhasil dilanjutkan.');
@@ -26945,7 +27781,7 @@ function PosPage() {
                 {selectedCustomer ? (
                     <div>
                         <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span>
-                        <RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink>
+                        <RemoveCustomerLink onClick={() => dispatch({ type: 'SET_CUSTOMER', payload: null })}>Hapus</RemoveCustomerLink>
                     </div>
                 ) : (
                     <span>Pelanggan Umum</span>
@@ -26967,15 +27803,15 @@ function PosPage() {
                                 <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
                             </CartItemDetails>
                             <CartItemControls>
-                                <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}>
+                                <ControlButton onClick={() => dispatch({ type: 'UPDATE_QUANTITY', payload: { cartItemId: item.cartItemId, change: -1 } })}>
                                     <FiMinus size={16} />
                                 </ControlButton>
                                 <QuantityDisplay>{item.quantity}</QuantityDisplay>
-                                <ControlButton onClick={() => increaseQuantity(item.cartItemId)}>
+                                <ControlButton onClick={() => dispatch({ type: 'UPDATE_QUANTITY', payload: { cartItemId: item.cartItemId, change: 1 } })}>
                                     <FiPlus size={16} />
                                 </ControlButton>
                             </CartItemControls>
-                            <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}>
+                            <RemoveItemButton onClick={() => dispatch({ type: 'REMOVE_ITEM', payload: { cartItemId: item.cartItemId } })}>
                                 <FiTrash2 size={18} />
                             </RemoveItemButton>
                         </CartItem>
@@ -27125,8 +27961,6 @@ function PosPage() {
 export default PosPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductFormPage.jsx =====
-
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductFormPage.jsx
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -27510,6 +28344,9 @@ function ProductFormPage() {
             if (selectedMaterial) {
                 newItems[index].raw_material_name = selectedMaterial.name;
                 newItems[index].raw_material_unit = selectedMaterial.unit;
+            } else {
+                newItems[index].raw_material_name = '';
+                newItems[index].raw_material_unit = '';
             }
         }
         setFormData({ ...formData, recipeItems: newItems });
@@ -30570,6 +31407,7 @@ import RoleFormModal from '../components/RoleFormModal';
 import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiShield } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 
 const PageContainer = styled.div` padding: 30px; height: 100%; display: flex; flex-direction: column; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-shrink: 0; `;
@@ -32052,8 +32890,6 @@ function SupplierPage() {
 export default SupplierPage;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\TargetPage.jsx =====
-
-// frontend/src/pages/TargetPage.jsx
 
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -34233,22 +35069,27 @@ export default QuickActionGrids;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\RecentSuppliersList.jsx =====
 
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\RecentSuppliersList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
+import Skeleton from 'react-loading-skeleton';
 
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
     border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
+    grid-column: span 1;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
+    @media (max-width: 1200px) {
+        grid-column: span 2;
+    }
+    @media (max-width: 768px) {
+        grid-column: 1 / -1;
+    }
 `;
 
 const ListTitle = styled.h3`
@@ -34259,94 +35100,73 @@ const ListTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 10px;
-    justify-content: center;
-    text-align: center;
 `;
 
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
-    flex-grow: 1;
-    max-height: 350px;
+    margin: 0;
 `;
 
 const ListItem = styled.li`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 12px 20px;
+    background: var(--bg-primary);
     border-radius: 12px;
-    border: 1px solid var(--border-color);
     margin-bottom: 8px;
-    background-color: var(--bg-main);
-    transition: all 0.2s ease;
-
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
     &:hover {
-        background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
-        border-color: var(--primary-color, #007bff);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &:last-child {
-        margin-bottom: 0;
+        background-color: var(--bg-hover);
     }
 `;
 
 const ProductName = styled.span`
     font-weight: 500;
     color: var(--text-primary);
-    font-size: 0.95rem;
-    flex: 1;
-    min-width: 0;
+    max-width: 60%;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 `;
 
 const ItemValue = styled.span`
     color: var(--text-secondary);
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-left: 15px;
     font-size: 0.9rem;
 `;
 
+const SkeletonContainer = styled.div`
+    margin-top: 10px;
+`;
+
 const EmptyStateContainer = styled.div`
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     text-align: center;
+    padding: 30px 20px;
     color: var(--text-secondary);
-    padding: 50px 20px;
-    gap: 15px;
 `;
 
 const EmptyStateIcon = styled.div`
-    color: var(--text-tertiary, #ccc);
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 `;
 
 const EmptyStateText = styled.p`
-    margin: 0;
     font-size: 1rem;
-    color: var(--text-secondary);
-`;
-
-const SkeletonContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    margin: 0;
 `;
 
 function RecentSuppliersList({ loading, recentSuppliers = [] }) {
     if (loading) {
         return (
             <ListContainer>
-                <ListTitle><FiIcons.FiTruck size={22} /> Pemasok Terbaru</ListTitle>
+                <ListTitle>
+                    <FiIcons.FiTruck size={22} /> Pemasok Terbaru
+                </ListTitle>
                 <SkeletonContainer>
                     {[...Array(5)].map((_, index) => (
                         <Skeleton
@@ -34355,7 +35175,7 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
                             height={60}
                             style={{
                                 marginBottom: '8px',
-                                borderRadius: '12px'
+                                borderRadius: '12px',
                             }}
                         />
                     ))}
@@ -34365,13 +35185,15 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
     }
     return (
         <ListContainer>
-            <ListTitle><FiIcons.FiTruck size={22} /> Pemasok Terbaru</ListTitle>
+            <ListTitle>
+                <FiIcons.FiTruck size={22} /> Pemasok Terbaru
+            </ListTitle>
             {recentSuppliers.length > 0 ? (
                 <List>
-                    {recentSuppliers.map(s => (
+                    {recentSuppliers.map((s) => (
                         <ListItem key={s.id}>
                             <ProductName>{s.name}</ProductName>
-                            <ItemValue>{new Date(s.created_at).toLocaleDateString('id-ID')}</ItemValue>
+                            <ItemValue>{new Date(s.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</ItemValue>
                         </ListItem>
                     ))}
                 </List>
@@ -34380,9 +35202,7 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
                     <EmptyStateIcon>
                         <FiIcons.FiTruck size={48} />
                     </EmptyStateIcon>
-                    <EmptyStateText>
-                        Belum ada data pemasok.
-                    </EmptyStateText>
+                    <EmptyStateText>Belum ada data pemasok.</EmptyStateText>
                 </EmptyStateContainer>
             )}
         </ListContainer>
@@ -34391,10 +35211,20 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
 
 RecentSuppliersList.propTypes = {
     loading: PropTypes.bool.isRequired,
-    recentSuppliers: PropTypes.array,
+    recentSuppliers: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            created_at: PropTypes.string.isRequired,
+        }).isRequired
+    ),
 };
 
-export default RecentSuppliersList;
+RecentSuppliersList.defaultProps = {
+    recentSuppliers: [],
+};
+
+export default React.memo(RecentSuppliersList);
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\SalesChart.jsx =====
 
@@ -34449,38 +35279,57 @@ const getColor = (index) => {
 };
 
 const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('id-ID');
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date)) {
+            return 'Tanggal Tidak Valid';
+        }
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return 'Tanggal Tidak Valid';
+    }
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length && label) {
-        return (
-            <div style={{
+    if (!active || !payload?.length || !label) {
+        return null;
+    }
+    return (
+        <div
+            style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '8px',
                 padding: '10px',
                 fontSize: '0.9rem',
                 color: 'var(--text-primary)',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>
-                    {formatDate(label)}
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            }}
+        >
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>
+                {formatDate(label)}
+            </p>
+            {payload.map((entry, index) => (
+                <p key={index} style={{ color: getColor(index), margin: 0 }}>
+                    {entry.name}: <span style={{ fontWeight: '600' }}>{formatRupiah(entry.value || 0)}</span>
                 </p>
-                {payload.map((entry, index) => (
-                    <p key={index} style={{ color: getColor(index), margin: 0 }}>
-                        {entry.name}: <span style={{ fontWeight: '600' }}>{formatRupiah(entry.value)}</span>
-                    </p>
-                ))}
-            </div>
-        );
-    }
-    return null;
+            ))}
+        </div>
+    );
 };
 
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
-    payload: PropTypes.array,
+    payload: PropTypes.arrayOf(
+        PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            value: PropTypes.number.isRequired,
+        })
+    ),
     label: PropTypes.string,
 };
 
@@ -34488,7 +35337,9 @@ function SalesChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
-                <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
+                <ChartTitle>
+                    <FiDollarSign size={22} /> Penjualan Harian
+                </ChartTitle>
                 <Skeleton height={300} />
             </ChartContainer>
         );
@@ -34496,7 +35347,9 @@ function SalesChart({ loading, data = [] }) {
 
     return (
         <ChartContainer>
-            <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
+            <ChartTitle>
+                <FiDollarSign size={22} /> Penjualan Harian
+            </ChartTitle>
             {data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -34538,16 +35391,16 @@ SalesChart.propTypes = {
         PropTypes.shape({
             date: PropTypes.string.isRequired,
             revenue: PropTypes.number.isRequired,
-            profit: PropTypes.number.isRequired
-        })
-    )
+            profit: PropTypes.number.isRequired,
+        }).isRequired
+    ),
 };
 
 SalesChart.defaultProps = {
-    data: []
+    data: [],
 };
 
-export default SalesChart;
+export default React.memo(SalesChart);
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StaleProductsList.jsx =====
 
@@ -34589,7 +35442,7 @@ export default StaleProductsList;
 
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StatCardGrid.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
@@ -34637,21 +35490,45 @@ const ExpandButton = styled.button`
     &:hover { background-color: var(--primary-color); color: white; }
 `;
 
+/**
+ * Calculates the percentage change between current and previous values.
+ * @param {number|null|undefined} current - Current value.
+ * @param {number|null|undefined} previous - Previous value.
+ * @returns {number|null} - Percentage change or null if invalid.
+ */
 const calculatePercentageChange = (current, previous) => {
-    if (typeof current !== 'number' || typeof previous !== 'number' || previous === 0) return null;
+    if (
+        current === null ||
+        current === undefined ||
+        previous === null ||
+        previous === undefined ||
+        typeof current !== 'number' ||
+        typeof previous !== 'number' ||
+        previous === 0
+    ) {
+        return null;
+    }
     return ((current - previous) / previous) * 100;
 };
 
-const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood = true }) => {
-    let chip = null;
-    if (comparisonChange !== null && isFinite(comparisonChange)) {
+const StatCard = React.memo(({ icon, value, label, color, comparisonChange, positiveIsGood = true }) => {
+    const chip = useMemo(() => {
+        if (comparisonChange === null || !isFinite(comparisonChange)) {
+            return null;
+        }
         const isPositive = comparisonChange >= 0;
         const isGood = positiveIsGood ? isPositive : !isPositive;
         const displayValue = `${isPositive ? '+' : ''}${comparisonChange.toFixed(1)}%`;
         const chipColor = isGood ? 'var(--green-color)' : 'var(--red-color)';
         const chipIcon = isPositive ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />;
-        chip = <ComparisonChip color={chipColor}>{chipIcon}{displayValue}</ComparisonChip>;
-    }
+        return (
+            <ComparisonChip color={chipColor}>
+                {chipIcon}
+                {displayValue}
+            </ComparisonChip>
+        );
+    }, [comparisonChange, positiveIsGood]);
+
     return (
         <Card>
             <StatIcon color={color}>{icon}</StatIcon>
@@ -34662,7 +35539,7 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
             </StatInfo>
         </Card>
     );
-};
+});
 
 StatCard.propTypes = {
     icon: PropTypes.node.isRequired,
@@ -34670,7 +35547,7 @@ StatCard.propTypes = {
     label: PropTypes.string.isRequired,
     color: PropTypes.string.isRequired,
     comparisonChange: PropTypes.number,
-    positiveIsGood: PropTypes.bool
+    positiveIsGood: PropTypes.bool,
 };
 
 const StatCardSkeleton = () => (
@@ -34697,11 +35574,12 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
         );
     }
 
+    const formatCurrency = (val) => `Rp ${new Intl.NumberFormat('id-ID').format(val || 0)}`;
+
     const revenueChange = calculatePercentageChange(stats.totalRevenue, previousStats?.totalRevenue);
     const transactionsChange = calculatePercentageChange(stats.totalTransactions, previousStats?.totalTransactions);
     const profitChange = calculatePercentageChange(stats.totalProfit, previousStats?.totalProfit);
     const expensesChange = calculatePercentageChange(stats.totalExpenses, previousStats?.totalExpenses);
-    const formatCurrency = (val) => `Rp ${new Intl.NumberFormat('id-ID').format(val || 0)}`;
 
     return (
         <GridContainer>
@@ -34762,7 +35640,7 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
                     />
                     <StatCard
                         icon={<FiUserCheck size={28} />}
-                        value={userName}
+                        value={userName || 'Unknown'}
                         label="Kasir Aktif"
                         color="#20c997"
                     />
@@ -34792,21 +35670,34 @@ StatCardGrid.propTypes = {
         cashInDrawer: PropTypes.number,
         totalSoldUnits: PropTypes.number,
         newCustomers: PropTypes.number,
-        totalExpenses: PropTypes.number
-    }),
+        totalExpenses: PropTypes.number,
+    }).isRequired,
     previousStats: PropTypes.shape({
         totalRevenue: PropTypes.number,
         totalTransactions: PropTypes.number,
         totalProfit: PropTypes.number,
-        totalExpenses: PropTypes.number
+        totalExpenses: PropTypes.number,
     }),
-    userName: PropTypes.string
+    userName: PropTypes.string,
 };
 
 StatCardGrid.defaultProps = {
-    stats: {},
-    previousStats: {},
-    userName: ''
+    stats: {
+        totalRevenue: 0,
+        totalTransactions: 0,
+        totalProfit: 0,
+        cashInDrawer: 0,
+        totalSoldUnits: 0,
+        newCustomers: 0,
+        totalExpenses: 0,
+    },
+    previousStats: {
+        totalRevenue: 0,
+        totalTransactions: 0,
+        totalProfit: 0,
+        totalExpenses: 0,
+    },
+    userName: '',
 };
 
 export default StatCardGrid;
@@ -34904,7 +35795,7 @@ export default React.memo(TopCustomersList);
 
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
@@ -34949,47 +35840,58 @@ const getColor = (index) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length && label) {
-        return (
-            <div style={{
+    if (!active || !payload?.length || !label || !payload[0]?.value) {
+        return null;
+    }
+    return (
+        <div
+            style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '8px',
                 padding: '10px',
                 fontSize: '0.9rem',
                 color: 'var(--text-primary)',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>{label}</p>
-                <p style={{ color: 'var(--primary-color)', margin: 0 }}>
-                    Terjual: <span style={{ fontWeight: '600' }}>{payload[0].value} unit</span>
-                </p>
-            </div>
-        );
-    }
-    return null;
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            }}
+        >
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>{label}</p>
+            <p style={{ color: 'var(--primary-color)', margin: 0 }}>
+                Terjual: <span style={{ fontWeight: '600' }}>{payload[0].value} unit</span>
+            </p>
+        </div>
+    );
 };
 
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
-    payload: PropTypes.array,
+    payload: PropTypes.arrayOf(
+        PropTypes.shape({
+            value: PropTypes.number.isRequired,
+        })
+    ),
     label: PropTypes.string,
 };
 
 function TopProductsChart({ loading, data = [] }) {
+    // Tambahkan logging untuk debug data
+    console.log('TopProductsChart data:', data);
+
     if (loading) {
         return (
             <ChartContainer>
-                <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk</ChartTitle>
+                <ChartTitle>
+                    <FiTrendingUp size={22} /> Performa Penjualan Produk
+                </ChartTitle>
                 <Skeleton height={300} />
             </ChartContainer>
         );
     }
 
-    const formattedData = React.useMemo(() => {
+    const formattedData = useMemo(() => {
         return data.map(item => ({
             ...item,
-            shortName: item.name.length > 25 ? `${item.name.substring(0, Math.floor(window.innerWidth / 100))}...` : item.name,
+            shortName: item.name || 'Produk Tidak Diketahui',
         }));
     }, [data]);
 
@@ -34997,7 +35899,9 @@ function TopProductsChart({ loading, data = [] }) {
 
     return (
         <ChartContainer>
-            <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
+            <ChartTitle>
+                <FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)
+            </ChartTitle>
             {top10Data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={top10Data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -35006,10 +35910,10 @@ function TopProductsChart({ loading, data = [] }) {
                         <YAxis
                             dataKey="shortName"
                             type="category"
-                            width={180}
-                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
+                            width={200}
                             tickLine={false}
                             axisLine={false}
+                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }} />
                         <Bar dataKey="totalSold" name="Unit Terjual" barSize={20} radius={[0, 10, 10, 0]}>
@@ -35033,21 +35937,19 @@ TopProductsChart.propTypes = {
     loading: PropTypes.bool.isRequired,
     data: PropTypes.arrayOf(
         PropTypes.shape({
-            name: PropTypes.string.isRequired,
-            totalSold: PropTypes.number.isRequired
+            name: PropTypes.string,
+            totalSold: PropTypes.number.isRequired,
         })
-    )
+    ),
 };
 
 TopProductsChart.defaultProps = {
-    data: []
+    data: [],
 };
 
 export default React.memo(TopProductsChart);
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js =====
-
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\services\api.js
 
 import axios from 'axios';
 
@@ -35063,13 +35965,13 @@ API.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.log(`Request: ${config.method.toUpperCase()} ${config.url}`);
         }
         return config;
     },
     (error) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.error(`Request error: ${error.config?.method.toUpperCase()} ${error.config?.url} - ${error.message}`);
         }
         return Promise.reject({ message: error.message, code: 'REQUEST_ERROR', status: null });
@@ -35079,19 +35981,19 @@ API.interceptors.request.use(
 // Response Interceptor
 API.interceptors.response.use(
     (response) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.log(`Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
     (error) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.error(`Response error: ${error.response?.config?.method.toUpperCase()} ${error.response?.config?.url} - ${error.response?.status || 'No status'} - ${error.message}`);
         }
         const errorResponse = {
             message: 'An unexpected error occurred.',
             code: 'UNKNOWN',
-            status: null
+            status: null,
         };
         if (axios.isCancel(error)) {
             errorResponse.message = 'Request was canceled.';
@@ -35100,9 +36002,26 @@ API.interceptors.response.use(
             errorResponse.message = 'Connection timeout. Please ensure the backend is running and connected.';
             errorResponse.code = 'TIMEOUT';
         } else if (error.response) {
-            errorResponse.message = error.response.data?.message || 'Server error occurred.';
-            errorResponse.code = 'SERVER_ERROR';
             errorResponse.status = error.response.status;
+            switch (error.response.status) {
+                case 401:
+                    errorResponse.message = 'Unauthorized access. Please log in again.';
+                    errorResponse.code = 'UNAUTHORIZED';
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                    break;
+                case 403:
+                    errorResponse.message = 'Access forbidden. You lack the necessary permissions.';
+                    errorResponse.code = 'FORBIDDEN';
+                    break;
+                case 429:
+                    errorResponse.message = 'Too many requests. Please try again later.';
+                    errorResponse.code = 'RATE_LIMIT';
+                    break;
+                default:
+                    errorResponse.message = error.response.data?.message || 'Server error occurred.';
+                    errorResponse.code = 'SERVER_ERROR';
+            }
         } else if (error.request) {
             errorResponse.message = 'No response from server. The server may not be running.';
             errorResponse.code = 'NO_RESPONSE';
@@ -35111,11 +36030,21 @@ API.interceptors.response.use(
     }
 );
 
+/**
+ * Creates query parameters from an object, handling strings, numbers, dates, arrays, and nested objects.
+ * @param {Object} params - Parameters to convert to query string.
+ * @returns {string} - URL-encoded query string.
+ */
 const createQueryParams = (params = {}) => {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
-        if (value instanceof Date && !isNaN(value)) {
+        if (value === null || value === undefined) continue;
+        if (Array.isArray(value)) {
+            value.forEach((item) => searchParams.append(key, String(item)));
+        } else if (value instanceof Date && !isNaN(value)) {
             searchParams.append(key, value.toISOString());
+        } else if (typeof value === 'object') {
+            searchParams.append(key, JSON.stringify(value));
         } else if (typeof value === 'string' || typeof value === 'number') {
             searchParams.append(key, String(value));
         }
@@ -35124,9 +36053,27 @@ const createQueryParams = (params = {}) => {
 };
 
 // --- API Services ---
+/**
+ * Authenticates a user and returns a token.
+ * @param {Object} userData - { email: string, password: string }
+ * @returns {Promise} - Axios response with token.
+ */
 export const login = (userData) => API.post('/users/login', userData);
+
+/**
+ * Registers a new admin user.
+ * @param {Object} userData - { email: string, password: string, name: string, ... }
+ * @returns {Promise} - Axios response with user data.
+ */
 export const registerAdmin = (userData) => API.post('/users/register', userData);
-export const createUserByAdmin = (userData) => API.post('/users', userData);
+
+/**
+ * Creates a new user by admin.
+ * @param {Object} userData - { email: string, password: string, name: string, roleId: string, ... }
+ * @returns {Promise} - Axios response with user data.
+ */
+export const createUserByAdmin = (userData) => API.post('/users/create-by-admin', userData);
+
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
 export const deleteUser = (id) => API.delete(`/users/${id}`);
@@ -35221,21 +36168,18 @@ export const deleteRawMaterial = (id) => API.delete(`/raw-materials/${id}`);
 export const uploadImage = (formData) => API.post('/upload/image', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
 });
+export const getRewards = () => API.get('/rewards');
+export const createReward = (rewardData) => API.post('/rewards', rewardData);
+export const updateReward = (id, rewardData) => API.put(`/rewards/${id}`, rewardData);
+export const deleteReward = (id) => API.delete(`/rewards/${id}`);
+export const redeemRewardForCustomer = (customerId, rewardId) => API.post(`/customers/${customerId}/redeem-reward`, { reward_id: rewardId });
 
 export default API;
 
 ===== C:\Users\Ibnu\Project\smart-pos\frontend\src\utils\formatters.js =====
 
-/**
- * @fileoverview Modul ini berisi utilitas untuk memformat dan mengurai nilai mata uang Rupiah.
- */
+// C:\Users\Ibnu\Project\smart-pos\frontend\src/utils/formatters.js
 
-/**
- * @description Mengurai string atau angka menjadi string hanya berisi digit.
- * Menangani input null, undefined, atau non-string/non-number dengan aman.
- * @param {string|number} value - Nilai yang akan diurai.
- * @returns {string} - String yang hanya berisi digit, atau string kosong jika input tidak valid.
- */
 export const parseRupiah = (value) => {
     // FIXED: Added robust validation for various invalid inputs.
     if (value === null || value === undefined || (typeof value !== 'string' && typeof value !== 'number')) {
@@ -35244,36 +36188,22 @@ export const parseRupiah = (value) => {
     return String(value).replace(/[^0-9]/g, '');
 };
 
-/**
- * @description Memformat string atau angka menjadi format mata uang Rupiah (contoh: Rp100.000).
- * Menangani input yang tidak valid dan mengembalikan string kosong.
- * @param {string|number} value - Nilai yang akan diformat.
- * @returns {string} - String dalam format Rupiah, atau string kosong jika input tidak valid.
- */
 export const formatRupiah = (value) => {
     try {
         const cleanValue = parseRupiah(value);
-        
-        // FIXED: Return empty string if parsed value is empty to avoid formatting '0' incorrectly.
+        // FIXED: Return empty string if parsed value is empty
         if (cleanValue === '') {
             return '';
         }
-
         const number = Number(cleanValue);
-
-        // FIXED: Check for NaN to prevent crashes on invalid number conversions.
+        // FIXED: Check for NaN to prevent crashes
         if (isNaN(number)) {
             return '';
         }
-
         return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
+            style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0,
         }).format(number);
     } catch (error) {
-        // FIXED: Added error logging for easier debugging.
         console.error('Format Rupiah error:', error.message);
         return ''; // Return empty string to prevent app crashes.
     }
@@ -35333,41 +36263,61 @@ db.version(1).stores({
     offlineOrders: '++id, orderData.createdAt',
 });
 
+/**
+ * Adds an offline order to the Dexie database.
+ * @param {Object} orderData - Order data with required fields: createdAt, items, total.
+ * @returns {Promise<{success: boolean, id?: number, error?: string}>} - Result of the operation.
+ */
 export async function addOfflineOrder(orderData) {
     try {
         if (!orderData || typeof orderData !== 'object') {
-            return { success: false, error: 'Invalid order data' };
+            return { success: false, error: 'Order data must be a valid object' };
         }
         if (!orderData.createdAt) {
             return { success: false, error: 'Missing required field: createdAt' };
         }
+        if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
+            return { success: false, error: 'Missing or invalid required field: items' };
+        }
+        if (typeof orderData.total !== 'number' || orderData.total < 0) {
+            return { success: false, error: 'Missing or invalid required field: total' };
+        }
         const id = await db.offlineOrders.add({ orderData });
         return { success: true, id };
     } catch (error) {
-        console.error('Gagal menyimpan order offline:', error);
-        return { success: false, error: error.message };
+        console.error('Failed to save offline order:', error);
+        return { success: false, error: `Failed to save offline order: ${error.message}` };
     }
 }
 
+/**
+ * Retrieves all offline orders from the Dexie database.
+ * @returns {Promise<{success: boolean, data?: Array, error?: string}>} - Array of offline orders or error.
+ */
 export async function getAllOfflineOrders() {
     try {
         const data = await db.offlineOrders.toArray();
         return { success: true, data };
     } catch (error) {
-        console.error('Gagal mengambil order offline:', error);
-        return { success: false, error: error.message };
+        console.error('Failed to retrieve offline orders:', error);
+        return { success: false, error: `Failed to retrieve offline orders: ${error.message}` };
     }
 }
 
+/**
+ * Deletes an offline order by ID.
+ * @param {number} id - ID of the order to delete.
+ * @returns {Promise<{success: boolean, error?: string}>} - Result of the operation.
+ */
 export async function deleteOfflineOrder(id) {
     try {
-        if (typeof id !== 'number') {
-            return { success: false, error: 'Invalid order ID' };
+        if (typeof id !== 'number' || id <= 0) {
+            return { success: false, error: 'Invalid order ID: Must be a positive number' };
         }
         await db.offlineOrders.delete(id);
         return { success: true };
     } catch (error) {
-        console.error(`Gagal menghapus order offline ID ${id}:`, error);
-        return { success: false, error: error.message };
+        console.error(`Failed to delete offline order ID ${id}:`, error);
+        return { success: false, error: `Failed to delete offline order: ${error.message}` };
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback, useReducer } from 'react';
 import styled from 'styled-components';
 import { getProducts, createOrder, getOrderById, validateCoupon } from '../services/api';
 import { FiPlus, FiMinus, FiSearch, FiTrash2, FiUser, FiPause, FiGrid, FiTag, FiShoppingCart } from 'react-icons/fi';
@@ -18,6 +18,8 @@ import { BusinessContext } from '../context/BusinessContext';
 import { ShiftContext } from '../context/ShiftContext';
 import PageWrapper from '../components/PageWrapper';
 import { jwtDecode } from 'jwt-decode';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { addOfflineOrder } from '../utils/offlineDb';
 
 // --- Styled Components dengan Desain Baru ---
 const PageGrid = styled.div`
@@ -214,16 +216,74 @@ const getPriceDisplay = (variants) => {
     return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
 };
 
+// --- useReducer setup ---
+const cartInitialState = {
+    items: [],
+    selectedCustomer: null,
+    appliedDiscount: null,
+};
+
+function cartReducer(state, action) {
+    switch (action.type) {
+        case 'ADD_ITEM': {
+            const { product, variant } = action.payload;
+            const cartItemId = `${product.id}-${variant.id}`;
+            const existingItemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
+            
+            if (existingItemIndex > -1) {
+                const newItems = [...state.items];
+                newItems[existingItemIndex].quantity += 1;
+                return { ...state, items: newItems };
+            } else {
+                const newItem = {
+                    cartItemId,
+                    productId: product.id,
+                    variantId: variant.id,
+                    name: `${product.name} (${variant.name})`,
+                    price: variant.price,
+                    image_url: product.image_url,
+                    quantity: 1,
+                };
+                return { ...state, items: [...state.items, newItem] };
+            }
+        }
+        case 'UPDATE_QUANTITY': {
+            const { cartItemId, change } = action.payload;
+            const itemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
+            if (itemIndex < 0) return state;
+
+            const newItems = [...state.items];
+            newItems[itemIndex].quantity += change;
+
+            if (newItems[itemIndex].quantity <= 0) {
+                return { ...state, items: newItems.filter(item => item.cartItemId !== cartItemId) };
+            }
+
+            return { ...state, items: newItems };
+        }
+        case 'REMOVE_ITEM': {
+            const { cartItemId } = action.payload;
+            return { ...state, items: state.items.filter(item => item.cartItemId !== cartItemId) };
+        }
+        case 'SET_CUSTOMER':
+            return { ...state, selectedCustomer: action.payload };
+        case 'SET_DISCOUNT':
+            return { ...state, appliedDiscount: action.payload };
+        case 'CLEAR_CART':
+            return cartInitialState;
+        default:
+            return state;
+    }
+}
+
 function PosPage() {
     const [products, setProducts] = useState([]);
-    const [cart, setCart] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [lastOrderId, setLastOrderId] = useState(null);
     const [isPostCheckoutOpen, setIsPostCheckoutOpen] = useState(false);
     const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
     const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
     const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
     const [isHeldCartsModalOpen, setIsHeldCartsModalOpen] = useState(false);
@@ -231,8 +291,11 @@ function PosPage() {
     const { activeShift, isLoadingShift, refreshShiftStatus } = useContext(ShiftContext);
     const [heldCarts, setHeldCarts] = useState(() => { const saved = localStorage.getItem('heldCarts'); return saved ? JSON.parse(saved) : []; });
     const [couponCode, setCouponCode] = useState('');
-    const [appliedDiscount, setAppliedDiscount] = useState(null);
     const [userRole, setUserRole] = useState(null);
+
+    const [cartState, dispatch] = useReducer(cartReducer, cartInitialState);
+    const { items: cart, selectedCustomer, appliedDiscount } = cartState;
+    const isOnline = useOnlineStatus();
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -300,23 +363,8 @@ function PosPage() {
     }, []);
 
     const addToCart = useCallback((product, variant) => {
-        const cartItemId = `${product.id}-${variant.id}`;
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        if (existingItem) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-        } else {
-            const newItem = {
-                cartItemId,
-                productId: product.id,
-                variantId: variant.id,
-                name: `${product.name} (${variant.name})`,
-                price: variant.price,
-                image_url: product.image_url,
-                quantity: 1,
-            };
-            setCart(prevCart => [...prevCart, newItem]);
-        }
-    }, [cart]);
+        dispatch({ type: 'ADD_ITEM', payload: { product, variant } });
+    }, []);
 
     const handleProductClick = useCallback((product) => {
         if (!product.variants || product.variants.length === 0) {
@@ -340,37 +388,20 @@ function PosPage() {
         setIsVariantModalOpen(false);
     };
 
-    const decreaseQuantity = (cartItemId) => {
-        const existingItem = cart.find((item) => item.cartItemId === cartItemId);
-        if (existingItem && existingItem.quantity > 1) {
-            setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item)));
-        } else {
-            removeFromCart(cartItemId);
-        }
-    };
-
-    const increaseQuantity = (cartItemId) => {
-        setCart(cart.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
-    };
-
-    const removeFromCart = (cartItemId) => {
-        setCart(cart.filter((item) => item.cartItemId !== cartItemId));
-    };
-
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return toast.warn("Masukkan kode promo.");
         try {
             const res = await validateCoupon(couponCode);
-            setAppliedDiscount(res.data);
+            dispatch({ type: 'SET_DISCOUNT', payload: res.data });
             toast.success(`Promo "${res.data.name}" berhasil diterapkan!`);
         } catch (error) {
-            setAppliedDiscount(null);
+            dispatch({ type: 'SET_DISCOUNT', payload: null });
             toast.error(error.response?.data?.message || "Gagal menerapkan promo.");
         }
     };
 
     const removeDiscount = () => {
-        setAppliedDiscount(null);
+        dispatch({ type: 'SET_DISCOUNT', payload: null });
         setCouponCode('');
         toast.info("Promo dibatalkan.");
     };
@@ -410,47 +441,70 @@ function PosPage() {
             shift_id: activeShift?.id || null, // Tambahkan shift_id ke order data
         };
 
-        try {
-            const res = await toast.promise(createOrder(orderData), {
-                pending: 'Memproses transaksi...',
-                success: 'Transaksi berhasil!',
-                error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
-            });
-            setLastOrderId(res.data.orderId);
-            setIsPostCheckoutModalOpen(true);
-            setIsCheckoutModalOpen(false);
-            setAppliedDiscount(null);
-            setCouponCode('');
-        } catch (err) {
-            console.error('Checkout error:', err);
+        if (isOnline) {
+            // --- LOGIKA SAAT ONLINE ---
+            try {
+                const res = await toast.promise(createOrder(orderData), {
+                    pending: 'Memproses transaksi...',
+                    success: 'Transaksi berhasil!',
+                    error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
+                });
+                setLastOrderId(res.data.orderId);
+                setIsPostCheckoutOpen(true);
+                setIsCheckoutModalOpen(false);
+                dispatch({ type: 'CLEAR_CART' });
+                setCouponCode('');
+            } catch (err) {
+                console.error('Checkout error:', err);
+                toast.error(err.response?.data?.message || 'Gagal checkout: Server error');
+            }
+        } else {
+            // --- LOGIKA BARU SAAT OFFLINE ---
+            try {
+                const offlineOrderData = {
+                    ...orderData,
+                    createdAt: new Date().toISOString(),
+                    syncStatus: 'pending' // Tambahkan status sinkronisasi
+                };
+                await addOfflineOrder(offlineOrderData);
+                toast.warn('Koneksi terputus. Transaksi disimpan lokal dan akan disinkronkan nanti.', { autoClose: 5000 });
+                dispatch({ type: 'CLEAR_CART' });
+                setIsCheckoutModalOpen(false);
+            } catch (error) {
+                console.error('Offline checkout error:', error);
+                toast.error('Gagal menyimpan transaksi offline.');
+            }
         }
     };
 
     const handleClosePostCheckoutModal = () => {
         setIsPostCheckoutOpen(false);
-        setCart([]);
-        setSelectedCustomer(null);
+        dispatch({ type: 'CLEAR_CART' });
     };
 
     const handleSelectCustomer = (customer) => {
-        setSelectedCustomer(customer);
+        dispatch({ type: 'SET_CUSTOMER', payload: customer });
         setIsCustomerModalOpen(false);
     };
 
     const handleHoldCart = () => {
         if (cart.length === 0) return;
-        const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer };
+        const newHeldCart = { id: new Date().toISOString(), items: cart, customer: selectedCustomer, discount: appliedDiscount };
         setHeldCarts((prev) => [...prev, newHeldCart]);
-        setCart([]);
-        setSelectedCustomer(null);
+        dispatch({ type: 'CLEAR_CART' });
+        setCouponCode('');
         toast.info('Keranjang berhasil ditahan.');
     };
 
     const handleResumeCart = (cartId) => {
         const cartToResume = heldCarts.find((c) => c.id === cartId);
         if (cartToResume) {
-            setCart(cartToResume.items);
-            setSelectedCustomer(cartToResume.customer);
+            dispatch({ type: 'SET_CUSTOMER', payload: cartToResume.customer });
+            dispatch({ type: 'SET_DISCOUNT', payload: cartToResume.discount });
+            // Mengatur kembali item di keranjang dengan dispatch
+            // Note: Metode ini mungkin perlu disesuaikan tergantung struktur `heldCarts.items`
+            dispatch({ type: 'RESTORE_ITEMS', payload: cartToResume.items });
+            
             setHeldCarts(heldCarts.filter((c) => c.id !== cartId));
             setIsHeldCartsModalOpen(false);
             toast.success('Keranjang berhasil dilanjutkan.');
@@ -512,7 +566,7 @@ function PosPage() {
                 {selectedCustomer ? (
                     <div>
                         <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{selectedCustomer.name}</span>
-                        <RemoveCustomerLink onClick={() => setSelectedCustomer(null)}>Hapus</RemoveCustomerLink>
+                        <RemoveCustomerLink onClick={() => dispatch({ type: 'SET_CUSTOMER', payload: null })}>Hapus</RemoveCustomerLink>
                     </div>
                 ) : (
                     <span>Pelanggan Umum</span>
@@ -534,15 +588,15 @@ function PosPage() {
                                 <CartItemPrice>Rp {new Intl.NumberFormat('id-ID').format(item.price)}</CartItemPrice>
                             </CartItemDetails>
                             <CartItemControls>
-                                <ControlButton onClick={() => decreaseQuantity(item.cartItemId)}>
+                                <ControlButton onClick={() => dispatch({ type: 'UPDATE_QUANTITY', payload: { cartItemId: item.cartItemId, change: -1 } })}>
                                     <FiMinus size={16} />
                                 </ControlButton>
                                 <QuantityDisplay>{item.quantity}</QuantityDisplay>
-                                <ControlButton onClick={() => increaseQuantity(item.cartItemId)}>
+                                <ControlButton onClick={() => dispatch({ type: 'UPDATE_QUANTITY', payload: { cartItemId: item.cartItemId, change: 1 } })}>
                                     <FiPlus size={16} />
                                 </ControlButton>
                             </CartItemControls>
-                            <RemoveItemButton onClick={() => removeFromCart(item.cartItemId)}>
+                            <RemoveItemButton onClick={() => dispatch({ type: 'REMOVE_ITEM', payload: { cartItemId: item.cartItemId } })}>
                                 <FiTrash2 size={18} />
                             </RemoveItemButton>
                         </CartItem>

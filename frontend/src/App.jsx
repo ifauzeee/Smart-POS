@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\App.jsx
-
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
@@ -46,11 +44,13 @@ import PurchaseOrderForm from './pages/PurchaseOrderForm';
 import PurchaseOrderDetailPage from './pages/PurchaseOrderDetailPage';
 import RawMaterialsPage from './pages/RawMaterialsPage';
 import RolesPage from './pages/RolesPage';
+import AdminRewardsPage from './pages/AdminRewardsPage';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
+import SyncManager from './components/SyncManager';
 
 // --- Global Styles for UI/UX Improvements ---
 const GlobalStyle = createGlobalStyle`
@@ -59,7 +59,7 @@ const GlobalStyle = createGlobalStyle`
         --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         
         /* Primary Colors */
-        --primary-color: #8E44AD; /* A slightly deeper purple */
+        --primary-color: #8E44AD;
         --primary-hover: #9B59B6;
         --primary-dark: #7D3C98;
 
@@ -78,21 +78,21 @@ const GlobalStyle = createGlobalStyle`
 
     body {
         /* Light Theme */
-        --bg-main: #F4F7FC; /* A softer off-white */
-        --bg-surface: #FFFFFF; /* Clean white for cards */
-        --border-color: #EAECEF; /* A softer border */
-        --text-primary: #2C3E50; /* A dark blue for main text */
-        --text-secondary: #808B96; /* A grey for secondary text */
+        --bg-main: #F4F7FC;
+        --bg-surface: #FFFFFF;
+        --border-color: #EAECEF;
+        --text-primary: #2C3E50;
+        --text-secondary: #808B96;
         --text-placeholder: #ABB2B9;
     }
 
     body[data-theme='dark'] {
         /* Dark Theme */
-        --bg-main: #171A21; /* A bluish-black */
-        --bg-surface: #232834; /* Dark grey for cards */
-        --border-color: #3A4151; /* A more contrasting border */
-        --text-primary: #FDFEFE; /* Clean white */
-        --text-secondary: #A6ACAF; /* Light grey */
+        --bg-main: #171A21;
+        --bg-surface: #232834;
+        --border-color: #3A4151;
+        --text-primary: #FDFEFE;
+        --text-secondary: #A6ACAF;
         --text-placeholder: #797D7F;
     }
 
@@ -228,6 +228,7 @@ function AppContent() {
             <BrowserRouter>
                 {/* A component that conditionally redirects mobile users */}
                 <MobileRedirectHandler />
+                <SyncManager />
 
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
@@ -273,6 +274,7 @@ function AppContent() {
                                 <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
                                 <Route path="/raw-materials" element={<RawMaterialsPage />} />
                                 <Route path="/roles" element={<RolesPage />} />
+                                <Route path="/rewards" element={<AdminRewardsPage />} />
                             </Route>
                         </Route>
                     </Route>
