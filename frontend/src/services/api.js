@@ -14,13 +14,13 @@ API.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.log(`Request: ${config.method.toUpperCase()} ${config.url}`);
         }
         return config;
     },
     (error) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.error(`Request error: ${error.config?.method.toUpperCase()} ${error.config?.url} - ${error.message}`);
         }
         return Promise.reject({ message: error.message, code: 'REQUEST_ERROR', status: null });
@@ -30,19 +30,19 @@ API.interceptors.request.use(
 // Response Interceptor
 API.interceptors.response.use(
     (response) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.log(`Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
         }
         return response;
     },
     (error) => {
-        if (import.meta.env.DEV) {
+        if (import.meta.env.DEV && import.meta.env.VITE_LOG_LEVEL === 'debug') {
             console.error(`Response error: ${error.response?.config?.method.toUpperCase()} ${error.response?.config?.url} - ${error.response?.status || 'No status'} - ${error.message}`);
         }
         const errorResponse = {
             message: 'An unexpected error occurred.',
             code: 'UNKNOWN',
-            status: null
+            status: null,
         };
         if (axios.isCancel(error)) {
             errorResponse.message = 'Request was canceled.';
@@ -51,9 +51,26 @@ API.interceptors.response.use(
             errorResponse.message = 'Connection timeout. Please ensure the backend is running and connected.';
             errorResponse.code = 'TIMEOUT';
         } else if (error.response) {
-            errorResponse.message = error.response.data?.message || 'Server error occurred.';
-            errorResponse.code = 'SERVER_ERROR';
             errorResponse.status = error.response.status;
+            switch (error.response.status) {
+                case 401:
+                    errorResponse.message = 'Unauthorized access. Please log in again.';
+                    errorResponse.code = 'UNAUTHORIZED';
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                    break;
+                case 403:
+                    errorResponse.message = 'Access forbidden. You lack the necessary permissions.';
+                    errorResponse.code = 'FORBIDDEN';
+                    break;
+                case 429:
+                    errorResponse.message = 'Too many requests. Please try again later.';
+                    errorResponse.code = 'RATE_LIMIT';
+                    break;
+                default:
+                    errorResponse.message = error.response.data?.message || 'Server error occurred.';
+                    errorResponse.code = 'SERVER_ERROR';
+            }
         } else if (error.request) {
             errorResponse.message = 'No response from server. The server may not be running.';
             errorResponse.code = 'NO_RESPONSE';
@@ -62,11 +79,21 @@ API.interceptors.response.use(
     }
 );
 
+/**
+ * Creates query parameters from an object, handling strings, numbers, dates, arrays, and nested objects.
+ * @param {Object} params - Parameters to convert to query string.
+ * @returns {string} - URL-encoded query string.
+ */
 const createQueryParams = (params = {}) => {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
-        if (value instanceof Date && !isNaN(value)) {
+        if (value === null || value === undefined) continue;
+        if (Array.isArray(value)) {
+            value.forEach((item) => searchParams.append(key, String(item)));
+        } else if (value instanceof Date && !isNaN(value)) {
             searchParams.append(key, value.toISOString());
+        } else if (typeof value === 'object') {
+            searchParams.append(key, JSON.stringify(value));
         } else if (typeof value === 'string' || typeof value === 'number') {
             searchParams.append(key, String(value));
         }
@@ -75,9 +102,27 @@ const createQueryParams = (params = {}) => {
 };
 
 // --- API Services ---
+/**
+ * Authenticates a user and returns a token.
+ * @param {Object} userData - { email: string, password: string }
+ * @returns {Promise} - Axios response with token.
+ */
 export const login = (userData) => API.post('/users/login', userData);
+
+/**
+ * Registers a new admin user.
+ * @param {Object} userData - { email: string, password: string, name: string, ... }
+ * @returns {Promise} - Axios response with user data.
+ */
 export const registerAdmin = (userData) => API.post('/users/register', userData);
-export const createUserByAdmin = (userData) => API.post('/users', userData);
+
+/**
+ * Creates a new user by admin.
+ * @param {Object} userData - { email: string, password: string, name: string, roleId: string, ... }
+ * @returns {Promise} - Axios response with user data.
+ */
+export const createUserByAdmin = (userData) => API.post('/users/create-by-admin', userData);
+
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);
 export const deleteUser = (id) => API.delete(`/users/${id}`);

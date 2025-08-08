@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PosPage.jsx
-
 import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { getProducts, createOrder, getOrderById, validateCoupon } from '../services/api';
@@ -419,7 +417,7 @@ function PosPage() {
                 error: (err) => `Gagal checkout: ${err.response?.data?.message || 'Server error'}`,
             });
             setLastOrderId(res.data.orderId);
-            setIsPostCheckoutOpen(true);
+            setIsPostCheckoutModalOpen(true);
             setIsCheckoutModalOpen(false);
             setAppliedDiscount(null);
             setCouponCode('');

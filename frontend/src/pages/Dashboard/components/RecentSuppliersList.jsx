@@ -1,19 +1,24 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\RecentSuppliersList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
+import Skeleton from 'react-loading-skeleton';
 
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
     border-radius: 24px;
     border: 1px solid var(--border-color);
-    grid-column: 1 / -1;
+    grid-column: span 1;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
+    @media (max-width: 1200px) {
+        grid-column: span 2;
+    }
+    @media (max-width: 768px) {
+        grid-column: 1 / -1;
+    }
 `;
 
 const ListTitle = styled.h3`
@@ -24,94 +29,73 @@ const ListTitle = styled.h3`
     display: flex;
     align-items: center;
     gap: 10px;
-    justify-content: center;
-    text-align: center;
 `;
 
 const List = styled.ul`
     list-style: none;
     padding: 0;
-    overflow-y: auto;
-    flex-grow: 1;
-    max-height: 350px;
+    margin: 0;
 `;
 
 const ListItem = styled.li`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 12px 20px;
+    background: var(--bg-primary);
     border-radius: 12px;
-    border: 1px solid var(--border-color);
     margin-bottom: 8px;
-    background-color: var(--bg-main);
-    transition: all 0.2s ease;
-
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
     &:hover {
-        background-color: var(--bg-hover, rgba(0, 0, 0, 0.02));
-        border-color: var(--primary-color, #007bff);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &:last-child {
-        margin-bottom: 0;
+        background-color: var(--bg-hover);
     }
 `;
 
 const ProductName = styled.span`
     font-weight: 500;
     color: var(--text-primary);
-    font-size: 0.95rem;
-    flex: 1;
-    min-width: 0;
+    max-width: 60%;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 `;
 
 const ItemValue = styled.span`
     color: var(--text-secondary);
-    font-weight: 600;
-    flex-shrink: 0;
-    margin-left: 15px;
     font-size: 0.9rem;
 `;
 
+const SkeletonContainer = styled.div`
+    margin-top: 10px;
+`;
+
 const EmptyStateContainer = styled.div`
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     text-align: center;
+    padding: 30px 20px;
     color: var(--text-secondary);
-    padding: 50px 20px;
-    gap: 15px;
 `;
 
 const EmptyStateIcon = styled.div`
-    color: var(--text-tertiary, #ccc);
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 `;
 
 const EmptyStateText = styled.p`
-    margin: 0;
     font-size: 1rem;
-    color: var(--text-secondary);
-`;
-
-const SkeletonContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    margin: 0;
 `;
 
 function RecentSuppliersList({ loading, recentSuppliers = [] }) {
     if (loading) {
         return (
             <ListContainer>
-                <ListTitle><FiIcons.FiTruck size={22} /> Pemasok Terbaru</ListTitle>
+                <ListTitle>
+                    <FiIcons.FiTruck size={22} /> Pemasok Terbaru
+                </ListTitle>
                 <SkeletonContainer>
                     {[...Array(5)].map((_, index) => (
                         <Skeleton
@@ -120,7 +104,7 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
                             height={60}
                             style={{
                                 marginBottom: '8px',
-                                borderRadius: '12px'
+                                borderRadius: '12px',
                             }}
                         />
                     ))}
@@ -130,13 +114,15 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
     }
     return (
         <ListContainer>
-            <ListTitle><FiIcons.FiTruck size={22} /> Pemasok Terbaru</ListTitle>
+            <ListTitle>
+                <FiIcons.FiTruck size={22} /> Pemasok Terbaru
+            </ListTitle>
             {recentSuppliers.length > 0 ? (
                 <List>
-                    {recentSuppliers.map(s => (
+                    {recentSuppliers.map((s) => (
                         <ListItem key={s.id}>
                             <ProductName>{s.name}</ProductName>
-                            <ItemValue>{new Date(s.created_at).toLocaleDateString('id-ID')}</ItemValue>
+                            <ItemValue>{new Date(s.created_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</ItemValue>
                         </ListItem>
                     ))}
                 </List>
@@ -145,9 +131,7 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
                     <EmptyStateIcon>
                         <FiIcons.FiTruck size={48} />
                     </EmptyStateIcon>
-                    <EmptyStateText>
-                        Belum ada data pemasok.
-                    </EmptyStateText>
+                    <EmptyStateText>Belum ada data pemasok.</EmptyStateText>
                 </EmptyStateContainer>
             )}
         </ListContainer>
@@ -156,7 +140,17 @@ function RecentSuppliersList({ loading, recentSuppliers = [] }) {
 
 RecentSuppliersList.propTypes = {
     loading: PropTypes.bool.isRequired,
-    recentSuppliers: PropTypes.array,
+    recentSuppliers: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+            name: PropTypes.string.isRequired,
+            created_at: PropTypes.string.isRequired,
+        }).isRequired
+    ),
 };
 
-export default RecentSuppliersList;
+RecentSuppliersList.defaultProps = {
+    recentSuppliers: [],
+};
+
+export default React.memo(RecentSuppliersList);

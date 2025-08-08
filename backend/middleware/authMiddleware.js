@@ -31,27 +31,3 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'Tidak ada token, otorisasi gagal.' });
     }
 };
-
-const isAdmin = (req, res, next) => {
-    // Menggunakan optional chaining (?.) untuk mencegah error jika req.user atau req.user.role tidak ada
-    if (req.user?.role?.toLowerCase() === 'admin') {
-        next();
-    } else {
-        return res.status(403).json({ 
-            message: "Akses ditolak. Memerlukan peran admin.",
-            receivedRole: req.user ? req.user.role : 'No role found' 
-        });
-    }
-};
-
-const hasPermission = (permission) => {
-    return (req, res, next) => {
-        if (req.user && req.user.permissions && req.user.permissions.includes(permission)) {
-            next();
-        } else {
-            return res.status(403).json({ message: 'Akses ditolak. Anda tidak memiliki izin yang diperlukan.' });
-        }
-    };
-};
-
-module.exports = { protect, isAdmin, hasPermission };

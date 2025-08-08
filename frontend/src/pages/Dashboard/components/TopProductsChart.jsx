@@ -1,6 +1,6 @@
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\TopProductsChart.jsx
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
@@ -45,47 +45,58 @@ const getColor = (index) => {
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length && label) {
-        return (
-            <div style={{
+    if (!active || !payload?.length || !label || !payload[0]?.value) {
+        return null;
+    }
+    return (
+        <div
+            style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '8px',
                 padding: '10px',
                 fontSize: '0.9rem',
                 color: 'var(--text-primary)',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>{label}</p>
-                <p style={{ color: 'var(--primary-color)', margin: 0 }}>
-                    Terjual: <span style={{ fontWeight: '600' }}>{payload[0].value} unit</span>
-                </p>
-            </div>
-        );
-    }
-    return null;
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            }}
+        >
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>{label}</p>
+            <p style={{ color: 'var(--primary-color)', margin: 0 }}>
+                Terjual: <span style={{ fontWeight: '600' }}>{payload[0].value} unit</span>
+            </p>
+        </div>
+    );
 };
 
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
-    payload: PropTypes.array,
+    payload: PropTypes.arrayOf(
+        PropTypes.shape({
+            value: PropTypes.number.isRequired,
+        })
+    ),
     label: PropTypes.string,
 };
 
 function TopProductsChart({ loading, data = [] }) {
+    // Tambahkan logging untuk debug data
+    console.log('TopProductsChart data:', data);
+
     if (loading) {
         return (
             <ChartContainer>
-                <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk</ChartTitle>
+                <ChartTitle>
+                    <FiTrendingUp size={22} /> Performa Penjualan Produk
+                </ChartTitle>
                 <Skeleton height={300} />
             </ChartContainer>
         );
     }
 
-    const formattedData = React.useMemo(() => {
+    const formattedData = useMemo(() => {
         return data.map(item => ({
             ...item,
-            shortName: item.name.length > 25 ? `${item.name.substring(0, Math.floor(window.innerWidth / 100))}...` : item.name,
+            shortName: item.name || 'Produk Tidak Diketahui',
         }));
     }, [data]);
 
@@ -93,7 +104,9 @@ function TopProductsChart({ loading, data = [] }) {
 
     return (
         <ChartContainer>
-            <ChartTitle><FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)</ChartTitle>
+            <ChartTitle>
+                <FiTrendingUp size={22} /> Performa Penjualan Produk (Unit Terjual)
+            </ChartTitle>
             {top10Data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={top10Data} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -102,10 +115,10 @@ function TopProductsChart({ loading, data = [] }) {
                         <YAxis
                             dataKey="shortName"
                             type="category"
-                            width={180}
-                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
+                            width={200}
                             tickLine={false}
                             axisLine={false}
+                            tick={{ fill: 'var(--text-primary)', fontSize: 12 }}
                         />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(204, 204, 204, 0.2)' }} />
                         <Bar dataKey="totalSold" name="Unit Terjual" barSize={20} radius={[0, 10, 10, 0]}>
@@ -129,14 +142,14 @@ TopProductsChart.propTypes = {
     loading: PropTypes.bool.isRequired,
     data: PropTypes.arrayOf(
         PropTypes.shape({
-            name: PropTypes.string.isRequired,
-            totalSold: PropTypes.number.isRequired
+            name: PropTypes.string,
+            totalSold: PropTypes.number.isRequired,
         })
-    )
+    ),
 };
 
 TopProductsChart.defaultProps = {
-    data: []
+    data: [],
 };
 
 export default React.memo(TopProductsChart);

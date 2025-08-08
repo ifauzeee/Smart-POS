@@ -1,6 +1,6 @@
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\StatCardGrid.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
@@ -48,21 +48,45 @@ const ExpandButton = styled.button`
     &:hover { background-color: var(--primary-color); color: white; }
 `;
 
+/**
+ * Calculates the percentage change between current and previous values.
+ * @param {number|null|undefined} current - Current value.
+ * @param {number|null|undefined} previous - Previous value.
+ * @returns {number|null} - Percentage change or null if invalid.
+ */
 const calculatePercentageChange = (current, previous) => {
-    if (typeof current !== 'number' || typeof previous !== 'number' || previous === 0) return null;
+    if (
+        current === null ||
+        current === undefined ||
+        previous === null ||
+        previous === undefined ||
+        typeof current !== 'number' ||
+        typeof previous !== 'number' ||
+        previous === 0
+    ) {
+        return null;
+    }
     return ((current - previous) / previous) * 100;
 };
 
-const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood = true }) => {
-    let chip = null;
-    if (comparisonChange !== null && isFinite(comparisonChange)) {
+const StatCard = React.memo(({ icon, value, label, color, comparisonChange, positiveIsGood = true }) => {
+    const chip = useMemo(() => {
+        if (comparisonChange === null || !isFinite(comparisonChange)) {
+            return null;
+        }
         const isPositive = comparisonChange >= 0;
         const isGood = positiveIsGood ? isPositive : !isPositive;
         const displayValue = `${isPositive ? '+' : ''}${comparisonChange.toFixed(1)}%`;
         const chipColor = isGood ? 'var(--green-color)' : 'var(--red-color)';
         const chipIcon = isPositive ? <FiArrowUp size={12} /> : <FiArrowDown size={12} />;
-        chip = <ComparisonChip color={chipColor}>{chipIcon}{displayValue}</ComparisonChip>;
-    }
+        return (
+            <ComparisonChip color={chipColor}>
+                {chipIcon}
+                {displayValue}
+            </ComparisonChip>
+        );
+    }, [comparisonChange, positiveIsGood]);
+
     return (
         <Card>
             <StatIcon color={color}>{icon}</StatIcon>
@@ -73,7 +97,7 @@ const StatCard = ({ icon, value, label, color, comparisonChange, positiveIsGood 
             </StatInfo>
         </Card>
     );
-};
+});
 
 StatCard.propTypes = {
     icon: PropTypes.node.isRequired,
@@ -81,7 +105,7 @@ StatCard.propTypes = {
     label: PropTypes.string.isRequired,
     color: PropTypes.string.isRequired,
     comparisonChange: PropTypes.number,
-    positiveIsGood: PropTypes.bool
+    positiveIsGood: PropTypes.bool,
 };
 
 const StatCardSkeleton = () => (
@@ -108,11 +132,12 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
         );
     }
 
+    const formatCurrency = (val) => `Rp ${new Intl.NumberFormat('id-ID').format(val || 0)}`;
+
     const revenueChange = calculatePercentageChange(stats.totalRevenue, previousStats?.totalRevenue);
     const transactionsChange = calculatePercentageChange(stats.totalTransactions, previousStats?.totalTransactions);
     const profitChange = calculatePercentageChange(stats.totalProfit, previousStats?.totalProfit);
     const expensesChange = calculatePercentageChange(stats.totalExpenses, previousStats?.totalExpenses);
-    const formatCurrency = (val) => `Rp ${new Intl.NumberFormat('id-ID').format(val || 0)}`;
 
     return (
         <GridContainer>
@@ -173,7 +198,7 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
                     />
                     <StatCard
                         icon={<FiUserCheck size={28} />}
-                        value={userName}
+                        value={userName || 'Unknown'}
                         label="Kasir Aktif"
                         color="#20c997"
                     />
@@ -203,21 +228,34 @@ StatCardGrid.propTypes = {
         cashInDrawer: PropTypes.number,
         totalSoldUnits: PropTypes.number,
         newCustomers: PropTypes.number,
-        totalExpenses: PropTypes.number
-    }),
+        totalExpenses: PropTypes.number,
+    }).isRequired,
     previousStats: PropTypes.shape({
         totalRevenue: PropTypes.number,
         totalTransactions: PropTypes.number,
         totalProfit: PropTypes.number,
-        totalExpenses: PropTypes.number
+        totalExpenses: PropTypes.number,
     }),
-    userName: PropTypes.string
+    userName: PropTypes.string,
 };
 
 StatCardGrid.defaultProps = {
-    stats: {},
-    previousStats: {},
-    userName: ''
+    stats: {
+        totalRevenue: 0,
+        totalTransactions: 0,
+        totalProfit: 0,
+        cashInDrawer: 0,
+        totalSoldUnits: 0,
+        newCustomers: 0,
+        totalExpenses: 0,
+    },
+    previousStats: {
+        totalRevenue: 0,
+        totalTransactions: 0,
+        totalProfit: 0,
+        totalExpenses: 0,
+    },
+    userName: '',
 };
 
 export default StatCardGrid;

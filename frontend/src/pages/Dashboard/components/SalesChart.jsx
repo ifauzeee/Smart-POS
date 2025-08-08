@@ -49,38 +49,57 @@ const getColor = (index) => {
 };
 
 const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('id-ID');
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date)) {
+            return 'Tanggal Tidak Valid';
+        }
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+        });
+    } catch {
+        return 'Tanggal Tidak Valid';
+    }
 };
 
 const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length && label) {
-        return (
-            <div style={{
+    if (!active || !payload?.length || !label) {
+        return null;
+    }
+    return (
+        <div
+            style={{
                 backgroundColor: 'var(--bg-surface)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '8px',
                 padding: '10px',
                 fontSize: '0.9rem',
                 color: 'var(--text-primary)',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-            }}>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>
-                    {formatDate(label)}
+                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+            }}
+        >
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '5px', fontWeight: '500' }}>
+                {formatDate(label)}
+            </p>
+            {payload.map((entry, index) => (
+                <p key={index} style={{ color: getColor(index), margin: 0 }}>
+                    {entry.name}: <span style={{ fontWeight: '600' }}>{formatRupiah(entry.value || 0)}</span>
                 </p>
-                {payload.map((entry, index) => (
-                    <p key={index} style={{ color: getColor(index), margin: 0 }}>
-                        {entry.name}: <span style={{ fontWeight: '600' }}>{formatRupiah(entry.value)}</span>
-                    </p>
-                ))}
-            </div>
-        );
-    }
-    return null;
+            ))}
+        </div>
+    );
 };
 
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
-    payload: PropTypes.array,
+    payload: PropTypes.arrayOf(
+        PropTypes.shape({
+            name: PropTypes.string.isRequired,
+            value: PropTypes.number.isRequired,
+        })
+    ),
     label: PropTypes.string,
 };
 
@@ -88,7 +107,9 @@ function SalesChart({ loading, data = [] }) {
     if (loading) {
         return (
             <ChartContainer>
-                <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
+                <ChartTitle>
+                    <FiDollarSign size={22} /> Penjualan Harian
+                </ChartTitle>
                 <Skeleton height={300} />
             </ChartContainer>
         );
@@ -96,7 +117,9 @@ function SalesChart({ loading, data = [] }) {
 
     return (
         <ChartContainer>
-            <ChartTitle><FiDollarSign size={22} /> Penjualan Harian</ChartTitle>
+            <ChartTitle>
+                <FiDollarSign size={22} /> Penjualan Harian
+            </ChartTitle>
             {data.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                     <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -138,13 +161,13 @@ SalesChart.propTypes = {
         PropTypes.shape({
             date: PropTypes.string.isRequired,
             revenue: PropTypes.number.isRequired,
-            profit: PropTypes.number.isRequired
-        })
-    )
+            profit: PropTypes.number.isRequired,
+        }).isRequired
+    ),
 };
 
 SalesChart.defaultProps = {
-    data: []
+    data: [],
 };
 
-export default SalesChart;
+export default React.memo(SalesChart);

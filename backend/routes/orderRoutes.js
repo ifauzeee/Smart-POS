@@ -33,6 +33,9 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
 
         // Langkah 1: SELALU periksa dan kurangi/tambah stok produk jadi
         const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
+        if (!product) {
+            throw new Error(`Produk dengan ID ${productId} tidak ditemukan.`);
+        }
         if (factor > 0 && product.stock < item.quantity) {
             throw new Error(`Stok untuk produk "${product.name}" tidak mencukupi.`);
         }
@@ -45,6 +48,9 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
         if (recipeItems.length > 0) {
             for (const recipeItem of recipeItems) {
                 const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
+                if (!material) {
+                    throw new Error(`Bahan baku dengan ID ${recipeItem.raw_material_id} tidak ditemukan.`);
+                }
                 const requiredQuantity = recipeItem.quantity_used * item.quantity;
                 if (factor > 0 && material.stock_quantity < requiredQuantity) {
                     throw new Error(`Stok bahan baku "${material.name}" tidak cukup untuk membuat ${product.name}. Butuh ${requiredQuantity} ${material.unit}, tersedia ${material.stock_quantity} ${material.unit}.`);
@@ -65,12 +71,6 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
  * @route   POST /api/orders
  * @desc    Membuat pesanan baru
  * @access  Private
- *
- * @comment
- * Menggunakan handleStockUpdate dua kali:
- * 1. Mode `validateOnly=true` untuk memeriksa ketersediaan stok produk dan bahan baku sebelum memulai transaksi.
- * 2. Mode `validateOnly=false` untuk benar-benar mengurangi stok setelah semua data pesanan berhasil dimasukkan ke database.
- * Ini memastikan transaksi hanya berjalan jika stok mencukupi.
  */
 router.post('/', protect, async (req, res) => {
     const { items, customer_id, payment_method, amount_paid, subtotal_amount, tax_amount, total_amount, promotion_id, discount_amount } = req.body;
@@ -186,11 +186,6 @@ router.get('/:id', protect, async (req, res) => {
  * @route   DELETE /api/orders/clear-history
  * @desc    Menghapus semua riwayat transaksi (hard reset)
  * @access  Private (hanya untuk Admin)
- *
- * @comment
- * Endpoint ini melakukan "hard reset" untuk riwayat transaksi,
- * termasuk menghapus log poin dan mengembalikan `AUTO_INCREMENT`.
- * Ini merupakan operasi berbahaya dan hanya bisa diakses oleh Admin.
  */
 router.delete('/clear-history', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
@@ -226,12 +221,6 @@ router.delete('/clear-history', protect, isAdmin, async (req, res) => {
  * @route   DELETE /api/orders/:id
  * @desc    Menghapus pesanan tunggal dan mengembalikan stok/poin
  * @access  Private (hanya untuk Admin)
- *
- * @comment
- * Ini adalah perbaikan penting untuk endpoint pembatalan pesanan.
- * Menggunakan `handleStockUpdate` dengan `factor = -1` untuk mengembalikan
- * stok produk dan bahan baku. Poin pelanggan juga dikembalikan dengan
- * mencatat log poin negatif.
  */
 router.delete('/:id', protect, isAdmin, async (req, res) => {
     const connection = await db.getConnection();
