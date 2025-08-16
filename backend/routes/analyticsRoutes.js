@@ -108,7 +108,7 @@ router.get('/daily-revenue-profit', protect, isAdmin, async (req, res) => {
             SELECT
                 d.date,
                 CAST(COALESCE(SUM(o.total_amount), 0) AS DECIMAL(15,2)) as revenue,
-                CAST(COALESCE(SUM(oi.price * oi.quantity) - SUM(oi.cost_price * oi.quantity), 0) AS DECIMAL(15,2)) as profit
+                CAST(COALESCE(SUM(oi.price * oi.quantity) - SUM(COALESCE(oi.cost_price, 0) * oi.quantity), 0) AS DECIMAL(15,2)) as profit
             FROM dates d
             LEFT JOIN orders o ON DATE(o.created_at) = d.date AND o.business_id = ?
             LEFT JOIN order_items oi ON oi.order_id = o.id
@@ -184,10 +184,16 @@ router.get('/top-products', protect, isAdmin, async (req, res) => {
             WHERE p.business_id = ? AND p.is_archived = 0
             GROUP BY p.id, p.name
             ORDER BY totalSold DESC
-            LIMIT 5
+            LIMIT 10
         `;
         const [topProducts] = await db.query(topProductsQuery, [startDate, endDate, businessId]);
-        res.json(topProducts);
+        
+        const formattedTopProducts = topProducts.map(product => ({
+            ...product,
+            totalSold: Number(product.totalSold)
+        }));
+        
+        res.json(formattedTopProducts);
     } catch (error) {
         console.error("Error fetching top products:", error);
         res.status(500).json({ message: "Failed to fetch top products data." });
@@ -220,12 +226,10 @@ router.get('/product-sales-performance', protect, isAdmin, async (req, res) => {
     }
 });
 
-// --- PERBAIKAN DI SINI ---
 router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
     try {
         const { startDate, endDate } = getValidDateRange(req.query.startDate, req.query.endDate);
         const businessId = req.user.business_id;
-        // Kueri diperbarui untuk hanya mengambil pengguna yang aktif (is_active = 1)
         const query = `
             SELECT
                 u.id, 
@@ -250,7 +254,6 @@ router.get('/cashier-performance', protect, isAdmin, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch cashier performance." });
     }
 });
-// --- AKHIR PERBAIKAN ---
 
 router.get('/notifications', protect, isAdmin, async (req, res) => {
     try {
@@ -366,7 +369,14 @@ router.get('/top-customers', protect, isAdmin, async (req, res) => {
             LIMIT 5;
         `;
         const [topCustomers] = await db.query(query, [startDate, endDate, businessId]);
-        res.json(topCustomers);
+        
+        const formattedTopCustomers = topCustomers.map(customer => ({
+            ...customer,
+            totalSpent: Number(customer.totalSpent),
+            totalOrders: Number(customer.totalOrders)
+        }));
+
+        res.json(formattedTopCustomers);
     } catch (error) {
         console.error("Error fetching top customers:", error);
         res.status(500).json({ message: "Failed to fetch top customers data." });

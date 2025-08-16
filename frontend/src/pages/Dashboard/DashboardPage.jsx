@@ -74,44 +74,48 @@ function DashboardPage() {
     const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 29)));
     const [endDate, setEndDate] = useState(new Date());
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [
-                statsData, revenueTargetData, dailyRevenueProfitData, topCustomersData, stockInfoData,
-                staleProductsData, expiredProductsData, cashierPerformanceData,
-                notificationsData, insightsData, topProductsData
-            ] = await Promise.all([
-                getStats(startDate, endDate),
-                getRevenueTarget(),
-                getDailyRevenueProfit(startDate, endDate),
-                getTopCustomers(startDate, endDate),
-                getStockInfo(),
-                getStaleProducts(),
-                getExpiredProducts(),
-                getCashierPerformance(startDate, endDate),
-                getNotifications(),
-                getInsights(startDate, endDate),
-                getTopProducts(startDate, endDate),
-            ]);
-            setDashboardData({
-                stats: statsData.data,
-                dailyRevenueProfit: dailyRevenueProfitData.data,
-                topCustomers: topCustomersData.data,
-                stockInfo: stockInfoData.data,
-                staleProducts: staleProductsData.data,
-                expiredProducts: expiredProductsData.data,
-                cashierPerformance: cashierPerformanceData.data,
-                notifications: notificationsData.data,
-                insights: insightsData.data,
-                topProducts: topProductsData.data,
-            });
-            setRevenueTarget(revenueTargetData.data.monthly_revenue_target);
-        } catch (error) {
-            toast.error("Gagal memuat data dashboard.");
-        } finally {
-            setLoading(false);
-        }
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [
+                    statsData, revenueTargetData, dailyRevenueProfitData, topCustomersData, stockInfoData,
+                    staleProductsData, expiredProductsData, cashierPerformanceData,
+                    notificationsData, insightsData, topProductsData
+                ] = await Promise.all([
+                    getStats(startDate, endDate),
+                    getRevenueTarget(),
+                    getDailyRevenueProfit(startDate, endDate),
+                    getTopCustomers(startDate, endDate),
+                    getStockInfo(),
+                    getStaleProducts(),
+                    getExpiredProducts(),
+                    getCashierPerformance(startDate, endDate),
+                    getNotifications(),
+                    getInsights(startDate, endDate),
+                    getTopProducts(startDate, endDate),
+                ]);
+                setDashboardData({
+                    stats: statsData.data,
+                    dailyRevenueProfit: dailyRevenueProfitData.data,
+                    topCustomers: topCustomersData.data,
+                    stockInfo: stockInfoData.data,
+                    staleProducts: staleProductsData.data,
+                    expiredProducts: expiredProductsData.data,
+                    cashierPerformance: cashierPerformanceData.data,
+                    notifications: notificationsData.data,
+                    insights: insightsData.data,
+                    topProducts: topProductsData.data,
+                });
+                setRevenueTarget(revenueTargetData.data.monthly_revenue_target);
+            } catch (error) {
+                toast.error("Gagal memuat data dashboard.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchData();
     }, [startDate, endDate]);
 
     useEffect(() => {
@@ -120,12 +124,8 @@ function DashboardPage() {
         if (token) setUserName(jwtDecode(token).name || 'Kasir');
         return () => clearInterval(timer);
     }, []);
-    
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
 
-    const handlePrepareDailyReport = () => {
+    const handlePrepareDailyReport = useCallback(() => {
         const reportPayload = {
             startDate,
             endDate,
@@ -134,14 +134,13 @@ function DashboardPage() {
         };
         setDailyReportData(reportPayload);
         toast.info("Laporan harian siap, klik 'Cetak Laporan' untuk mencetak.");
-    };
+    }, [startDate, endDate, dashboardData]);
 
     const handleManualPrint = useReactToPrint({ 
         content: () => reportRef.current,
         documentTitle: `Laporan-Harian-${new Date().toISOString().slice(0, 10)}`
     });
     
-    // ✅ PERBAIKAN: Pisahkan logic untuk memastikan state `dailyReportData` sudah ter-update sebelum mencetak.
     useEffect(() => {
         if (dailyReportData) {
             handleManualPrint();
@@ -168,7 +167,10 @@ function DashboardPage() {
                     <motion.div variants={itemVariants} style={{ gridColumn: '1 / -1' }}>
                         <DashboardHeader
                             currentTime={currentTime}
-                            onRefresh={fetchData}
+                            onRefresh={() => {
+                                setStartDate(new Date(startDate));
+                                setEndDate(new Date(endDate));
+                            }}
                             onPrint={handlePrepareDailyReport}
                             onManualPrint={handleManualPrint}
                             activeShift={activeShift}

@@ -3,8 +3,9 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const rateLimit = require('express-rate-limit'); // Tambah: Express Rate Limit
 
-const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173'];
+const allowedOrigins = [process.env.FRONTEND_URL];
 const corsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
@@ -23,6 +24,20 @@ const app = express();
 
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
+
+// Konfigurasi Rate Limiter untuk mencegah brute-force attacks
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 menit
+    max: 100, // maks 100 request per IP per windowMs
+    message: "Terlalu banyak permintaan dari IP ini, silakan coba lagi setelah 15 menit."
+});
+
+// Gunakan rate limiter pada semua rute API
+app.use('/api/', apiLimiter);
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Impor semua rute aplikasi
 const userRoutes = require('./routes/userRoutes');
@@ -44,10 +59,6 @@ const rawMaterialRoutes = require('./routes/rawMaterialRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const rewardsRoutes = require('./routes/rewardsRoutes');
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 // Pendaftaran semua rute
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
@@ -67,6 +78,7 @@ app.use('/api/raw-materials', rawMaterialRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/rewards', rewardsRoutes);
+
 
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 

@@ -1,58 +1,41 @@
-# =======================
-# Dependencies
-# =======================
-/node_modules/
-frontend/node_modules/
-backend/node_modules/
+# Ketergantungan dan Paket
+node_modules/
+/frontend/node_modules
+/backend/node_modules
 
-# =======================
-# Build Output
-# =======================
-/frontend/dist/
-/backend/build/
-dist/
-build/
-.vite/
-.cache/
+# File Build & Output
+/frontend/dist
+/frontend/build
+/backend/exports
+/backend/uploads
 
-# =======================
-# Log Files
-# =======================
+# File Log
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# =======================
-# Environment Variables
-# =======================
+# File Konfigurasi Lingkungan (SANGAT PENTING!)
 .env
 .env.*
-!example.env
-!backend/example.env
+!.env.example
 
-# =======================
-# IDE / Editor Settings
-# =======================
-.vscode/
-.idea/
-
-# =======================
-# OS Generated Files
-# =======================
+# File Sistem Operasi
 .DS_Store
 Thumbs.db
 
-# =======================
-# Backup / Dump Files
-# =======================
-*.sql
-*.bak
-*.dump
-*.zip
-*.tar.gz
+# File Editor & IDE
+.vscode/
+.idea/
 
-# =======================
-# Vendor (jika ada Composer/Laravel)
-# =======================
-/vendor/
+# File Cache & Temporary
+.npm
+.eslintcache
+.vite-node-sourcemap-cache
+.cache
+
+# Laporan Vitest/Testing
+/coverage

@@ -44,7 +44,7 @@ const getColor = (index) => {
     return colors[index % colors.length];
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = React.memo(({ active, payload, label }) => {
     if (!active || !payload?.length || !label || !payload[0]?.value) {
         return null;
     }
@@ -66,7 +66,7 @@ const CustomTooltip = ({ active, payload, label }) => {
             </p>
         </div>
     );
-};
+});
 
 CustomTooltip.propTypes = {
     active: PropTypes.bool,
@@ -77,11 +77,9 @@ CustomTooltip.propTypes = {
     ),
     label: PropTypes.string,
 };
+CustomTooltip.displayName = 'CustomTooltip';
 
 function TopProductsChart({ loading, data = [] }) {
-    // Tambahkan logging untuk debug data
-    console.log('TopProductsChart data:', data);
-
     if (loading) {
         return (
             <ChartContainer>
@@ -146,10 +144,6 @@ TopProductsChart.propTypes = {
             totalSold: PropTypes.number.isRequired,
         })
     ),
-};
-
-TopProductsChart.defaultProps = {
-    data: [],
 };
 
 export default React.memo(TopProductsChart);

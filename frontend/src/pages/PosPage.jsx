@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PosPage.jsx
+
 import React, { useState, useEffect, useContext, useRef, useCallback, useReducer } from 'react';
 import styled from 'styled-components';
 import { getProducts, createOrder, getOrderById, validateCoupon } from '../services/api';
@@ -21,7 +23,7 @@ import { jwtDecode } from 'jwt-decode';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { addOfflineOrder } from '../utils/offlineDb';
 
-// --- Styled Components dengan Desain Baru ---
+// --- Styled Components (dengan perbaikan pada ProductCard dan ProductInfo) ---
 const PageGrid = styled.div`
     display: grid;
     grid-template-columns: 1fr 420px;
@@ -30,7 +32,6 @@ const PageGrid = styled.div`
     height: 100%;
     padding: 30px;
     overflow: hidden;
-
     @media (max-width: 1024px) {
         grid-template-columns: 1fr;
         height: auto;
@@ -89,9 +90,7 @@ const ProductGrid = styled(motion.div)`
     }
 `;
 
-// =================================================================
-// PERBAIKAN TOTAL PADA KARTU PRODUK UNTUK VISIBILITAS TEKS
-// =================================================================
+// --- PERBAIKAN UI/UX DIMULAI DI SINI ---
 const ProductCard = styled(motion.div)`
     border-radius: 12px;
     border: 1px solid var(--border-color);
@@ -100,13 +99,13 @@ const ProductCard = styled(motion.div)`
     cursor: ${(props) => (props.$disabled ? 'not-allowed' : 'pointer')};
     opacity: ${(props) => (props.$disabled ? 0.9 : 1)};
     transition: all 0.2s ease-in-out;
-    aspect-ratio: 1 / 1; // Memastikan kartu selalu persegi
+    aspect-ratio: 1 / 1;
     background-image: url(${(props) => props.src});
     background-size: cover;
     background-position: center;
-    display: flex; // Menggunakan flex untuk menata info di bagian bawah
+    display: flex;
     flex-direction: column;
-    justify-content: flex-end; // Mendorong info ke bawah
+    justify-content: flex-end;
 
     &:hover:not([disabled]) {
         transform: translateY(-5px) scale(1.03);
@@ -118,10 +117,11 @@ const ProductInfo = styled.div`
     padding: 20px 15px 15px 15px;
     text-align: left;
     width: 100%;
-    color: #FFFFFF; // Warna teks dibuat putih agar kontras
-    // Gradien dari transparan ke hitam untuk latar belakang teks
+    color: #FFFFFF; // Teks putih untuk kontras
+    // Gradien untuk memastikan teks mudah dibaca di atas gambar apapun
     background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
 `;
+// --- AKHIR PERBAIKAN UI/UX ---
 
 const ProductName = styled.h4`
     margin: 0;
@@ -129,7 +129,7 @@ const ProductName = styled.h4`
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; // Potong teks jika terlalu panjang
+    text-overflow: ellipsis;
 `;
 
 const ProductPrice = styled.p`
@@ -137,9 +137,6 @@ const ProductPrice = styled.p`
     font-weight: 500;
     font-size: 0.85rem;
 `;
-// =================================================================
-// AKHIR PERBAIKAN KARTU
-// =================================================================
 
 const CartPanel = styled(motion.aside)`
     background-color: var(--bg-surface);
@@ -215,7 +212,6 @@ const getPriceDisplay = (variants) => {
     }
     return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
 };
-
 // --- useReducer setup ---
 const cartInitialState = {
     items: [],
@@ -269,6 +265,10 @@ function cartReducer(state, action) {
             return { ...state, selectedCustomer: action.payload };
         case 'SET_DISCOUNT':
             return { ...state, appliedDiscount: action.payload };
+        // --- PERBAIKAN: Menambahkan case untuk RESTORE_ITEMS ---
+        case 'RESTORE_ITEMS':
+            return { ...state, items: action.payload };
+        // --- AKHIR PERBAIKAN ---
         case 'CLEAR_CART':
             return cartInitialState;
         default:
@@ -501,8 +501,7 @@ function PosPage() {
         if (cartToResume) {
             dispatch({ type: 'SET_CUSTOMER', payload: cartToResume.customer });
             dispatch({ type: 'SET_DISCOUNT', payload: cartToResume.discount });
-            // Mengatur kembali item di keranjang dengan dispatch
-            // Note: Metode ini mungkin perlu disesuaikan tergantung struktur `heldCarts.items`
+            // --- PERBAIKAN: Gunakan dispatch untuk memulihkan item ---
             dispatch({ type: 'RESTORE_ITEMS', payload: cartToResume.items });
             
             setHeldCarts(heldCarts.filter((c) => c.id !== cartId));

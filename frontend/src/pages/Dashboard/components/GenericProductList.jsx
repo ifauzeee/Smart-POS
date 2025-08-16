@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\GenericProductList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
@@ -5,7 +7,6 @@ import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
 
-// Styled Components
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
@@ -58,7 +59,7 @@ const ItemValue = styled.span`
     font-size: 0.9rem;
     color: var(--text-secondary);
     font-weight: 400;
-    ${({ stockColor }) => stockColor && `color: ${stockColor};`}
+    ${({ $stockColor }) => $stockColor && `color: ${$stockColor};`}
 `;
 
 const ProductImage = styled.img`
@@ -114,7 +115,6 @@ const SkeletonContainer = styled.div`
     }
 `;
 
-// Component
 function GenericProductList({
     loading,
     items = [],
@@ -151,45 +151,17 @@ function GenericProductList({
                             {renderItemLink ? (
                                 <Link to={renderItemLink(item)} style={{ textDecoration: 'none', flex: 1 }}>
                                     <ProductName>
-                                        {showImage && (
-                                            item.image_url ? (
-                                                <ProductImage
-                                                    src={item.image_url}
-                                                    alt={item.name}
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                        if (e.target.nextSibling) {
-                                                            e.target.nextSibling.style.display = 'flex';
-                                                        }
-                                                    }}
-                                                />
-                                            ) : null
-                                        )}
-                                        {showImage && !item.image_url && <PlaceholderImage>No Image</PlaceholderImage>}
+                                        {showImage && (item.image_url ? <ProductImage src={item.image_url} alt={item.name} /> : <PlaceholderImage>No Img</PlaceholderImage>)}
                                         {item.name}
                                     </ProductName>
                                 </Link>
                             ) : (
                                 <ProductName>
-                                    {showImage && (
-                                        item.image_url ? (
-                                            <ProductImage
-                                                src={item.image_url}
-                                                alt={item.name}
-                                                onError={(e) => {
-                                                    e.target.style.display = 'none';
-                                                    if (e.target.nextSibling) {
-                                                        e.target.nextSibling.style.display = 'flex';
-                                                    }
-                                                }}
-                                            />
-                                        ) : null
-                                    )}
-                                    {showImage && !item.image_url && <PlaceholderImage>No Image</PlaceholderImage>}
+                                    {showImage && (item.image_url ? <ProductImage src={item.image_url} alt={item.name} /> : <PlaceholderImage>No Img</PlaceholderImage>)}
                                     {item.name}
                                 </ProductName>
                             )}
-                            <ItemValue stockColor={getStockColor?.(item.stock)}>
+                            <ItemValue $stockColor={getStockColor?.(item.stock)}>
                                 {renderItemValue(item)}
                             </ItemValue>
                         </ListItem>
@@ -205,7 +177,6 @@ function GenericProductList({
     );
 }
 
-// PropTypes
 GenericProductList.propTypes = {
     loading: PropTypes.bool.isRequired,
     items: PropTypes.arrayOf(
@@ -223,11 +194,6 @@ GenericProductList.propTypes = {
     emptyMessage: PropTypes.string.isRequired,
     showImage: PropTypes.bool,
     getStockColor: PropTypes.func,
-};
-
-GenericProductList.defaultProps = {
-    items: [],
-    showImage: false,
 };
 
 export default GenericProductList;

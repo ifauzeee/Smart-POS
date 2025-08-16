@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\CustomerPage.jsx
+
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +11,7 @@ import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import PageWrapper from '../components/PageWrapper'; 
 
-// --- Styled Components ---
+// --- Styled Components (dengan perbaikan pada PageHeader) ---
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -17,21 +19,20 @@ const PageContainer = styled.div`
     flex-direction: column;
 `;
 
+// --- PERBAIKAN FINAL DI SINI ---
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
     flex-shrink: 0;
     
-    /* --- PERBAIKAN FINAL DI SINI --- */
     position: relative; 
     z-index: 2; 
-    /* Menambahkan background solid sesuai warna halaman untuk menutupi elemen di belakangnya */
     background-color: var(--bg-main); 
-    padding-bottom: 30px; /* Menambah padding agar tidak terlalu mepet */
-    margin-bottom: 0; /* Margin dipindahkan ke padding */
+    padding-bottom: 30px;
+    margin-bottom: 0;
 `;
+// --- AKHIR PERBAIKAN ---
 
 const Title = styled.h1`
     font-size: 1.8rem;
@@ -55,7 +56,7 @@ const GridWrapper = styled.div`
     z-index: 1; 
     flex-grow: 1;
     overflow-y: auto;
-    padding-top: 30px; /* Memberi jarak dari header */
+    padding-top: 30px;
 `;
 
 const CustomerGrid = styled.div`
@@ -77,7 +78,7 @@ const CustomerCard = styled.div`
     cursor: pointer;
     &:hover {
         border-color: var(--primary-color);
-        transform: translateY(-5px); /* Sedikit diperbesar efeknya */
+        transform: translateY(-5px);
         box-shadow: 0 6px 16px rgba(0,0,0,0.1);
     }
 `;

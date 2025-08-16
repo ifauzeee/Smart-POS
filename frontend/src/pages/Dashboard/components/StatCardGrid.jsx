@@ -108,6 +108,8 @@ StatCard.propTypes = {
     positiveIsGood: PropTypes.bool,
 };
 
+StatCard.displayName = 'StatCard';
+
 const StatCardSkeleton = () => (
     <Card as="div">
         <Skeleton circle width={60} height={60} />
@@ -118,7 +120,7 @@ const StatCardSkeleton = () => (
     </Card>
 );
 
-function StatCardGrid({ loading, stats, previousStats, userName }) {
+function StatCardGrid({ loading, stats = {}, previousStats = null, userName = '' }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const handleToggleExpand = () => setIsExpanded(!isExpanded);
 
@@ -141,67 +143,17 @@ function StatCardGrid({ loading, stats, previousStats, userName }) {
 
     return (
         <GridContainer>
-            <StatCard
-                icon={<FiDollarSign size={28} />}
-                value={formatCurrency(stats.totalRevenue)}
-                label="Pendapatan"
-                color="var(--primary-color)"
-                comparisonChange={revenueChange}
-            />
-            <StatCard
-                icon={<FiShoppingBag size={28} />}
-                value={stats.totalTransactions || 0}
-                label="Total Transaksi"
-                color="var(--green-color)"
-                comparisonChange={transactionsChange}
-            />
-            <StatCard
-                icon={<FiTrendingUp size={28} />}
-                value={formatCurrency(stats.totalProfit)}
-                label="Total Laba"
-                color="#FFA500"
-                comparisonChange={profitChange}
-            />
-            <StatCard
-                icon={<FiArchive size={28} />}
-                value={formatCurrency(stats.cashInDrawer)}
-                label="Total Kas di Laci"
-                color="#17a2b8"
-            />
-            <StatCard
-                icon={<FiTag size={28} />}
-                value={stats.totalSoldUnits || 0}
-                label="Produk Terjual"
-                color="#007bff"
-            />
-            <StatCard
-                icon={<FiUsers size={28} />}
-                value={stats.newCustomers || 0}
-                label="Pelanggan Baru"
-                color="#6f42c4"
-            />
+            <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalRevenue)} label="Pendapatan" color="var(--primary-color)" comparisonChange={revenueChange} />
+            <StatCard icon={<FiShoppingBag size={28} />} value={stats.totalTransactions || 0} label="Total Transaksi" color="var(--green-color)" comparisonChange={transactionsChange} />
+            <StatCard icon={<FiTrendingUp size={28} />} value={formatCurrency(stats.totalProfit)} label="Total Laba" color="#FFA500" comparisonChange={profitChange} />
+            <StatCard icon={<FiArchive size={28} />} value={formatCurrency(stats.cashInDrawer)} label="Total Kas di Laci" color="#17a2b8" />
+            <StatCard icon={<FiTag size={28} />} value={stats.totalSoldUnits || 0} label="Produk Terjual" color="#007bff" />
+            <StatCard icon={<FiUsers size={28} />} value={stats.newCustomers || 0} label="Pelanggan Baru" color="#6f42c4" />
             {isExpanded && (
                 <>
-                    <StatCard
-                        icon={<FiDollarSign size={28} />}
-                        value={formatCurrency(stats.totalExpenses)}
-                        label="Total Pengeluaran"
-                        color="#dc3545"
-                        comparisonChange={expensesChange}
-                        positiveIsGood={false}
-                    />
-                    <StatCard
-                        icon={<FiList size={28} />}
-                        value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`}
-                        label="Rata-rata Transaksi"
-                        color="#6c757d"
-                    />
-                    <StatCard
-                        icon={<FiUserCheck size={28} />}
-                        value={userName || 'Unknown'}
-                        label="Kasir Aktif"
-                        color="#20c997"
-                    />
+                    <StatCard icon={<FiDollarSign size={28} />} value={formatCurrency(stats.totalExpenses)} label="Total Pengeluaran" color="#dc3545" comparisonChange={expensesChange} positiveIsGood={false} />
+                    <StatCard icon={<FiList size={28} />} value={`${formatCurrency(stats.totalRevenue / (stats.totalTransactions || 1))} / trx`} label="Rata-rata Transaksi" color="#6c757d" />
+                    <StatCard icon={<FiUserCheck size={28} />} value={userName || 'Unknown'} label="Kasir Aktif" color="#20c997" />
                 </>
             )}
             <ExpandButton onClick={handleToggleExpand}>
@@ -237,25 +189,6 @@ StatCardGrid.propTypes = {
         totalExpenses: PropTypes.number,
     }),
     userName: PropTypes.string,
-};
-
-StatCardGrid.defaultProps = {
-    stats: {
-        totalRevenue: 0,
-        totalTransactions: 0,
-        totalProfit: 0,
-        cashInDrawer: 0,
-        totalSoldUnits: 0,
-        newCustomers: 0,
-        totalExpenses: 0,
-    },
-    previousStats: {
-        totalRevenue: 0,
-        totalTransactions: 0,
-        totalProfit: 0,
-        totalExpenses: 0,
-    },
-    userName: '',
 };
 
 export default StatCardGrid;

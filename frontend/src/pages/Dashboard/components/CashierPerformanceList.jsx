@@ -1,13 +1,12 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\CashierPerformanceList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
 
-// =================================================================
-// STYLED COMPONENTS
-// =================================================================
-
+// ... (Styled components lainnya tidak berubah) ...
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
@@ -32,20 +31,15 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
-/**
- * @description Komponen List yang sudah diperbaiki.
- * @comment
- * Menghapus properti `overflow-y` dan `max-height` agar semua item dalam
- * daftar ditampilkan secara penuh, tidak terbatas pada tinggi tertentu
- * yang memerlukan scrollbar. Ini memungkinkan `ListContainer` untuk
- * menyesuaikan tingginya secara dinamis.
- */
+// --- PERBAIKAN DI SINI ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
     flex-grow: 1;
+    /* Menghapus max-height dan overflow-y agar komponen bisa tumbuh sesuai konten */
 `;
+// --- AKHIR PERBAIKAN ---
 
 const ListItem = styled.li`
     display: flex;
@@ -132,22 +126,8 @@ const SkeletonContainer = styled.div`
     gap: 10px;
 `;
 
-// =================================================================
-// KOMPONEN UTAMA
-// =================================================================
-
-/**
- * @description Komponen untuk menampilkan daftar performa kasir.
- * @param {boolean} loading - Menunjukkan status loading untuk menampilkan skeleton.
- * @param {Array<object>} cashierPerformance - Data performa kasir.
- */
 function CashierPerformanceList({ loading, cashierPerformance = [] }) {
 
-    /**
-     * @description Mengubah nilai angka menjadi format mata uang Rupiah.
-     * @param {number} amount - Nilai mata uang.
-     * @returns {string} - Nilai dalam format Rupiah.
-     */
     const formatCurrency = (amount) => {
         try {
             return new Intl.NumberFormat('id-ID', {
@@ -157,16 +137,10 @@ function CashierPerformanceList({ loading, cashierPerformance = [] }) {
                 maximumFractionDigits: 0
             }).format(amount || 0);
         } catch (error) {
-            // Fallback jika Intl.NumberFormat gagal
             return `Rp ${(amount || 0).toLocaleString('id-ID')}`;
         }
     };
 
-    /**
-     * @description Mengubah nilai angka menjadi string jumlah transaksi.
-     * @param {number} count - Jumlah transaksi.
-     * @returns {string} - String yang menunjukkan jumlah transaksi.
-     */
     const formatTransactionCount = (count) => {
         return `${count || 0} transaksi`;
     };
@@ -201,8 +175,6 @@ function CashierPerformanceList({ loading, cashierPerformance = [] }) {
                 <FiIcons.FiUserCheck size={22} />
                 Performa Kasir
             </ListTitle>
-
-            {/* Menampilkan daftar atau empty state berdasarkan data */}
             {cashierPerformance && cashierPerformance.length > 0 ? (
                 <List>
                     {cashierPerformance.map((cashier, index) => (
@@ -234,10 +206,6 @@ function CashierPerformanceList({ loading, cashierPerformance = [] }) {
         </ListContainer>
     );
 }
-
-// =================================================================
-// PROP TYPES
-// =================================================================
 
 CashierPerformanceList.propTypes = {
     loading: PropTypes.bool.isRequired,

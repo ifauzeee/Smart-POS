@@ -2,7 +2,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import GenericProductList from './GenericProductList';
+import GenericProductList from './GenericProductList'; // PERBAIKAN: Nama file diubah dari GenericList menjadi GenericProductList
 import { FiUsers } from 'react-icons/fi';
 
 function TopCustomersList({ loading, topCustomers = [] }) {
@@ -29,10 +29,6 @@ TopCustomersList.propTypes = {
             totalOrders: PropTypes.number.isRequired
         })
     )
-};
-
-TopCustomersList.defaultProps = {
-    topCustomers: []
 };
 
 export default React.memo(TopCustomersList);

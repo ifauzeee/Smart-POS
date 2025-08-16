@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\Dashboard\components\ExpiredProductsList.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
@@ -28,13 +30,15 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
-// --- PERUBAHAN DI SINI: Hapus properti scrollbar ---
+// --- PERBAIKAN DI SINI: Hapus properti scrollbar ---
 const List = styled.ul`
     list-style: none;
     padding: 0;
+    margin: 0;
     flex-grow: 1;
     /* Menghapus overflow-y dan max-height agar semua item ditampilkan */
 `;
+// --- AKHIR PERBAIKAN ---
 
 const ListItem = styled.li`
     display: flex;

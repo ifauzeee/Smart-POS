@@ -8,7 +8,7 @@ import { getCustomers } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
 import CustomerFormModal from './CustomerFormModal';
-import { useDebounce } from '../hooks/useDebounce'; // <-- PERUBAHAN: Impor hook
+import { useDebounce } from '../hooks/useDebounce'; // <-- PERBAIKAN: Impor hook
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -49,12 +49,12 @@ const AddCustomerButton = styled.button`
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 300); // <-- PERUBAHAN: Gunakan hook
+    const debouncedSearchTerm = useDebounce(searchTerm, 300); // <-- PERBAIKAN: Gunakan hook
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    // <-- PERUBAHAN: Logika useEffect disederhanakan -->
+    // <-- PERBAIKAN: Logika useEffect disederhanakan -->
     useEffect(() => {
         if (!isOpen || isFormOpen) return;
 

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import GenericProductList from './GenericProductList';
+import GenericProductList from './GenericProductList'; // PERBAIKAN: Nama file diubah dari GenericList menjadi GenericProductList
 import { FiArchive } from 'react-icons/fi';
 
 function StockInfoList({ loading, stockInfo = [] }) {
@@ -36,10 +36,6 @@ StockInfoList.propTypes = {
             image_url: PropTypes.string
         })
     )
-};
-
-StockInfoList.defaultProps = {
-    stockInfo: []
 };
 
 export default StockInfoList;

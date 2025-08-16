@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\PurchaseOrderForm.jsx
+
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate, Link } from 'react-router-dom';
@@ -5,9 +7,9 @@ import { getSuppliers, getProducts, createPurchaseOrder } from '../services/api'
 import { toast } from 'react-toastify';
 import { FiSave, FiPlus, FiTrash2, FiArrowLeft } from 'react-icons/fi';
 import Skeleton from 'react-loading-skeleton';
-import { formatRupiah, parseRupiah } from '../utils/formatters'; // <-- Impor formatter
+import { formatRupiah, parseRupiah } from '../utils/formatters'; // <-- PERBAIKAN: Impor formatter
 
-// --- Styled Components ---
+// --- Styled Components (Tidak Ada Perubahan) ---
 const PageContainer = styled.div` padding: 30px; max-width: 1000px; margin: 0 auto; `;
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; `;
 const Title = styled.h1` font-size: 1.8rem; `;
@@ -32,7 +34,6 @@ const ModalContainer = styled.div` background: var(--bg-surface); padding: 20px;
 const ProductSearchInput = styled(Input)` margin-bottom: 15px; `;
 const ProductSelectionList = styled.ul` list-style: none; padding: 0; overflow-y: auto; `;
 const ProductListItem = styled.li` padding: 10px; border-radius: 6px; cursor: pointer; &:hover { background-color: var(--bg-main); } `;
-
 
 function PurchaseOrderForm() {
     const navigate = useNavigate();
@@ -63,17 +64,17 @@ function PurchaseOrderForm() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // --- PERBAIKAN: Terapkan formatter pada input harga beli ---
     const handleItemChange = (index, field, value) => {
         const newItems = [...formData.items];
-        // --- PENYEMPURNAAN UX DIMULAI ---
         if (field === 'cost_price') {
             newItems[index][field] = parseRupiah(value);
         } else {
             newItems[index][field] = value;
         }
-        // --- PENYEMPURNAAN UX SELESAI ---
         setFormData({ ...formData, items: newItems });
     };
+    // --- AKHIR PERBAIKAN ---
 
     const addProductToPO = (product) => {
         if (formData.items.some(item => item.product_id === product.id)) {
@@ -154,15 +155,15 @@ function PurchaseOrderForm() {
                                         <tr key={index}>
                                             <Td>{item.name}</Td>
                                             <Td><Input type="number" min="1" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} /></Td>
+                                            {/* --- PERBAIKAN: Terapkan formatter pada input harga beli --- */}
                                             <Td>
-                                                {/* --- PENYEMPURNAAN UX DIMULAI --- */}
-                                                <Input 
-                                                    type="text" 
-                                                    value={formatRupiah(item.cost_price)} 
-                                                    onChange={(e) => handleItemChange(index, 'cost_price', e.target.value)} 
+                                                <Input
+                                                    type="text"
+                                                    value={formatRupiah(item.cost_price)}
+                                                    onChange={(e) => handleItemChange(index, 'cost_price', e.target.value)}
                                                 />
-                                                {/* --- PENYEMPURNAAN UX SELESAI --- */}
                                             </Td>
+                                            {/* --- AKHIR PERBAIKAN --- */}
                                             <Td><button type="button" onClick={() => removeItemFromPO(index)} style={{background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red-color)'}}><FiTrash2 /></button></Td>
                                         </tr>
                                     ))}

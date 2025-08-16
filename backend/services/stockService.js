@@ -17,6 +17,7 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
         }
         const productId = variant.product_id;
 
+        // --- PERBAIKAN: Menambahkan 'FOR UPDATE' untuk mengunci baris dan mencegah race condition ---
         // Langkah 1: SELALU periksa dan kurangi/tambah stok produk jadi
         const [[product]] = await connection.query('SELECT name, stock FROM products WHERE id = ? FOR UPDATE', [productId]);
         if (!product) {
@@ -33,6 +34,7 @@ async function handleStockUpdate(connection, items, factor = 1, validateOnly = f
         const [recipeItems] = await connection.query('SELECT * FROM recipes WHERE product_id = ?', [productId]);
         if (recipeItems.length > 0) {
             for (const recipeItem of recipeItems) {
+                // --- PERBAIKAN: Menambahkan 'FOR UPDATE' untuk mengunci baris bahan baku ---
                 const [[material]] = await connection.query('SELECT name, stock_quantity, unit FROM raw_materials WHERE id = ? FOR UPDATE', [recipeItem.raw_material_id]);
                 if (!material) {
                     throw new Error(`Bahan baku dengan ID ${recipeItem.raw_material_id} tidak ditemukan.`);

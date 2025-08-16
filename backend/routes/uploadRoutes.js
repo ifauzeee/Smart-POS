@@ -1,4 +1,4 @@
-// backend/routes/uploadRoutes.js
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\uploadRoutes.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');

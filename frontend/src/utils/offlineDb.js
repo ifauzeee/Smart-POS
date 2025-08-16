@@ -10,7 +10,7 @@ db.version(1).stores({
 
 /**
  * Adds an offline order to the Dexie database.
- * @param {Object} orderData - Order data with required fields: createdAt, items, total.
+ * @param {Object} orderData - Order data with required fields: createdAt, items, total_amount.
  * @returns {Promise<{success: boolean, id?: number, error?: string}>} - Result of the operation.
  */
 export async function addOfflineOrder(orderData) {
@@ -24,8 +24,9 @@ export async function addOfflineOrder(orderData) {
         if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
             return { success: false, error: 'Missing or invalid required field: items' };
         }
-        if (typeof orderData.total !== 'number' || orderData.total < 0) {
-            return { success: false, error: 'Missing or invalid required field: total' };
+        // --- PERBAIKAN: Mengganti validasi dari 'total' menjadi 'total_amount' ---
+        if (typeof orderData.total_amount !== 'number' || orderData.total_amount < 0) {
+            return { success: false, error: 'Missing or invalid required field: total_amount' };
         }
         const id = await db.offlineOrders.add({ orderData });
         return { success: true, id };
