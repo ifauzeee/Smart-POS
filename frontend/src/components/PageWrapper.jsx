@@ -4,7 +4,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
-import Skeleton from 'react-loading-skeleton';
 
 const PageContainer = styled.div`
   padding: 30px;
@@ -25,13 +24,15 @@ const pageTransition = {
   ease: "easeInOut",
 };
 
-// FIXED: Removed the loading prop and conditional rendering.
-// The component's only responsibility is now page transition animations.
-const PageWrapper = ({ children, loading }) => {
+/**
+ * PageWrapper now focuses solely on providing consistent page transition animations.
+ * The loading state is handled by parent components.
+ */
+const PageWrapper = ({ children }) => {
   return (
     <AnimatePresence mode="wait">
       <motion.div
-        key="page-content-wrapper"
+        key="page-content-wrapper" // A consistent key can be used here
         initial="initial"
         animate="animate"
         exit="exit"
@@ -39,7 +40,7 @@ const PageWrapper = ({ children, loading }) => {
         transition={pageTransition}
         style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, height: '100%' }}
       >
-        {loading ? <Skeleton height="100%" /> : <PageContainer>{children}</PageContainer>}
+        <PageContainer>{children}</PageContainer>
       </motion.div>
     </AnimatePresence>
   );
@@ -47,7 +48,6 @@ const PageWrapper = ({ children, loading }) => {
 
 PageWrapper.propTypes = {
   children: PropTypes.node.isRequired,
-  loading: PropTypes.bool,
 };
 
 export default PageWrapper;

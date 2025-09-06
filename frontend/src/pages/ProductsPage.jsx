@@ -4,15 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { getProducts, deleteProduct } from '../services/api';
 import { toast } from 'react-toastify';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { FiPackage, FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
-import Skeleton from 'react-loading-skeleton';
 import 'react-loading-skeleton/dist/skeleton.css';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
-// --- Styled Components dengan Perbaikan UI dan Responsif ---
+// --- Styled Components ---
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -70,7 +69,6 @@ const ContentContainer = styled.div`
     overflow: hidden;
 `;
 
-// --- DESKTOP TABLE STYLES ---
 const TableWrapper = styled.div`
     display: none;
     @media (min-width: 769px) {
@@ -155,7 +153,6 @@ const DeleteButton = styled.button`
     }
 `;
 
-// --- MOBILE CARD STYLES ---
 const CardList = styled(motion.div)`
     display: none;
     @media (max-width: 768px) {
@@ -226,7 +223,6 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
-// --- ANIMATION VARIANTS ---
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -238,7 +234,6 @@ const tableRowVariants = {
     }),
 };
 
-// --- HELPER FUNCTION ---
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 
 function ProductsPage() {
@@ -298,94 +293,100 @@ function ProductsPage() {
         return `${formatCurrency(minPrice)} - ${formatCurrency(maxPrice)}`;
     };
 
-    const renderTable = () => (
-        <TableWrapper>
-            <Table>
-                <thead>
-                    <tr>
-                        <Th>Gambar</Th>
-                        <Th>Nama Produk</Th>
-                        <Th>Kategori</Th>
-                        <Th>Pemasok</Th>
-                        <Th>Stok</Th>
-                        <Th>Harga</Th>
-                        <Th>Aksi</Th>
-                    </tr>
-                </thead>
-                <tbody>
+    const renderContent = () => {
+        if (loading) {
+            // Optional: You can return a Skeleton loader for the content area here
+            // For now, it will just show the header while loading
+            return null; 
+        }
+
+        if (products.length === 0) {
+            return (
+                <EmptyStateContainer>
+                    <FiPackage size={48} />
+                    <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
+                    <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
+                </EmptyStateContainer>
+            );
+        }
+
+        return (
+            <ContentContainer>
+                {/* Desktop Table View */}
+                <TableWrapper>
+                    <Table>
+                        <thead>
+                            <tr>
+                                <Th>Gambar</Th>
+                                <Th>Nama Produk</Th>
+                                <Th>Kategori</Th>
+                                <Th>Pemasok</Th>
+                                <Th>Stok</Th>
+                                <Th>Harga</Th>
+                                <Th>Aksi</Th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <AnimatePresence>
+                                {products.map((product, i) => (
+                                    <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                        <Td><ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} /></Td>
+                                        <Td>{product.name}</Td>
+                                        <Td>{product.category_name || '-'}</Td>
+                                        <Td>{product.supplier_name || '-'}</Td>
+                                        <Td><StockStatus $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</StockStatus></Td>
+                                        <Td>{getPriceRange(product.variants)}</Td>
+                                        <Td>
+                                            <ActionButtons>
+                                                <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={18} /></ActionButton>
+                                                <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={18} /></DeleteButton>
+                                            </ActionButtons>
+                                        </Td>
+                                    </Tr>
+                                ))}
+                            </AnimatePresence>
+                        </tbody>
+                    </Table>
+                </TableWrapper>
+
+                {/* Mobile Card View */}
+                <CardList>
                     <AnimatePresence>
                         {products.map((product, i) => (
-                            <Tr key={product.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                <Td><ProductImage src={product.image_url || `https://placehold.co/100`} alt={product.name} /></Td>
-                                <Td>{product.name}</Td>
-                                <Td>{product.category_name || '-'}</Td>
-                                <Td>{product.supplier_name || '-'}</Td>
-                                <Td><StockStatus $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</StockStatus></Td>
-                                <Td>{getPriceRange(product.variants)}</Td>
-                                <Td>
-                                    <ActionButtons>
-                                        <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={18} /></ActionButton>
-                                        <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={18} /></DeleteButton>
-                                    </ActionButtons>
-                                </Td>
-                            </Tr>
+                            <ProductCard key={product.id} custom={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+                                <CardImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
+                                <CardContent>
+                                    <CardTitle>{product.name}</CardTitle>
+                                    <CardDetail>
+                                        <span>Kategori: {product.category_name || '-'}</span>
+                                        <ActionButtons>
+                                            <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={16} /></ActionButton>
+                                            <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={16} /></DeleteButton>
+                                        </ActionButtons>
+                                    </CardDetail>
+                                    <CardDetail>
+                                        <span>Harga: {getPriceRange(product.variants)}</span>
+                                        <span>Stok: <CardStock $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</CardStock></span>
+                                    </CardDetail>
+                                </CardContent>
+                            </ProductCard>
                         ))}
                     </AnimatePresence>
-                </tbody>
-            </Table>
-        </TableWrapper>
-    );
-
-    const renderCards = () => (
-        <CardList>
-            <AnimatePresence>
-                {products.map((product, i) => (
-                    <ProductCard key={product.id} custom={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                        <CardImage src={product.image_url || `https://placehold.co/100`} alt={product.name} />
-                        <CardContent>
-                            <CardTitle>{product.name}</CardTitle>
-                            <CardDetail>
-                                <span>Kategori: {product.category_name || '-'}</span>
-                                <ActionButtons>
-                                    <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={16} /></ActionButton>
-                                    <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={16} /></DeleteButton>
-                                </ActionButtons>
-                            </CardDetail>
-                            <CardDetail>
-                                <span>Harga: {getPriceRange(product.variants)}</span>
-                                <span>Stok: <CardStock $lowStock={product.stock <= (product.low_stock_threshold || 0)}>{product.stock}</CardStock></span>
-                            </CardDetail>
-                        </CardContent>
-                    </ProductCard>
-                ))}
-            </AnimatePresence>
-        </CardList>
-    );
+                </CardList>
+            </ContentContainer>
+        );
+    };
 
     return (
         <>
-            <PageWrapper loading={loading}>
-                <PageContainer>
-                    <PageHeader>
-                        <Title><FiPackage /> Produk</Title>
-                        <AddButton to="/products/new">
-                            <FiPlus size={18} /> Tambah Produk
-                        </AddButton>
-                    </PageHeader>
-                    
-                    {products.length > 0 ? (
-                        <ContentContainer>
-                            {renderTable()}
-                            {renderCards()}
-                        </ContentContainer>
-                    ) : (
-                        <EmptyStateContainer>
-                            <FiPackage size={48} />
-                            <EmptyStateTitle>Belum Ada Produk</EmptyStateTitle>
-                            <p>Klik tombol di pojok kanan atas untuk menambahkan produk pertama Anda.</p>
-                        </EmptyStateContainer>
-                    )}
-                </PageContainer>
+            <PageWrapper>
+                <PageHeader>
+                    <Title><FiPackage /> Produk</Title>
+                    <AddButton to="/products/new">
+                        <FiPlus size={18} /> Tambah Produk
+                    </AddButton>
+                </PageHeader>
+                {renderContent()}
             </PageWrapper>
 
             <ConfirmationModal

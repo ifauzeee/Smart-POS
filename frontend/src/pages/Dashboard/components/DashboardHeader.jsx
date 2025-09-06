@@ -1,6 +1,8 @@
+// frontend/src/components/DashboardHeader.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
-import styled, { keyframes, css } from 'styled-components'; // Import keyframes dan css
+import styled, { keyframes, css } from 'styled-components';
 import { FiRefreshCw, FiPrinter, FiPlayCircle, FiPauseCircle } from 'react-icons/fi';
 
 const HeaderContainer = styled.div`
@@ -59,9 +61,9 @@ const Button = styled.button`
     gap: 8px;
     font-size: 14px;
     font-weight: 500;
-    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s; /* Tambah box-shadow */
-    position: relative; /* Penting untuk pseudo-element */
-    overflow: hidden; /* Penting untuk efek riak */
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
 
     &:hover {
         background-color: var(--primary-hover);
@@ -72,7 +74,7 @@ const Button = styled.button`
     &:active {
         transform: translateY(0);
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        background-color: var(--primary-dark); /* Warna sedikit lebih gelap saat diklik */
+        background-color: var(--primary-dark);
     }
 
     &:disabled {
@@ -94,48 +96,29 @@ const ShiftButton = styled(Button)`
     }
 `;
 
-// --- Animasi Putaran yang lebih Dinamis ---
 const rotateDynamic = keyframes`
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 `;
 
-// --- Animasi "Pop" saat Refresh Dimulai (satu kali) ---
 const initialPop = keyframes`
-    0% {
-        transform: scale(0.8);
-        opacity: 0;
-    }
-    70% {
-        transform: scale(1.1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
+    0% { transform: scale(0.8); opacity: 0; }
+    70% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
 `;
 
-// Gaya untuk Ikon Refresh yang bisa berputar
 const RotatingRefreshIcon = styled(FiRefreshCw)`
-    display: block; /* Pastikan ukuran ikon dihormati */
-    width: 20px; /* Ukuran konsisten */
+    display: block;
+    width: 20px;
     height: 20px;
-    
-    // Transisi halus untuk perubahan warna saat isRefreshing berubah
     transition: color 0.3s ease-in-out, transform 0.1s;
-    color: var(--text-secondary); /* Warna default ikon */
+    color: var(--text-secondary);
 
     ${props => props.$isRefreshing && css`
-        // Animasi utama saat isRefreshing aktif
         animation: 
-            ${rotateDynamic} 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite, /* Rotasi dengan ease-in-out */
-            ${initialPop} 0.3s ease-out forwards; /* Efek pop awal satu kali */
-        color: var(--primary-color); /* Warna ikon saat refreshing */
+            ${rotateDynamic} 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite,
+            ${initialPop} 0.3s ease-out forwards;
+        color: var(--primary-color);
     `}
 `;
 
@@ -145,7 +128,8 @@ const getGreeting = (hour) => {
     return 'Selamat Malam';
 };
 
-const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint, activeShift, onStartShift, onCloseShift, userName, isRefreshing }) => {
+// Prop 'onPrint' dihapus karena tidak digunakan lagi
+const DashboardHeader = ({ currentTime, onRefresh, onManualPrint, activeShift, onStartShift, onCloseShift, userName, isRefreshing }) => {
     const currentHour = currentTime.getHours();
     const greeting = getGreeting(currentHour);
 
@@ -169,29 +153,28 @@ const DashboardHeader = ({ currentTime, onRefresh, onPrint, onManualPrint, activ
                     {activeShift ? 'Tutup Shift' : 'Mulai Shift'}
                 </ShiftButton>
                 
-                {/* Tombol Refresh dengan Ikon Berputar dan Teks yang berubah */}
                 <Button onClick={onRefresh} disabled={isRefreshing} aria-live="polite">
                     <RotatingRefreshIcon size={20} $isRefreshing={isRefreshing} />
                     {isRefreshing ? 'Memuat Data...' : 'Refresh Data'}
                 </Button>
 
-                <Button onClick={onPrint} disabled={isRefreshing}>
-                    <FiPrinter /> Siapkan Laporan
-                </Button>
-                <Button onClick={onManualPrint} disabled={isRefreshing}>
-                    <FiPrinter /> Cetak Laporan
+                {/* Tombol Cetak yang sudah digabung dan diberi logika */}
+                <Button 
+                    onClick={onManualPrint} 
+                    disabled={!!activeShift || isRefreshing}
+                    title={activeShift ? "Tutup shift terlebih dahulu untuk mencetak laporan" : "Cetak laporan shift terakhir"}
+                >
+                    <FiPrinter /> Cetak Laporan Shift
                 </Button>
             </ButtonGroup>
         </HeaderContainer>
     );
 };
 
-export default DashboardHeader;
-
+// PropType untuk onPrint juga dihapus
 DashboardHeader.propTypes = {
     currentTime: PropTypes.instanceOf(Date).isRequired,
     onRefresh: PropTypes.func.isRequired,
-    onPrint: PropTypes.func.isRequired,
     onManualPrint: PropTypes.func.isRequired,
     activeShift: PropTypes.object,
     onStartShift: PropTypes.func.isRequired,
@@ -199,3 +182,5 @@ DashboardHeader.propTypes = {
     userName: PropTypes.string.isRequired,
     isRefreshing: PropTypes.bool.isRequired,
 };
+
+export default DashboardHeader;

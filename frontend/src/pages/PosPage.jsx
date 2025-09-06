@@ -265,7 +265,7 @@ function cartReducer(state, action) {
             return { ...state, selectedCustomer: action.payload };
         case 'SET_DISCOUNT':
             return { ...state, appliedDiscount: action.payload };
-        // --- PERBAIKAN: Menambahkan case untuk RESTORE_ITEMS ---
+        // --- ✅ PERBAIKAN: Menambahkan case untuk RESTORE_ITEMS ---
         case 'RESTORE_ITEMS':
             return { ...state, items: action.payload };
         // --- AKHIR PERBAIKAN ---
@@ -501,7 +501,7 @@ function PosPage() {
         if (cartToResume) {
             dispatch({ type: 'SET_CUSTOMER', payload: cartToResume.customer });
             dispatch({ type: 'SET_DISCOUNT', payload: cartToResume.discount });
-            // --- PERBAIKAN: Gunakan dispatch untuk memulihkan item ---
+            // --- ✅ PERBAIKAN: Gunakan dispatch untuk memulihkan item ---
             dispatch({ type: 'RESTORE_ITEMS', payload: cartToResume.items });
             
             setHeldCarts(heldCarts.filter((c) => c.id !== cartId));
