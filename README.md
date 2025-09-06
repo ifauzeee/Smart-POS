@@ -1,77 +1,111 @@
-# Smart POS - Aplikasi Point of Sale Modern
+<p align="center">
+  <img src="https://i.pinimg.com/474x/6c/1a/e3/6c1ae3e1c0f7985bb55e74cc9963c822.jpg" alt="Smart POS Logo" width="150"/>
+</p>
 
-Smart POS adalah aplikasi kasir (Point of Sale) berbasis web yang lengkap, modern, dan dirancang untuk membantu mengelola berbagai aspek operasional bisnis, mulai dari transaksi penjualan, manajemen inventaris, hingga analisis kinerja. Aplikasi ini dibangun dengan tumpukan teknologi modern yang memastikan performa cepat, keamanan, dan fitur canggih seperti kemampuan bekerja secara offline.
+<h1 align="center">Smart POS - Modern Point of Sale System</h1>
 
-## ✨ Fitur Utama
+<p align="center">
+  A comprehensive, modern, web-based Point of Sale (POS) application designed to streamline business operations. It features real-time transaction processing, advanced inventory management, customer loyalty programs, and in-depth analytics, complete with offline capabilities to ensure business continuity.
+</p>
 
--   [cite_start]**Sistem Kasir (POS):** Antarmuka kasir yang intuitif untuk memproses transaksi dengan cepat[cite: 1109].
--   [cite_start]**Manajemen Produk:** Kelola produk dengan dukungan untuk varian (misal: ukuran, warna) dan resep yang terhubung dengan bahan baku[cite: 161, 399].
--   **Manajemen Inventaris:**
-    -   [cite_start]Pelacakan stok *real-time*[cite: 543].
-    -   [cite_start]Fitur penerimaan stok dari pemasok (Receive Stock)[cite: 1418].
-    -   [cite_start]Penyesuaian stok manual (Stock Opname, Barang Rusak)[cite: 497].
--   [cite_start]**Manajemen Pesanan Pembelian (Purchase Orders):** Buat dan kelola pesanan ke pemasok[cite: 435].
--   [cite_start]**Manajemen Pelanggan & Loyalitas:** Catat data pelanggan dan kelola program poin loyalitas[cite: 359].
--   [cite_start]**Dashboard & Analitik:** Dapatkan wawasan mendalam tentang kinerja bisnis dengan metrik seperti total pendapatan, laba, produk terlaris, dan performa kasir[cite: 306].
--   [cite_start]**Manajemen Pengguna & Peran:** Sistem peran (Roles) dan izin (Permissions) yang fleksibel untuk membatasi akses pengguna[cite: 463].
--   [cite_start]**Manajemen Operasional:** Lacak pengeluaran, kelola shift kasir, dan atur promosi atau diskon[cite: 161, 421, 482].
--   [cite_start]**Kemampuan Bekerja Offline:** Transaksi dapat tetap dilakukan saat koneksi internet terputus dan akan disinkronkan secara otomatis saat kembali online[cite: 1131, 1132, 1133].
--   [cite_start]**Progressive Web App (PWA):** Dapat diinstal di perangkat desktop untuk pengalaman seperti aplikasi native[cite: 899, 900].
--   [cite_start]**Ekspor Laporan:** Ekspor data transaksi dan laporan lainnya ke format CSV untuk analisis lebih lanjut[cite: 455].
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18.3.1-blue?logo=react" alt="React">
+  <img src="https://img.shields.io/badge/Node.js-Express-green?logo=nodedotjs" alt="Node.js/Express">
+  <img src="https://img.shields.io/badge/Database-MySQL-orange?logo=mysql" alt="MySQL">
+  <img src="https://img.shields.io/badge/Vite-5.4-purple?logo=vite" alt="Vite">
+  <img src="https://img.shields.io/badge/License-ISC-yellow" alt="License">
+</p>
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
+## Table of Contents
 
-**Frontend:**
-* [cite_start]**Framework:** React 18 [cite: 157]
-* [cite_start]**Build Tool:** Vite [cite: 158]
-* [cite_start]**Styling:** Styled Components [cite: 157]
-* [cite_start]**Routing:** React Router DOM [cite: 157]
-* [cite_start]**HTTP Client:** Axios [cite: 157]
-* [cite_start]**Grafik & Chart:** Recharts [cite: 157]
-* **Database Offline:** Dexie.js (IndexedDB Wrapper)
-* **Animasi:** Framer Motion
-
-**Backend:**
-* [cite_start]**Framework:** Node.js & Express.js [cite: 303]
-* [cite_start]**Database:** MySQL / MariaDB (via `mysql2`) [cite: 303]
-* [cite_start]**Autentikasi:** JSON Web Tokens (JWT) [cite: 303]
-* [cite_start]**Keamanan:** `bcrypt` untuk hashing password, `crypto` untuk enkripsi [cite: 303, 554]
-* [cite_start]**Lainnya:** `Nodemailer` untuk pengiriman email, `Multer` untuk upload file [cite: 303]
+-   [✨ Key Features](#-key-features)
+-   [🛠️ Tech Stack](#️-tech-stack)
+-   [🚀 Getting Started](#-getting-started)
+    -   [Prerequisites](#1-prerequisites)
+    -   [Database Setup](#2-database-setup)
+    -   [Backend Setup](#3-backend-setup)
+    -   [Frontend Setup](#4-frontend-setup)
+-   [⚙️ Environment Configuration (`.env`)](#️-environment-configuration-env)
+-   [📝 License](#-license)
 
 ---
 
-## 🚀 Panduan Instalasi dan Konfigurasi
+## ✨ Key Features
 
-Ikuti langkah-langkah berikut untuk menjalankan proyek ini di lingkungan lokal Anda.
+[cite_start]A comprehensive suite of tools to manage and grow your business[cite: 161]:
+* **Intuitive POS System:** A fast and user-friendly interface for processing sales transactions.
+* **Advanced Product Management:** Manage products with support for variants (e.g., size, color) and recipes linked to raw materials.
+* **Robust Inventory Control:**
+    * Real-time stock tracking.
+    * Receive stock from suppliers via Purchase Orders.
+    * Manual stock adjustments for cycle counts, damages, or returns.
+* **Purchase Order Management:** Create and manage purchase orders to suppliers.
+* **Customer Relationship & Loyalty:** Maintain a customer database and manage a points-based loyalty program.
+* **Analytics Dashboard:** Gain insights with metrics on revenue, profit, top-selling products, and cashier performance.
+* **User & Role Management:** A flexible role and permission system to control user access.
+* **Operational Management:** Track expenses, manage cashier shifts, and create powerful promotions.
+* **Offline-First Capability:** Continue making sales even when the internet is down; data syncs automatically upon reconnection.
+* **Progressive Web App (PWA):** Installable on desktop devices for a native app-like experience.
+* **CSV Data Export:** Export transaction history and other reports for further analysis.
 
-### 1. Prasyarat
+---
 
-Pastikan perangkat Anda telah terinstal perangkat lunak berikut:
-* **Node.js:** Versi 18.x atau lebih tinggi.
-* **npm:** Biasanya terinstal bersama Node.js.
-* **Server Database:** MySQL atau MariaDB.
+## 🛠️ Tech Stack
 
-### 2. Pengaturan Database (MySQL/MariaDB)
+This project is built with a modern, reliable, and scalable technology stack.
 
-1.  Buat sebuah database baru di server MySQL/MariaDB Anda. [cite_start]Nama database yang direkomendasikan adalah `smart_pos_db`[cite: 158].
-2.  Jalankan skrip SQL berikut untuk membuat semua tabel yang diperlukan.
+* **Frontend:**
+    * [cite_start]**Framework:** React 18 [cite: 1]
+    * [cite_start]**Build Tool:** Vite [cite: 2]
+    * [cite_start]**Styling:** Styled Components [cite: 1]
+    * **State Management:** React Context API
+    * [cite_start]**Routing:** React Router DOM [cite: 1]
+    * [cite_start]**HTTP Client:** Axios [cite: 1]
+    * [cite_start]**Charts & Graphs:** Recharts [cite: 1]
+    * **Offline Database:** Dexie.js (IndexedDB Wrapper)
+    * **Animation:** Framer Motion
+
+* **Backend:**
+    * [cite_start]**Framework:** Node.js & Express.js [cite: 163]
+    * [cite_start]**Database:** MySQL / MariaDB (using `mysql2`) [cite: 163]
+    * [cite_start]**Authentication:** JSON Web Tokens (JWT) [cite: 163]
+    * [cite_start]**Security:** `bcrypt` for password hashing, `crypto` for secure data encryption [cite: 163]
+    * [cite_start]**Services:** `Nodemailer` for email receipts, `Multer` for file uploads [cite: 163, 164]
+
+---
+
+## 🚀 Getting Started
+
+Follow these steps to get the project running on your local machine.
+
+### 1. Prerequisites
+
+Ensure you have the following software installed:
+* **Node.js:** Version 18.x or higher.
+* **npm:** Included with Node.js.
+* **Database Server:** A running instance of MySQL or MariaDB.
+
+### 2. Database Setup
+
+1.  Create a new database in your MySQL/MariaDB server. The recommended name is `smart_pos_db`.
+2.  Execute the following SQL script to create all the necessary tables and relationships.
 
 <details>
-<summary><strong>Tampilkan Skrip SQL Lengkap</strong></summary>
+<summary><strong>Click to view the full SQL Schema</strong></summary>
 
 ```sql
 CREATE TABLE `businesses` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `business_name` varchar(255) DEFAULT 'Toko Saya',
+  `business_name` varchar(255) DEFAULT 'My Store',
   `address` text DEFAULT NULL,
   `phone_number` varchar(50) DEFAULT NULL,
   `website` varchar(255) DEFAULT NULL,
   `logo_url` varchar(255) DEFAULT NULL,
   `payment_methods` json DEFAULT '["Tunai", "Kartu", "QRIS"]',
   `receipt_logo_url` varchar(255) DEFAULT NULL,
-  `receipt_footer_text` varchar(255) DEFAULT 'Terima kasih telah berbelanja!',
+  `receipt_footer_text` varchar(255) DEFAULT 'Thank you for your purchase!',
   `tax_rate` decimal(5,4) DEFAULT 0.0000,
   `default_starting_cash` decimal(15,2) DEFAULT 0.00,
   `monthly_revenue_target` decimal(15,2) DEFAULT 0.00,
@@ -275,80 +309,79 @@ CREATE TABLE `order_items` (
   FOREIGN KEY (`variant_id`) REFERENCES `product_variants`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Sisanya (tabel opsional dan log) bisa Anda tambahkan sesuai kebutuhan
--- (Misal: expenses, shifts, dll.)
+-- Additional tables for logging, shifts, etc. can be added here as needed.
 ````
 
 \</details\>
 
-### 3\. Pengaturan Backend
+### 3\. Backend Setup
 
-1.  **Navigasi ke Direktori Backend:**
+1.  **Navigate to the Backend Directory:**
 
     ```bash
     cd backend
     ```
 
-2.  **Instal Dependensi:**
+2.  **Install Dependencies:**
 
     ```bash
     npm install
     ```
 
-3.  **Konfigurasi Environment:**
+3.  **Configure Environment:**
 
-      * [cite\_start]Salin file `example.env` menjadi `.env`[cite: 159].
+      * Create a `.env` file by copying the example file.
         ```bash
         cp example.env .env
         ```
-      * [cite\_start]Buka file `.env` dan isi semua variabel yang diperlukan sesuai dengan konfigurasi Anda[cite: 158]. Lihat bagian **Konfigurasi Environment** di bawah untuk detailnya.
+      * Open the newly created `.env` file and fill in all the required variables according to your local setup. See the **Environment Configuration** section below for details.
 
-4.  **Jalankan Server Backend:**
+4.  **Run the Backend Server:**
 
     ```bash
     npm start
     ```
 
-    [cite\_start]Server akan berjalan di `http://localhost:5000` secara default[cite: 162].
+    The server will start, typically on `http://localhost:5000`.
 
-### 4\. Pengaturan Frontend
+### 4\. Frontend Setup
 
-1.  **Navigasi ke Direktori Frontend:**
+1.  **Navigate to the Frontend Directory:**
     ```bash
     cd frontend
     ```
-2.  **Instal Dependensi:**
+2.  **Install Dependencies:**
     ```bash
     npm install
     ```
-3.  **Jalankan Server Development Frontend:**
+3.  **Run the Frontend Development Server:**
     ```bash
     npm run dev
     ```
-    [cite\_start]Aplikasi akan tersedia di `http://localhost:5173`[cite: 158]. [cite\_start]Frontend sudah dikonfigurasi untuk berkomunikasi dengan backend di `http://localhost:5000`[cite: 1850].
+    The application will be available at `http://localhost:5173`. It is pre-configured to communicate with the backend running on port 5000.
 
 -----
 
-## ⚙️ Konfigurasi Environment (`.env`)
+## ⚙️ Environment Configuration (`.env`)
 
-File `.env` di dalam direktori `backend` sangat penting untuk konfigurasi aplikasi. [cite\_start]Pastikan Anda mengisinya dengan benar dan **JANGAN PERNAH** mengunggah file ini ke repositori Git Anda[cite: 158].
+The `.env` file in the `backend` directory is crucial for the application's configuration. **Never commit this file to your Git repository.**
 
-| Variabel                 | Deskripsi                                                                                                                              | Contoh Nilai                                 |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| `DB_HOST`                | Alamat host server database Anda.                                                                                                      | `localhost`                                  |
-| `DB_USER`                | Nama pengguna untuk mengakses database.                                                                                                | `root`                                       |
-| `DB_PASSWORD`            | Password untuk pengguna database. Kosongkan jika tidak ada.                                                                            | `password_rahasia`                           |
-| `DB_NAME`                | Nama database yang telah Anda buat.                                                                                                    | `smart_pos_db`                               |
-| `DB_TIMEZONE`            | Zona waktu yang digunakan oleh server database.                                                                                        | `Asia/Jakarta`                               |
-| `JWT_SECRET`             | Kunci rahasia yang sangat panjang dan acak untuk menandatangani token autentikasi (JWT). **Wajib diisi dengan nilai unik.** | `kunci_acak_yang_sangat_panjang_dan_aman`    |
-| `ENCRYPTION_KEY`         | Kunci rahasia dengan panjang **tepat 32 karakter** untuk mengenkripsi data sensitif seperti password email. **Wajib diisi nilai unik.** | `kunci_enkripsi_aman_32_karakter_`         |
-| `ADMIN_REGISTRATION_KEY` | Kode rahasia yang digunakan **hanya untuk registrasi admin pertama kali**. Ganti dengan kode yang sulit ditebak.                           | `"frasa_rahasia_untuk_admin_pertama"`        |
-| `FRONTEND_URL`           | URL lengkap dari aplikasi frontend Anda. Penting untuk kebijakan CORS.                                                                 | `http://localhost:5173`                      |
-| `EMAIL_USER`             | Alamat email Gmail yang akan digunakan untuk mengirim struk.                                                                           | `email.bisnis.anda@gmail.com`                |
-| `EMAIL_PASS`             | **Sandi Aplikasi 16 digit** dari akun Google Anda, bukan password login biasa.                                                          | `sandi aplikasi 16 digit`                    |
+| Variable                 | Description                                                                                                                                                             | Example Value                                |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `DB_HOST`                | [cite\_start]The hostname of your database server. [cite: 159]                                                                                                                       | `localhost`                                  |
+| `DB_USER`                | [cite\_start]The username for your database connection. [cite: 159]                                                                                                                | `root`                                       |
+| `DB_PASSWORD`            | The password for the database user. [cite\_start]Leave blank if there is no password. [cite: 159]                                                                                      | `your_secret_password`                       |
+| `DB_NAME`                | [cite\_start]The name of the database you created in Step 2. [cite: 159]                                                                                                               | `smart_pos_db`                               |
+| `DB_TIMEZONE`            | The timezone used by the database server.                                                                                                                               | `Asia/Jakarta`                               |
+| `JWT_SECRET`             | A long, random, and secret key used to sign authentication tokens (JWT). [cite\_start]**Must be a unique value.** [cite: 159]                                                         | `a_very_long_and_secure_random_string`       |
+| `ENCRYPTION_KEY`         | A secret key that is **exactly 32 characters long**, used for encrypting sensitive data like email passwords. [cite\_start]**Must be a unique value.** [cite: 159]                 | `a_32_character_long_encryption_key`       |
+| `ADMIN_REGISTRATION_KEY` | A secret code required **only for the very first admin registration**. [cite\_start]Change this to something hard to guess. [cite: 159]                                             | `"secret_phrase_for_first_admin"`          |
+| `FRONTEND_URL`           | The full URL of your frontend application. [cite\_start]This is essential for the CORS policy. [cite: 159]                                                                             | `http://localhost:5173`                      |
+| `EMAIL_USER`             | [cite\_start]The Gmail address that will be used to send email receipts. [cite: 159, 160]                                                                                                | `your.business.email@gmail.com`              |
+| `EMAIL_PASS`             | [cite\_start]The **16-digit App Password** generated from your Google account, not your regular login password. [cite: 159, 160]                                                              | `abcd efgh ijkl mnop`                        |
 
 -----
 
-## 📝 Lisensi
+## 📝 License
 
-[cite\_start]Proyek ini dilisensikan di bawah Lisensi ISC[cite: 163, 303].
+[cite\_start]This project is licensed under the ISC License. [cite: 1, 303]
