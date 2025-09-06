@@ -1,3 +1,5 @@
+// frontend/src/App.jsx
+
 import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
@@ -52,32 +54,22 @@ import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
 import SyncManager from './components/SyncManager';
 
-// --- Global Styles for UI/UX Improvements ---
 const GlobalStyle = createGlobalStyle`
-    /* Modern Font & New Color Variables */
     :root {
         --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        
-        /* Primary Colors */
         --primary-color: #8E44AD;
         --primary-hover: #9B59B6;
         --primary-dark: #7D3C98;
-
-        /* Accent Colors */
         --red-color: #E74C3C;
         --green-color: #2ECC71;
         --orange-color: #F39C12;
         --blue-color: #3498DB;
-
-        /* Status Badge Colors (for better readability) */
         --orange-text: #D35400; --orange-bg: #FDEBD0;
         --green-text: #21618C; --green-bg: #D4E6F1;
         --red-text: #922B21; --red-bg: #FDEDEC;
         --grey-text: #566573; --grey-bg: #EAEDED;
     }
-
     body {
-        /* Light Theme */
         --bg-main: #F4F7FC;
         --bg-surface: #FFFFFF;
         --border-color: #EAECEF;
@@ -85,9 +77,7 @@ const GlobalStyle = createGlobalStyle`
         --text-secondary: #808B96;
         --text-placeholder: #ABB2B9;
     }
-
     body[data-theme='dark'] {
-        /* Dark Theme */
         --bg-main: #171A21;
         --bg-surface: #232834;
         --border-color: #3A4151;
@@ -95,85 +85,35 @@ const GlobalStyle = createGlobalStyle`
         --text-secondary: #A6ACAF;
         --text-placeholder: #797D7F;
     }
-
-    * {
-        box-sizing: border-box; 
-        margin: 0; 
-        padding: 0;
-    }
-
-    html, body, #root {
-        height: 100%;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; }
     body {
         font-family: var(--font-sans);
         background-color: var(--bg-main);
         color: var(--text-primary);
         transition: background-color 0.3s ease, color 0.3s ease;
     }
-
-    /* Smooth Transitions for All Interactive Elements */
     button, a, input, select, textarea {
         transition: all 0.2s ease-in-out;
     }
 `;
-// --- End of Global Styles ---
 
-// --- Mobile Redirect Component ---
 const MobileRedirectContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    height: 100vh;
-    width: 100vw;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    padding: 20px;
-    box-sizing: border-box;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; height: 100vh; width: 100vw; background-color: var(--bg-main);
+    color: var(--text-primary); padding: 20px; box-sizing: border-box;
 `;
-
-const RedirectTitle = styled.h1`
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin-bottom: 12px;
-`;
-
-const RedirectMessage = styled.p`
-    font-size: 1rem;
-    color: var(--text-secondary);
-    max-width: 400px;
-    line-height: 1.6;
-    margin-bottom: 30px;
-`;
-
+const RedirectTitle = styled.h1` font-size: 1.8rem; font-weight: 700; margin-bottom: 12px; `;
+const RedirectMessage = styled.p` font-size: 1rem; color: var(--text-secondary); max-width: 400px; line-height: 1.6; margin-bottom: 30px; `;
 const DownloadButton = styled.a`
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 15px 30px;
-    border-radius: 12px;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin: 10px;
-    transition: background-color 0.2s ease;
-    
-    &:hover {
-        background-color: var(--primary-hover);
-    }
+    display: inline-block; background-color: var(--primary-color); color: white;
+    padding: 15px 30px; border-radius: 12px; text-decoration: none;
+    font-weight: 600; font-size: 1.1rem; margin: 10px; transition: background-color 0.2s ease;
+    &:hover { background-color: var(--primary-hover); }
 `;
-
 const ContinueLink = styled.button`
-    margin-top: 20px;
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    text-decoration: underline;
-    font-size: 0.9rem;
-    cursor: pointer;
+    margin-top: 20px; background: none; border: none; color: var(--primary-color);
+    text-decoration: underline; font-size: 0.9rem; cursor: pointer;
 `;
 
 function MobileRedirectPage() {
@@ -194,7 +134,6 @@ function MobileRedirectPage() {
     );
 }
 
-// --- Component to handle mobile redirect logic conditionally
 function MobileRedirectHandler() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -207,17 +146,14 @@ function MobileRedirectHandler() {
     }, []);
 
     useEffect(() => {
-        // Only redirect if on mobile and not already on the redirect page
         if (isMobile && location.pathname !== '/mobile-redirect') {
             navigate('/mobile-redirect');
         }
     }, [isMobile, location.pathname, navigate]);
 
-    // Render nothing, as its sole purpose is to handle navigation
     return null;
 }
 
-// --- Main App Content Component
 function AppContent() {
     const { theme } = useContext(ThemeContext);
     
@@ -226,7 +162,6 @@ function AppContent() {
             <GlobalStyle />
             <ToastContainer position="top-right" autoClose={3000} theme={theme} />
             <BrowserRouter>
-                {/* A component that conditionally redirects mobile users */}
                 <MobileRedirectHandler />
                 <SyncManager />
 
@@ -237,15 +172,13 @@ function AppContent() {
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/tutorial/app-password" element={<AppPasswordTutorialPage />} />
                     <Route path="/mobile-redirect" element={<MobileRedirectPage />} />
-                    
-                    {/* The root path redirects to /pos if a token exists, otherwise to /login */}
+    
                     <Route path="/" element={localStorage.getItem('token') ? <Navigate to="/pos" /> : <Navigate to="/login" />} />
                     
                     <Route element={<ProtectedRoute />}>
                         <Route element={<Layout />}>
                             <Route path="/pos" element={<PosPage />} />
                             
-                            {/* Admin-only routes */}
                             <Route element={<AdminRoute />}>
                                 <Route path="/dashboard" element={<DashboardPage />} />
                                 <Route path="/products" element={<ProductsPage />} />
@@ -279,7 +212,6 @@ function AppContent() {
                         </Route>
                     </Route>
                     
-                    {/* Catch-all route for any undefined paths, redirect to login unless already on a auth route */}
                     <Route path="*" element={<Navigate to="/login" />} />
                 </Routes>
             </BrowserRouter>

@@ -1,6 +1,4 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\SupplierPage.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../services/api';
 import SupplierFormModal from '../components/SupplierFormModal';
@@ -9,6 +7,7 @@ import { toast } from 'react-toastify';
 import { FiEdit, FiTrash2, FiPlus, FiTruck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
+import { useDataFetching } from '../hooks/useDataFetching';
 
 // --- Styled Components ---
 const PageContainer = styled.div`
@@ -17,7 +16,6 @@ const PageContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-
 const PageHeader = styled.header`
     display: flex;
     justify-content: space-between;
@@ -25,14 +23,12 @@ const PageHeader = styled.header`
     margin-bottom: 30px;
     flex-shrink: 0;
 `;
-
 const Title = styled.h1`
     font-size: 1.8rem;
     display: flex;
     align-items: center;
     gap: 12px;
 `;
-
 const AddButton = styled.button`
     background-color: var(--primary-color);
     color: white;
@@ -46,7 +42,6 @@ const AddButton = styled.button`
     cursor: pointer;
     &:hover { background-color: var(--primary-hover); }
 `;
-
 const TableContainer = styled.div`
     background-color: var(--bg-surface);
     border-radius: 16px;
@@ -56,16 +51,14 @@ const TableContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
-
 const TableWrapper = styled.div`
     flex-grow: 1;
+    overflow-y: auto;
 `;
-
 const Table = styled.table`
     width: 100%;
     border-collapse: collapse;
 `;
-
 const Th = styled.th`
     text-align: left;
     padding: 15px 20px;
@@ -76,20 +69,17 @@ const Th = styled.th`
     font-size: 0.9rem;
     text-transform: uppercase;
 `;
-
 const Td = styled.td`
     padding: 15px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     vertical-align: middle;
 `;
-
 const Tr = styled(motion.tr)`
-    &:last-child {
-        ${Td} { border-bottom: none; }
+    &:last-child > td {
+        border-bottom: none;
     }
 `;
-
 const ActionButton = styled.button`
     background: none;
     border: none;
@@ -98,7 +88,6 @@ const ActionButton = styled.button`
     margin-right: 15px;
     &:hover { color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'}; }
 `;
-
 const EmptyStateContainer = styled.div`
     flex-grow: 1;
     display: flex;
@@ -108,7 +97,6 @@ const EmptyStateContainer = styled.div`
     text-align: center;
     color: var(--text-secondary);
 `;
-
 const EmptyStateTitle = styled.h3`
     font-size: 1.2rem;
     font-weight: 600;
@@ -117,40 +105,18 @@ const EmptyStateTitle = styled.h3`
     margin-bottom: 10px;
 `;
 
-// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
-    visible: (i) => ({
-        opacity: 1,
-        y: 0,
-        transition: { delay: i * 0.05 },
-    }),
+    visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05 } }),
 };
 
 function SupplierPage() {
-    const [suppliers, setSuppliers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: suppliers, loading, refetch: fetchSuppliers } = useDataFetching(getSuppliers, "Gagal memuat data pemasok.");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [supplierToDelete, setSupplierToDelete] = useState(null);
-
-    const fetchSuppliers = async () => {
-        setLoading(true);
-        try {
-            const res = await getSuppliers();
-            setSuppliers(res.data);
-        } catch (error) {
-            toast.error("Gagal memuat data pemasok.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchSuppliers();
-    }, []);
 
     const handleOpenModal = (supplier = null) => {
         setEditingSupplier(supplier);
@@ -167,7 +133,6 @@ function SupplierPage() {
         const promise = editingSupplier
             ? updateSupplier(editingSupplier.id, supplierData)
             : createSupplier(supplierData);
-
         try {
             await toast.promise(promise, {
                 pending: 'Menyimpan data...',
@@ -190,7 +155,6 @@ function SupplierPage() {
 
     const confirmDelete = async () => {
         if (!supplierToDelete) return;
-
         try {
             await toast.promise(deleteSupplier(supplierToDelete.id), {
                 pending: 'Menghapus data...',
@@ -207,46 +171,43 @@ function SupplierPage() {
     };
 
     const renderTableContent = () => {
-        if (suppliers.length > 0) {
+        if (!loading && suppliers.length === 0) {
             return (
-                <TableContainer>
-                    <TableWrapper>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <Th>Nama Pemasok</Th>
-                                    <Th>Narahubung</Th>
-                                    <Th>Telepon</Th>
-                                    <Th>Email</Th>
-                                    <Th>Aksi</Th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {suppliers.map((supplier, i) => (
-                                    <Tr key={supplier.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
-                                        <Td>{supplier.name}</Td>
-                                        <Td>{supplier.contact_person || '-'}</Td>
-                                        <Td>{supplier.phone || '-'}</Td>
-                                        <Td>{supplier.email || '-'}</Td>
-                                        <Td>
-                                            <ActionButton onClick={() => handleOpenModal(supplier)}><FiEdit size={18} /></ActionButton>
-                                            <ActionButton $danger onClick={() => openDeleteConfirmation(supplier)}><FiTrash2 size={18} /></ActionButton>
-                                        </Td>
-                                    </Tr>
-                                ))}
-                            </tbody>
-                        </Table>
-                    </TableWrapper>
-                </TableContainer>
+                <EmptyStateContainer>
+                    <FiTruck size={48} />
+                    <EmptyStateTitle>Belum Ada Pemasok</EmptyStateTitle>
+                    <p>Klik tombol di pojok kanan atas untuk menambahkan pemasok pertama Anda.</p>
+                </EmptyStateContainer>
             );
         }
-
         return (
-            <EmptyStateContainer>
-                <FiTruck size={48} />
-                <EmptyStateTitle>Belum Ada Pemasok</EmptyStateTitle>
-                <p>Klik tombol di pojok kanan atas untuk menambahkan pemasok pertama Anda.</p>
-            </EmptyStateContainer>
+            <TableWrapper>
+                <Table>
+                    <thead>
+                        <tr>
+                            <Th>Nama Pemasok</Th>
+                            <Th>Narahubung</Th>
+                            <Th>Telepon</Th>
+                            <Th>Email</Th>
+                            <Th>Aksi</Th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {suppliers.map((supplier, i) => (
+                            <Tr key={supplier.id} custom={i} initial="hidden" animate="visible" variants={tableRowVariants}>
+                                <Td>{supplier.name}</Td>
+                                <Td>{supplier.contact_person || '-'}</Td>
+                                <Td>{supplier.phone || '-'}</Td>
+                                <Td>{supplier.email || '-'}</Td>
+                                <Td>
+                                    <ActionButton onClick={() => handleOpenModal(supplier)}><FiEdit size={18} /></ActionButton>
+                                    <ActionButton $danger onClick={() => openDeleteConfirmation(supplier)}><FiTrash2 size={18} /></ActionButton>
+                                </Td>
+                            </Tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </TableWrapper>
         );
     };
 
@@ -260,8 +221,9 @@ function SupplierPage() {
                             <FiPlus /> Tambah Pemasok
                         </AddButton>
                     </PageHeader>
-                    
-                    {renderTableContent()}
+                    <TableContainer>
+                        {renderTableContent()}
+                    </TableContainer>
                 </PageContainer>
             </PageWrapper>
 
@@ -272,7 +234,6 @@ function SupplierPage() {
                 supplier={editingSupplier}
                 isSubmitting={isSubmitting}
             />
-
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}

@@ -3,13 +3,15 @@ import styled from 'styled-components';
 import { getCategories, createCategory, deleteCategory, getSubCategories, createSubCategory, deleteSubCategory } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiPlus, FiTrash2, FiChevronRight, FiArrowLeft } from 'react-icons/fi';
+import ConfirmationModal from '../components/ConfirmationModal';
+import { useDataFetching } from '../hooks/useDataFetching';
 
+// --- Styled Components ---
 const PageContainer = styled.div`
   padding: 30px;
   height: 100%;
   overflow-y: auto;
 `;
-
 const Panel = styled.div`
   background-color: var(--bg-surface);
   border-radius: 16px;
@@ -18,20 +20,18 @@ const Panel = styled.div`
   max-width: 800px;
   margin: 0 auto;
 `;
-
 const PanelHeader = styled.div`
   margin: 0 0 20px 0;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--border-color);
 `;
-
 const PanelTitle = styled.h2`
   font-size: 1.5rem;
-  font-weight: 600; display: flex;
+  font-weight: 600;
+  display: flex;
   align-items: center;
   gap: 15px;
 `;
-
 const BackButton = styled.button`
   background: none;
   border: none;
@@ -39,13 +39,11 @@ const BackButton = styled.button`
   color: var(--text-secondary);
   &:hover { color: var(--primary-color); }
 `;
-
 const Form = styled.form`
   display: flex;
   gap: 15px;
   margin-bottom: 25px;
 `;
-
 const Input = styled.input`
   flex-grow: 1;
   padding: 12px;
@@ -64,7 +62,6 @@ const Input = styled.input`
     box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 98, 0, 234), 0.2);
   }
 `;
-
 const Button = styled.button`
   padding: 0 20px;
   border-radius: 8px;
@@ -84,13 +81,11 @@ const Button = styled.button`
     cursor: not-allowed;
   }
 `;
-
 const List = styled.ul`
   list-style: none;
   padding: 0;
   margin: 0;
 `;
-
 const ListItem = styled.li`
   display: flex;
   justify-content: space-between;
@@ -108,13 +103,11 @@ const ListItem = styled.li`
     border-bottom: 1px solid var(--border-color);
   }
 `;
-
 const ListItemActions = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
 `;
-
 const DeleteButton = styled.button`
   background: none;
   border: none;
@@ -127,27 +120,18 @@ const DeleteButton = styled.button`
   padding: 5px;
   &:hover { color: var(--red-color); }
 `;
-
 const ListItemText = styled.span`
   flex-grow: 1;
 `;
 
 function CategoryPage() {
+    const { data: categories, refetch: fetchCategories } = useDataFetching(getCategories, "Gagal memuat kategori.");
     const [view, setView] = useState('categories');
-    const [categories, setCategories] = useState([]);
     const [subCategories, setSubCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [newSubCategoryName, setNewSubCategoryName] = useState('');
-
-    const fetchCategories = async () => {
-        try {
-            const res = await getCategories();
-            setCategories(res.data);
-        } catch (error) { toast.error("Gagal memuat kategori."); }
-    };
-
-    useEffect(() => { fetchCategories(); }, []);
+    const [modalState, setModalState] = useState({ isOpen: false, type: null, data: null });
 
     const handleSelectCategory = async (category) => {
         setSelectedCategory(category);
@@ -171,7 +155,7 @@ function CategoryPage() {
             toast.warn("Nama kategori tidak boleh kosong.");
             return;
         }
-        await toast.promise(createCategory({name: newCategoryName}), {
+        await toast.promise(createCategory({ name: newCategoryName }), {
             pending: 'Menyimpan...', success: 'Kategori dibuat!', error: 'Gagal membuat kategori.'
         });
         setNewCategoryName('');
@@ -184,9 +168,7 @@ function CategoryPage() {
             toast.warn("Nama sub-kategori tidak boleh kosong.");
             return;
         }
-        const subCategoryData = {
-            name: newSubCategoryName,
-        };
+        const subCategoryData = { name: newSubCategoryName };
         await toast.promise(createSubCategory(selectedCategory.id, subCategoryData), {
             pending: 'Menyimpan...', success: 'Sub-kategori dibuat!', error: 'Gagal membuat sub-kategori.'
         });
@@ -194,80 +176,100 @@ function CategoryPage() {
         handleSelectCategory(selectedCategory);
     };
     
-    const handleDeleteCategory = async (id) => {
-        if (window.confirm("Yakin ingin menghapus kategori ini? Semua sub-kategori di dalamnya akan ikut terhapus.")) {
-            await toast.promise(deleteCategory(id), {
-                pending: 'Menghapus...', success: 'Kategori dihapus!', error: 'Gagal menghapus kategori.'
-            });
-            fetchCategories();
-        }
+    const openConfirmation = (type, data) => {
+        setModalState({ isOpen: true, type, data });
     };
 
-    const handleDeleteSubCategory = async (id) => {
-        if (window.confirm("Yakin ingin menghapus sub-kategori ini?")) {
-            await toast.promise(deleteSubCategory(id), {
-                pending: 'Menghapus...', success: 'Sub-kategori dihapus!', error: 'Gagal menghapus sub-kategori.'
+    const handleConfirmDelete = async () => {
+        const { type, data } = modalState;
+        if (!data) return;
+
+        const promise = type === 'category' ? deleteCategory(data.id) : deleteSubCategory(data.id);
+        const entityName = type === 'category' ? 'Kategori' : 'Sub-kategori';
+        
+        try {
+            await toast.promise(promise, {
+                pending: `Menghapus ${entityName}...`,
+                success: `${entityName} berhasil dihapus!`,
+                error: (err) => err.response?.data?.message || `Gagal menghapus ${entityName}.`
             });
-            handleSelectCategory(selectedCategory);
+            if (type === 'category') {
+                fetchCategories();
+            } else {
+                handleSelectCategory(selectedCategory);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setModalState({ isOpen: false, type: null, data: null });
         }
     };
 
     return (
-        <PageContainer>
-            <Panel>
-                {view === 'categories' && (
-                    <>
-                        <PanelHeader><PanelTitle>Manajemen Kategori</PanelTitle></PanelHeader>
-                        <Form onSubmit={handleCreateCategory}>
-                            <Input
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                placeholder="Nama kategori baru..."
-                            />
-                            <Button type="submit"><FiPlus /></Button>
-                        </Form>
-                        <List>
-                            {categories.map(cat => (
-                                <ListItem key={cat.id} $clickable onClick={() => handleSelectCategory(cat)}>
-                                    <ListItemText>{cat.name}</ListItemText>
-                                    <ListItemActions>
-                                        <DeleteButton onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}><FiTrash2 /></DeleteButton>
-                                        <FiChevronRight />
-                                    </ListItemActions>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </>
-                )}
+        <>
+            <PageContainer>
+                <Panel>
+                    {view === 'categories' && (
+                        <>
+                            <PanelHeader><PanelTitle>Manajemen Kategori</PanelTitle></PanelHeader>
+                            <Form onSubmit={handleCreateCategory}>
+                                <Input
+                                    value={newCategoryName}
+                                    onChange={(e) => setNewCategoryName(e.target.value)}
+                                    placeholder="Nama kategori baru..."
+                                />
+                                <Button type="submit"><FiPlus /></Button>
+                            </Form>
+                            <List>
+                                {categories.map(cat => (
+                                    <ListItem key={cat.id} $clickable onClick={() => handleSelectCategory(cat)}>
+                                        <ListItemText>{cat.name}</ListItemText>
+                                        <ListItemActions>
+                                            <DeleteButton onClick={(e) => { e.stopPropagation(); openConfirmation('category', cat); }}><FiTrash2 /></DeleteButton>
+                                            <FiChevronRight />
+                                        </ListItemActions>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </>
+                    )}
 
-                {view === 'subcategories' && selectedCategory && (
-                    <>
-                        <PanelHeader>
-                            <PanelTitle>
-                                <BackButton onClick={handleBackToCategories}><FiArrowLeft size={24} /></BackButton>
-                                Sub-Kategori: {selectedCategory.name}
-                            </PanelTitle>
-                        </PanelHeader>
-                        <Form onSubmit={handleCreateSubCategory}>
-                            <Input
-                                value={newSubCategoryName}
-                                onChange={(e) => setNewSubCategoryName(e.target.value)}
-                                placeholder="Nama sub-kategori..."
-                            />
-                            <Button type="submit"><FiPlus /></Button>
-                        </Form>
-                        <List>
-                            {subCategories.map(sub => (
-                                <ListItem key={sub.id}>
-                                    <ListItemText>{sub.name}</ListItemText>
-                                    <DeleteButton onClick={() => handleDeleteSubCategory(sub.id)}><FiTrash2 /></DeleteButton>
-                                </ListItem>
-                            ))}
-                        </List>
-                    </>
-                )}
-            </Panel>
-        </PageContainer>
+                    {view === 'subcategories' && selectedCategory && (
+                        <>
+                            <PanelHeader>
+                                <PanelTitle>
+                                    <BackButton onClick={handleBackToCategories}><FiArrowLeft size={24} /></BackButton>
+                                    Sub-Kategori: {selectedCategory.name}
+                                </PanelTitle>
+                            </PanelHeader>
+                            <Form onSubmit={handleCreateSubCategory}>
+                                <Input
+                                    value={newSubCategoryName}
+                                    onChange={(e) => setNewSubCategoryName(e.target.value)}
+                                    placeholder="Nama sub-kategori..."
+                                />
+                                <Button type="submit"><FiPlus /></Button>
+                            </Form>
+                            <List>
+                                {subCategories.map(sub => (
+                                    <ListItem key={sub.id}>
+                                        <ListItemText>{sub.name}</ListItemText>
+                                        <DeleteButton onClick={() => openConfirmation('subcategory', sub)}><FiTrash2 /></DeleteButton>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </>
+                    )}
+                </Panel>
+            </PageContainer>
+            <ConfirmationModal
+                isOpen={modalState.isOpen}
+                onClose={() => setModalState({ isOpen: false, type: null, data: null })}
+                onConfirm={handleConfirmDelete}
+                title={`Konfirmasi Hapus ${modalState.type === 'category' ? 'Kategori' : 'Sub-Kategori'}`}
+                message={`Yakin ingin menghapus "${modalState.data?.name}"? ${modalState.type === 'category' ? 'Semua sub-kategori di dalamnya juga akan terhapus.' : ''}`}
+            />
+        </>
     );
 }
 

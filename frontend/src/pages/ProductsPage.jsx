@@ -1,28 +1,26 @@
 // C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\ProductsPage.jsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { getProducts, deleteProduct } from '../services/api';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { FiPackage, FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
-import 'react-loading-skeleton/dist/skeleton.css';
-import ConfirmationModal from '../components/ConfirmationModal'; // <-- Impor Modal
+import ConfirmationModal from '../components/ConfirmationModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
+import { useDataFetching } from '../hooks/useDataFetching';
 
-// --- Styled Components (Tidak Ada Perubahan) ---
+// --- Styled Components ---
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
     display: flex;
     flex-direction: column;
-    
     @media (max-width: 768px) {
         padding: 15px;
     }
 `;
-// ... (sisa styled components tidak berubah, untuk keringkasan tidak ditampilkan) ...
 const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-shrink: 0; flex-wrap: wrap; gap: 15px; `;
 const Title = styled.h1` font-size: 1.8rem; display: flex; align-items: center; gap: 12px; `;
 const AddButton = styled(Link)` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none; transition: background-color 0.2s ease; &:hover { background-color: var(--primary-hover); } `;
@@ -52,54 +50,24 @@ const tableRowVariants = {
     visible: (i) => ({
         opacity: 1,
         y: 0,
-        transition: {
-            delay: i * 0.05,
-        },
+        transition: { delay: i * 0.05 },
     }),
 };
 
 const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(value || 0)}`;
 
 function ProductsPage() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    // ==========================================================
-    // ✅ PERBAIKAN: Tambahkan state untuk modal konfirmasi
-    // ==========================================================
+    const { data: products, loading, refetch: fetchProducts } = useDataFetching(getProducts, "Gagal memuat data produk.");
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
-    // ==========================================================
 
-    const fetchProducts = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await getProducts();
-            setProducts(res.data);
-        } catch (error) {
-            toast.error("Gagal memuat data produk.");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchProducts();
-    }, [fetchProducts]);
-
-    // ==========================================================
-    // ✅ PERBAIKAN: Buat fungsi baru untuk membuka modal
-    // ==========================================================
     const openDeleteConfirmation = (product) => {
         setProductToDelete(product);
         setIsConfirmOpen(true);
     };
 
-    // ==========================================================
-    // ✅ PERBAIKAN: Pindahkan logika hapus ke fungsi konfirmasi
-    // ==========================================================
     const confirmDelete = async () => {
         if (!productToDelete) return;
-
         try {
             await toast.promise(
                 deleteProduct(productToDelete.id),
@@ -117,7 +85,7 @@ function ProductsPage() {
             setProductToDelete(null);
         }
     };
-    
+
     const getPriceRange = (variants) => {
         if (!variants || variants.length === 0) return 'Tidak tersedia';
         const prices = variants.map(v => parseFloat(v.price));
@@ -128,11 +96,7 @@ function ProductsPage() {
     };
 
     const renderContent = () => {
-        if (loading) {
-            return null; 
-        }
-
-        if (products.length === 0) {
+        if (!loading && products.length === 0) {
             return (
                 <EmptyStateContainer>
                     <FiPackage size={48} />
@@ -141,10 +105,8 @@ function ProductsPage() {
                 </EmptyStateContainer>
             );
         }
-
         return (
             <ContentContainer>
-                {/* Desktop Table View */}
                 <TableWrapper>
                     <Table>
                         <thead>
@@ -171,7 +133,6 @@ function ProductsPage() {
                                         <Td>
                                             <ActionButtons>
                                                 <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={18} /></ActionButton>
-                                                {/* ✅ PERBAIKAN: Ganti onClick ke fungsi baru */}
                                                 <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={18} /></DeleteButton>
                                             </ActionButtons>
                                         </Td>
@@ -181,8 +142,6 @@ function ProductsPage() {
                         </tbody>
                     </Table>
                 </TableWrapper>
-
-                {/* Mobile Card View */}
                 <CardList>
                     <AnimatePresence>
                         {products.map((product, i) => (
@@ -194,7 +153,6 @@ function ProductsPage() {
                                         <span>Kategori: {product.category_name || '-'}</span>
                                         <ActionButtons>
                                             <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={16} /></ActionButton>
-                                            {/* ✅ PERBAIKAN: Ganti onClick ke fungsi baru */}
                                             <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={16} /></DeleteButton>
                                         </ActionButtons>
                                     </CardDetail>
@@ -213,8 +171,8 @@ function ProductsPage() {
 
     return (
         <>
-            <PageWrapper>
-              <PageContainer> {/* Tambahan ini agar PageWrapper bekerja dengan benar */}
+            <PageWrapper loading={loading}>
+              <PageContainer>
                 <PageHeader>
                     <Title><FiPackage /> Produk</Title>
                     <AddButton to="/products/new">
@@ -225,7 +183,6 @@ function ProductsPage() {
               </PageContainer>
             </PageWrapper>
 
-            {/* ✅ PERBAIKAN: Tambahkan komponen modal di sini */}
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}

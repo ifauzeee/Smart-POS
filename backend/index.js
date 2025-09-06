@@ -3,13 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const rateLimit = require('express-rate-limit');
+const rateLimit = require('express-rate-limit'); // Tambah: Express Rate Limit
 
-// --- Konfigurasi CORS ---
 const allowedOrigins = [process.env.FRONTEND_URL];
 const corsOptions = {
     origin: (origin, callback) => {
-        // Izinkan request tanpa origin (seperti dari Postman atau mobile apps)
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
@@ -24,28 +22,24 @@ const corsOptions = {
 
 const app = express();
 
-// --- Middleware Utama ---
-app.options('*', cors(corsOptions)); // Handle pre-flight requests
+app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
-// --- Middleware Keamanan: Rate Limiter ---
-// Melindungi semua rute API dari serangan brute-force atau spam
+// Konfigurasi Rate Limiter untuk mencegah brute-force attacks
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 menit
-    max: 100, // Batasi setiap IP hingga 100 permintaan per jendela waktu
-    message: "Terlalu banyak permintaan dari IP ini, silakan coba lagi setelah 15 menit.",
-    standardHeaders: true, // Kirim header RateLimit-* ke client
-    legacyHeaders: false, // Nonaktifkan header X-RateLimit-*
+    max: 100, // maks 100 request per IP per windowMs
+    message: "Terlalu banyak permintaan dari IP ini, silakan coba lagi setelah 15 menit."
 });
 
-app.use('/api/', apiLimiter); // Terapkan rate limiter ke semua rute di bawah /api/
+// Gunakan rate limiter pada semua rute API
+app.use('/api/', apiLimiter);
 
-// --- Middleware Lainnya ---
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// --- Impor Rute Aplikasi ---
+// Impor semua rute aplikasi
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -65,7 +59,7 @@ const rawMaterialRoutes = require('./routes/rawMaterialRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const rewardsRoutes = require('./routes/rewardsRoutes');
 
-// --- Pendaftaran Rute Aplikasi ---
+// Pendaftaran semua rute
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
@@ -85,11 +79,11 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/shifts', shiftRoutes);
 app.use('/api/rewards', rewardsRoutes);
 
-// Rute dasar untuk health check
+
 app.get('/', (req, res) => res.status(200).send('Smart POS Backend API is running!'));
 
-// --- Penanganan Error Terpusat ---
-// Middleware ini harus ditempatkan SETELAH semua rute
+// Middleware Penanganan Error Terpusat
+// Ini akan menangkap semua error yang dilempar dari rute async Anda
 const errorHandler = (err, req, res, next) => {
     console.error(`[GLOBAL ERROR HANDLER]: ${err.stack}`);
     
@@ -105,6 +99,6 @@ const errorHandler = (err, req, res, next) => {
 
 app.use(errorHandler);
 
-// --- Jalankan Server ---
+
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`🚀 Backend server running at http://localhost:${port}`));

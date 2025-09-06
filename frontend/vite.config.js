@@ -1,9 +1,8 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\vite.config.js
-
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { VitePWA } from 'vite-plugin-pwa'
-import path from 'path'
+// frontend/vite.config.js
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
+import path from 'path';
 
 export default defineConfig({
   plugins: [
@@ -34,4 +33,4 @@ export default defineConfig({
       overlay: true
     }
   }
-})
+});

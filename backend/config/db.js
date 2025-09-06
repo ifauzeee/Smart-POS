@@ -1,5 +1,4 @@
-// C:\Users\Ibnu\Project\smart-pos\backend\config\db.js
-
+// backend/config/db.js
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
@@ -11,10 +10,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // ============================= PERBAIKAN DI SINI =============================
-  // Menggunakan nama zona waktu standar internasional untuk konsistensi data waktu.
-  timezone: 'Asia/Jakarta', 
-  // ===========================================================================
+  timezone: process.env.DB_TIMEZONE || '+07:00', // Gunakan dari .env atau default ke WIB
   dateStrings: true 
 });
 
