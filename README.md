@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://i.postimg.cc/Dwq1t64G/image.png" alt="Smart POS Logo" width="150"/>
+  <img src="https://i.postimg.cc/Dwq1t64G/image.png" alt="Smart POS Logo" width="500"/>
 </p>
 
 <h1 align="center">Smart POS - Modern Point of Sale System</h1>
