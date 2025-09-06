@@ -119,7 +119,7 @@ export const registerAdmin = (userData) => API.post('/users/register', userData)
  * @param {Object} userData - { email: string, password: string, name: string, roleId: string, ... }
  * @returns {Promise} - Axios response with user data.
  */
-export const createUserByAdmin = (userData) => API.post('/users/create-by-admin', userData);
+export const createUserByAdmin = (userData) => API.post('/users', userData);
 
 export const getUsers = () => API.get('/users');
 export const updateUser = (id, userData) => API.put(`/users/${id}`, userData);

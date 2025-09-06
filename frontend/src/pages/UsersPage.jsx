@@ -1,5 +1,3 @@
-// C:\Users\Ibnu\Project\smart-pos\frontend\src\pages\UsersPage.jsx
-
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { getUsers, deleteUser, getRoles, createUserByAdmin, updateUser } from '../services/api';
@@ -61,6 +59,7 @@ const TableContainer = styled.div`
 
 const TableWrapper = styled.div`
     flex-grow: 1;
+    overflow-y: auto;
 `;
 
 const Table = styled.table`
@@ -77,6 +76,8 @@ const Th = styled.th`
     color: var(--text-secondary);
     font-size: 0.9rem;
     text-transform: uppercase;
+    position: sticky;
+    top: 0;
 `;
 
 const Td = styled.td`
@@ -111,9 +112,7 @@ const EmptyStateContainer = styled.div`
     align-items: center;
     text-align: center;
     color: var(--text-secondary);
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px dashed var(--border-color);
+    padding: 20px;
 `;
 
 const EmptyStateTitle = styled.h3`
@@ -173,18 +172,20 @@ function UsersPage() {
 
     const handleSaveUser = async (userData) => {
         setIsSubmitting(true);
-        const promise = editingUser
+        const isEditing = Boolean(editingUser);
+        const promise = isEditing
             ? updateUser(editingUser.id, userData)
             : createUserByAdmin(userData);
         try {
             await toast.promise(promise, {
-                pending: 'Menyimpan data pengguna...',
+                pending: isEditing ? 'Menyimpan perubahan...' : 'Menambahkan pengguna...',
                 success: 'Pengguna berhasil disimpan!',
                 error: (err) => err.response?.data?.message || 'Gagal menyimpan data.'
             });
             fetchUsersAndRoles();
             handleCloseModal();
         } catch (error) {
+            // Toast will show the error, console.error is for debugging
             console.error("Save user failed:", error);
         } finally {
             setIsSubmitting(false);
@@ -203,11 +204,7 @@ function UsersPage() {
             await toast.promise(deletePromise, {
                 pending: 'Menonaktifkan pengguna...',
                 success: 'Pengguna berhasil dinonaktifkan!',
-                error: {
-                    render({ data }) {
-                        return data.response?.data?.message || 'Gagal menonaktifkan pengguna.';
-                    }
-                }
+                error: (err) => err.response?.data?.message || 'Gagal menonaktifkan pengguna.'
             });
             fetchUsersAndRoles();
         } catch (error) {
@@ -219,12 +216,12 @@ function UsersPage() {
     };
 
     const renderTableContent = () => {
-        if (users.length === 0) {
+        if (!loading && users.length === 0) {
             return (
                 <EmptyStateContainer>
                     <FiUsers size={48} />
                     <EmptyStateTitle>Tidak Ada Pengguna</EmptyStateTitle>
-                    <p>Klik tombol di pojok kanan atas untuk menambahkan pengguna pertama Anda.</p>
+                    <p>Klik tombol "Tambah Pengguna" untuk menambahkan yang pertama.</p>
                 </EmptyStateContainer>
             );
         }
