@@ -8,122 +8,23 @@ import { toast } from 'react-toastify';
 import { FiPlus, FiTrash2, FiTag, FiEdit } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
-import ConfirmationModal from '../components/ConfirmationModal';
+import ConfirmationModal from '../components/ConfirmationModal'; // <-- Impor Modal
 
-// --- Styled Components ---
-const PageContainer = styled.div`
-    padding: 30px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-`;
+// --- Styled Components (Tidak Ada Perubahan) ---
+const PageContainer = styled.div` padding: 30px; height: 100%; display: flex; flex-direction: column; `;
+const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-shrink: 0; `;
+const Title = styled.h1` font-size: 1.8rem; display: flex; align-items: center; gap: 12px; `;
+const AddButton = styled.button` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 12px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; &:hover { background-color: var(--primary-hover); } `;
+const TableContainer = styled.div` background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; flex-grow: 1; display: flex; flex-direction: column; `;
+const TableWrapper = styled.div` overflow-x: auto; flex-grow: 1; `;
+const Table = styled.table` width: 100%; border-collapse: collapse; `;
+const Th = styled.th` text-align: left; padding: 15px 20px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; text-transform: uppercase; white-space: nowrap; `;
+const Td = styled.td` padding: 15px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; `;
+const Tr = styled(motion.tr)` &:last-child > td { border-bottom: none; } `;
+const ActionButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); margin-right: 15px; &:hover { color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'}; } `;
+const EmptyStateContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-secondary); background-color: var(--bg-surface); border-radius: 16px; border: 1px dashed var(--border-color); margin: 30px; `;
+const EmptyStateTitle = styled.h3` font-size: 1.2rem; font-weight: 600; color: var(--text-primary); margin-top: 20px; margin-bottom: 10px; `;
 
-const PageHeader = styled.header`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    flex-shrink: 0;
-`;
-
-const Title = styled.h1`
-    font-size: 1.8rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-`;
-
-const AddButton = styled.button`
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 20px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    &:hover { background-color: var(--primary-hover); }
-`;
-
-const TableContainer = styled.div`
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-`;
-
-const TableWrapper = styled.div`
-    overflow-x: auto;
-    flex-grow: 1;
-`;
-
-const Table = styled.table`
-    width: 100%;
-    border-collapse: collapse;
-`;
-
-const Th = styled.th`
-    text-align: left;
-    padding: 15px 20px;
-    background-color: var(--bg-main);
-    border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    white-space: nowrap;
-`;
-
-const Td = styled.td`
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
-    vertical-align: middle;
-`;
-
-const Tr = styled(motion.tr)`
-    &:last-child > td {
-        border-bottom: none;
-    }
-`;
-
-const ActionButton = styled.button`
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-    margin-right: 15px;
-    &:hover { color: ${props => props.$danger ? 'var(--red-color)' : 'var(--primary-color)'}; }
-`;
-
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px dashed var(--border-color);
-    margin: 30px;
-`;
-
-const EmptyStateTitle = styled.h3`
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-top: 20px;
-    margin-bottom: 10px;
-`;
-
-// Animation variants for table rows
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
     visible: (i) => ({
@@ -133,13 +34,16 @@ const tableRowVariants = {
     }),
 };
 
-// --- Component Logic ---
 function PromotionsPage() {
     const [promotions, setPromotions] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    // ==========================================================
+    // ✅ PERBAIKAN: Tambahkan state untuk modal konfirmasi
+    // ==========================================================
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [promotionToDelete, setPromotionToDelete] = useState(null);
+    // ==========================================================
 
     const fetchPromotions = useCallback(async () => {
         setLoading(true);
@@ -157,11 +61,17 @@ function PromotionsPage() {
         fetchPromotions();
     }, [fetchPromotions]);
 
+    // ==========================================================
+    // ✅ PERBAIKAN: Buat fungsi baru untuk membuka modal
+    // ==========================================================
     const openDeleteConfirmation = (promotion) => {
         setPromotionToDelete(promotion);
         setIsConfirmOpen(true);
     };
 
+    // ==========================================================
+    // ✅ PERBAIKAN: Pindahkan logika hapus ke fungsi konfirmasi
+    // ==========================================================
     const confirmDelete = async () => {
         if (!promotionToDelete) return;
 
@@ -211,6 +121,7 @@ function PromotionsPage() {
                                         <Td>{promo.is_active ? 'Aktif' : 'Tidak Aktif'}</Td>
                                         <Td>
                                             <ActionButton onClick={() => navigate(`/promotions/edit/${promo.id}`)}><FiEdit size={18} /></ActionButton>
+                                            {/* ✅ PERBAIKAN: Ganti onClick ke fungsi baru */}
                                             <ActionButton $danger onClick={() => openDeleteConfirmation(promo)}><FiTrash2 size={18} /></ActionButton>
                                         </Td>
                                     </Tr>
@@ -245,6 +156,7 @@ function PromotionsPage() {
                 </PageContainer>
             </PageWrapper>
 
+            {/* ✅ PERBAIKAN: Tambahkan komponen modal di sini */}
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}

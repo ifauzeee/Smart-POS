@@ -7,11 +7,11 @@ import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { FiPackage, FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import 'react-loading-skeleton/dist/skeleton.css';
-import ConfirmationModal from '../components/ConfirmationModal';
+import ConfirmationModal from '../components/ConfirmationModal'; // <-- Impor Modal
 import { motion, AnimatePresence } from 'framer-motion';
 import PageWrapper from '../components/PageWrapper';
 
-// --- Styled Components ---
+// --- Styled Components (Tidak Ada Perubahan) ---
 const PageContainer = styled.div`
     padding: 30px;
     height: 100%;
@@ -22,206 +22,30 @@ const PageContainer = styled.div`
         padding: 15px;
     }
 `;
-
-const PageHeader = styled.header`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-    gap: 15px;
-`;
-
-const Title = styled.h1`
-    font-size: 1.8rem;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-`;
-
-const AddButton = styled(Link)`
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 10px 20px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.2s ease;
-
-    &:hover {
-        background-color: var(--primary-hover);
-    }
-`;
-
-const ContentContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-`;
-
-const TableWrapper = styled.div`
-    display: none;
-    @media (min-width: 769px) {
-        display: block;
-        overflow-x: auto;
-        flex-grow: 1;
-        &::-webkit-scrollbar { display: none; }
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-`;
-const Table = styled.table`
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 900px;
-`;
-const Th = styled.th`
-    text-align: left;
-    padding: 15px 20px;
-    background-color: var(--bg-main);
-    border-bottom: 1px solid var(--border-color);
-    font-weight: 600;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    white-space: nowrap;
-    text-transform: uppercase;
-`;
-const Td = styled.td`
-    text-align: left;
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-primary);
-    vertical-align: middle;
-`;
-const Tr = styled(motion.tr)`
-    &:last-child > td {
-        border-bottom: none;
-    }
-`;
-const ProductImage = styled.img`
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
-    object-fit: cover;
-    border: 1px solid var(--border-color);
-`;
-const StockStatus = styled.span`
-    font-weight: 600;
-    color: ${props => props.$lowStock ? 'var(--red-color)' : 'inherit'};
-`;
-const ActionButtons = styled.div`
-    display: flex;
-    gap: 5px;
-    align-items: center;
-`;
-const ActionButton = styled(Link)`
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    transition: color 0.2s ease;
-
-    &:hover {
-        color: var(--primary-color);
-    }
-`;
-const DeleteButton = styled.button`
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-secondary);
-    padding: 5px;
-    display: flex;
-    align-items: center;
-    transition: color 0.2s ease;
-
-    &:hover {
-        color: var(--red-color);
-    }
-`;
-
-const CardList = styled(motion.div)`
-    display: none;
-    @media (max-width: 768px) {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px;
-    }
-`;
-const ProductCard = styled(motion.div)`
-    background-color: var(--bg-main);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    padding: 15px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-`;
-const CardImage = styled.img`
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-`;
-const CardContent = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-`;
-const CardTitle = styled.h3`
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 5px 0;
-    color: var(--text-primary);
-`;
-const CardDetail = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-`;
-const CardStock = styled.span`
-    font-weight: 500;
-    color: ${props => props.$lowStock ? 'var(--red-color)' : 'var(--green-color)'};
-`;
-
-const EmptyStateContainer = styled.div`
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    color: var(--text-secondary);
-    background-color: var(--bg-surface);
-    border-radius: 16px;
-    border: 1px dashed var(--border-color);
-`;
-
-const EmptyStateTitle = styled.h3`
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-top: 20px;
-    margin-bottom: 10px;
-`;
+// ... (sisa styled components tidak berubah, untuk keringkasan tidak ditampilkan) ...
+const PageHeader = styled.header` display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-shrink: 0; flex-wrap: wrap; gap: 15px; `;
+const Title = styled.h1` font-size: 1.8rem; display: flex; align-items: center; gap: 12px; `;
+const AddButton = styled(Link)` background-color: var(--primary-color); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; text-decoration: none; transition: background-color 0.2s ease; &:hover { background-color: var(--primary-hover); } `;
+const ContentContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; `;
+const TableWrapper = styled.div` display: none; @media (min-width: 769px) { display: block; overflow-x: auto; flex-grow: 1; &::-webkit-scrollbar { display: none; } scrollbar-width: none; -ms-overflow-style: none; } `;
+const Table = styled.table` width: 100%; border-collapse: collapse; min-width: 900px; `;
+const Th = styled.th` text-align: left; padding: 15px 20px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color); font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; white-space: nowrap; text-transform: uppercase; `;
+const Td = styled.td` text-align: left; padding: 15px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-primary); vertical-align: middle; `;
+const Tr = styled(motion.tr)` &:last-child > td { border-bottom: none; } `;
+const ProductImage = styled.img` width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color); `;
+const StockStatus = styled.span` font-weight: 600; color: ${props => props.$lowStock ? 'var(--red-color)' : 'inherit'}; `;
+const ActionButtons = styled.div` display: flex; gap: 5px; align-items: center; `;
+const ActionButton = styled(Link)` background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 5px; display: flex; align-items: center; transition: color 0.2s ease; &:hover { color: var(--primary-color); } `;
+const DeleteButton = styled.button` background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 5px; display: flex; align-items: center; transition: color 0.2s ease; &:hover { color: var(--red-color); } `;
+const CardList = styled(motion.div)` display: none; @media (max-width: 768px) { display: flex; flex-direction: column; gap: 15px; padding: 15px; } `;
+const ProductCard = styled(motion.div)` background-color: var(--bg-main); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px; display: flex; gap: 15px; align-items: center; `;
+const CardImage = styled.img` width: 60px; height: 60px; border-radius: 8px; object-fit: cover; flex-shrink: 0; `;
+const CardContent = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; `;
+const CardTitle = styled.h3` font-size: 1rem; font-weight: 600; margin: 0 0 5px 0; color: var(--text-primary); `;
+const CardDetail = styled.div` display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary); `;
+const CardStock = styled.span` font-weight: 500; color: ${props => props.$lowStock ? 'var(--red-color)' : 'var(--green-color)'}; `;
+const EmptyStateContainer = styled.div` flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: var(--text-secondary); background-color: var(--bg-surface); border-radius: 16px; border: 1px dashed var(--border-color); `;
+const EmptyStateTitle = styled.h3` font-size: 1.2rem; font-weight: 600; color: var(--text-primary); margin-top: 20px; margin-bottom: 10px; `;
 
 const tableRowVariants = {
     hidden: { opacity: 0, y: -10 },
@@ -239,8 +63,12 @@ const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(va
 function ProductsPage() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    // ==========================================================
+    // ✅ PERBAIKAN: Tambahkan state untuk modal konfirmasi
+    // ==========================================================
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState(null);
+    // ==========================================================
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
@@ -258,11 +86,17 @@ function ProductsPage() {
         fetchProducts();
     }, [fetchProducts]);
 
+    // ==========================================================
+    // ✅ PERBAIKAN: Buat fungsi baru untuk membuka modal
+    // ==========================================================
     const openDeleteConfirmation = (product) => {
         setProductToDelete(product);
         setIsConfirmOpen(true);
     };
 
+    // ==========================================================
+    // ✅ PERBAIKAN: Pindahkan logika hapus ke fungsi konfirmasi
+    // ==========================================================
     const confirmDelete = async () => {
         if (!productToDelete) return;
 
@@ -270,9 +104,9 @@ function ProductsPage() {
             await toast.promise(
                 deleteProduct(productToDelete.id),
                 {
-                    pending: 'Menghapus produk...',
+                    pending: 'Mengarsipkan produk...',
                     success: 'Produk berhasil diarsipkan!',
-                    error: (err) => err.response?.data?.message || 'Gagal menghapus produk.'
+                    error: (err) => err.response?.data?.message || 'Gagal mengarsipkan produk.'
                 }
             );
             fetchProducts();
@@ -295,8 +129,6 @@ function ProductsPage() {
 
     const renderContent = () => {
         if (loading) {
-            // Optional: You can return a Skeleton loader for the content area here
-            // For now, it will just show the header while loading
             return null; 
         }
 
@@ -339,6 +171,7 @@ function ProductsPage() {
                                         <Td>
                                             <ActionButtons>
                                                 <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={18} /></ActionButton>
+                                                {/* ✅ PERBAIKAN: Ganti onClick ke fungsi baru */}
                                                 <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={18} /></DeleteButton>
                                             </ActionButtons>
                                         </Td>
@@ -361,6 +194,7 @@ function ProductsPage() {
                                         <span>Kategori: {product.category_name || '-'}</span>
                                         <ActionButtons>
                                             <ActionButton to={`/products/edit/${product.id}`}><FiEdit size={16} /></ActionButton>
+                                            {/* ✅ PERBAIKAN: Ganti onClick ke fungsi baru */}
                                             <DeleteButton onClick={() => openDeleteConfirmation(product)}><FiTrash2 size={16} /></DeleteButton>
                                         </ActionButtons>
                                     </CardDetail>
@@ -380,6 +214,7 @@ function ProductsPage() {
     return (
         <>
             <PageWrapper>
+              <PageContainer> {/* Tambahan ini agar PageWrapper bekerja dengan benar */}
                 <PageHeader>
                     <Title><FiPackage /> Produk</Title>
                     <AddButton to="/products/new">
@@ -387,14 +222,16 @@ function ProductsPage() {
                     </AddButton>
                 </PageHeader>
                 {renderContent()}
+              </PageContainer>
             </PageWrapper>
 
+            {/* ✅ PERBAIKAN: Tambahkan komponen modal di sini */}
             <ConfirmationModal
                 isOpen={isConfirmOpen}
                 onClose={() => setIsConfirmOpen(false)}
                 onConfirm={confirmDelete}
                 title="Konfirmasi Pengarsipan"
-                message={`Apakah Anda yakin ingin mengarsipkan produk "${productToDelete?.name}"? Aksi ini tidak dapat dibatalkan.`}
+                message={`Apakah Anda yakin ingin mengarsipkan produk "${productToDelete?.name}"? Aksi ini akan menyembunyikannya dari kasir.`}
             />
         </>
     );
