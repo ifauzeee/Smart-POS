@@ -18,15 +18,22 @@ const Title = styled.h1`
     font-size: 1.8rem;
     margin-bottom: 30px;
 `;
+
+// ==========================================================
+// ✅ PERBAIKAN: Mengubah layout grid agar menjadi 2 kolom
+// ==========================================================
 const SettingsGrid = styled.div`
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1fr 1.2fr; /* Creates two columns */
     gap: 30px;
-    align-items: flex-start;
+    align-items: flex-start; /* Aligns cards to the top */
+
     @media (max-width: 1024px) {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Reverts to a single column on smaller screens */
     }
 `;
+// ==========================================================
+
 const Column = styled.div`
     display: flex;
     flex-direction: column;

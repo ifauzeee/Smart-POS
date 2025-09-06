@@ -23,7 +23,11 @@ import TargetChart from '../../components/TargetChart';
 import ProfitRevenueChart from './components/ProfitRevenueChart';
 import TopCustomersList from './components/TopCustomersList';
 import StockInfoList from './components/StockInfoList';
-import StaleProductsList from './components/StaleProductsList';
+// ==========================================================
+// ✅ PERBAIKAN: Path impor telah diperbaiki di sini
+// ==========================================================
+import StaleProductsList from "./components/StaleProductsList";
+// ==========================================================
 import ExpiredProductsList from './components/ExpiredProductsList';
 import CashierPerformanceList from './components/CashierPerformanceList';
 import { useShift } from '../../context/ShiftContext';

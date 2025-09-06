@@ -14,60 +14,105 @@ const GridContainer = styled.div`
 `;
 
 const ComparisonChip = styled.div`
-    display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; font-weight: 600;
-    padding: 2px 8px; border-radius: 20px; margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
     color: ${props => props.color};
     background-color: ${props => props.color}20;
 `;
 
 const StatIcon = styled.div`
-    width: 64px; height: 64px; border-radius: 20px; display: flex; align-items: center; justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background-color: ${props => props.color}15;
     color: ${props => props.color};
     flex-shrink: 0;
 `;
 
 const Card = styled.div`
-    background: var(--bg-surface); padding: 28px; border-radius: 24px; border: 1px solid var(--border-color);
-    display: flex; align-items: center; gap: 24px; grid-column: span 3;
+    background: var(--bg-surface);
+    padding: 28px;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    grid-column: span 3;
     transition: all 0.3s ease-in-out;
-    &:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); }
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
     @media (max-width: 1600px) { grid-column: span 4; }
     @media (max-width: 1200px) { grid-column: span 6; }
     @media (max-width: 768px) { grid-column: 1 / -1; }
 `;
 
-const StatInfo = styled.div` flex-grow: 1; `;
-const StatValue = styled.h2` font-size: 1.8rem; font-weight: 700; color: var(--text-primary); margin: 0; `;
-const StatLabel = styled.p` font-size: 0.95rem; color: var(--text-secondary); margin: 0; `;
+const StatInfo = styled.div`
+    flex-grow: 1;
+`;
+const StatValue = styled.h2`
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+`;
+const StatLabel = styled.p`
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+`;
 const ExpandButton = styled.button`
-    grid-column: 1 / -1; background: var(--bg-surface); color: var(--primary-color);
-    border: 1px solid var(--border-color); border-radius: 16px; padding: 12px 20px; cursor: pointer;
-    font-weight: 600; font-size: 1rem; display: flex; align-items: center; justify-content: center;
-    gap: 8px; transition: all 0.3s ease;
-    &:hover { background-color: var(--primary-color); color: white; }
+    grid-column: 1 / -1;
+    background: var(--bg-surface);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    &:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
 `;
 
 /**
- * Calculates the percentage change between current and previous values.
+ * FIXED: Handles division by zero gracefully. If the previous value was 0,
+ * any positive current value is considered a 100% increase.
  * @param {number|null|undefined} current - Current value.
  * @param {number|null|undefined} previous - Previous value.
  * @returns {number|null} - Percentage change or null if invalid.
  */
 const calculatePercentageChange = (current, previous) => {
     if (
-        current === null ||
-        current === undefined ||
-        previous === null ||
-        previous === undefined ||
-        typeof current !== 'number' ||
-        typeof previous !== 'number' ||
-        previous === 0
+        current === null || current === undefined ||
+        previous === null || previous === undefined ||
+        typeof current !== 'number' || typeof previous !== 'number'
     ) {
         return null;
     }
+    if (previous === 0) {
+        return current > 0 ? 100.0 : 0.0;
+    }
     return ((current - previous) / previous) * 100;
 };
+
 
 const StatCard = React.memo(({ icon, value, label, color, comparisonChange, positiveIsGood = true }) => {
     const chip = useMemo(() => {

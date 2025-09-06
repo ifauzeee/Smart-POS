@@ -6,7 +6,6 @@ import styled from 'styled-components';
 import Skeleton from 'react-loading-skeleton';
 import * as FiIcons from 'react-icons/fi';
 
-// ... (Styled components lainnya tidak berubah) ...
 const ListContainer = styled.div`
     background-color: var(--bg-surface);
     padding: 30px;
@@ -31,15 +30,13 @@ const ListTitle = styled.h3`
     text-align: center;
 `;
 
-// --- PERBAIKAN DI SINI ---
+// FIXED: Removed max-height and overflow-y to allow the component to grow naturally with its content.
 const List = styled.ul`
     list-style: none;
     padding: 0;
     margin: 0;
     flex-grow: 1;
-    /* Menghapus max-height dan overflow-y agar komponen bisa tumbuh sesuai konten */
 `;
-// --- AKHIR PERBAIKAN ---
 
 const ListItem = styled.li`
     display: flex;
@@ -127,7 +124,6 @@ const SkeletonContainer = styled.div`
 `;
 
 function CashierPerformanceList({ loading, cashierPerformance = [] }) {
-
     const formatCurrency = (amount) => {
         try {
             return new Intl.NumberFormat('id-ID', {
