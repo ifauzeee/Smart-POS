@@ -1,4 +1,3 @@
-```markdown
 <div align="center">
   <img src="https://www.freeiconspng.com/thumbs/point-of-sale-icon/point-of-sale-icon-9.png" alt="Smart POS Icon" width="128" />
 </div>
