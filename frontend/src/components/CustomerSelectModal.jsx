@@ -8,7 +8,7 @@ import { getCustomers } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiSearch, FiX, FiUserPlus } from 'react-icons/fi';
 import CustomerFormModal from './CustomerFormModal';
-import { useDebounce } from '../hooks/useDebounce'; // <-- PERBAIKAN: Impor hook
+import { useDebounce } from '../hooks/useDebounce';
 
 const ModalBackdrop = styled(motion.div)`
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -16,7 +16,8 @@ const ModalBackdrop = styled(motion.div)`
   justify-content: center; align-items: center; z-index: 1001;
 `;
 const ModalContainer = styled(motion.div)`
-  background-color: var(--bg-surface); border-radius: 16px;
+  background-color: var(--bg-surface);
+  border-radius: 16px;
   width: 100%; max-width: 500px; padding: 30px;
   display: flex; flex-direction: column; height: 70vh;
 `;
@@ -49,19 +50,17 @@ const AddCustomerButton = styled.button`
 
 function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const debouncedSearchTerm = useDebounce(searchTerm, 300); // <-- PERBAIKAN: Gunakan hook
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    // <-- PERBAIKAN: Logika useEffect disederhanakan -->
     useEffect(() => {
         if (!isOpen || isFormOpen) return;
 
         const fetchCustomers = async () => {
             setLoading(true);
             try {
-                // Gunakan nilai yang sudah di-debounce
                 const res = await getCustomers(debouncedSearchTerm);
                 setCustomers(res.data);
             } catch (error) {
@@ -72,11 +71,13 @@ function CustomerSelectModal({ isOpen, onClose, onSelectCustomer }) {
         };
 
         fetchCustomers();
-        // Hapus timeout manual dan hanya bergantung pada perubahan debouncedSearchTerm
     }, [debouncedSearchTerm, isOpen, isFormOpen]);
     
     const handleCustomerCreated = (newCustomer) => {
         setIsFormOpen(false);
+        // Manually add the new customer to the list for an instant UI update
+        setCustomers(prevCustomers => [newCustomer, ...prevCustomers]);
+        // Then select the customer, which will close this modal
         onSelectCustomer(newCustomer);
     };
 

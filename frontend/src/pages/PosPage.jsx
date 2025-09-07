@@ -861,14 +861,10 @@ function PosPage() {
             <CheckoutModal
                 isOpen={isCheckoutModalOpen}
                 onClose={() => setIsCheckoutModalOpen(false)}
-                cart={cart}
                 cartTotal={finalTotal}
                 onConfirmCheckout={handleCheckout}
                 paymentMethods={settings.payment_methods}
                 taxRate={settings.tax_rate}
-                selectedCustomer={selectedCustomer}
-                coupon={appliedDiscount}
-                onRemoveDiscount={removeDiscount}
             />
             <PostCheckoutModal
                 isOpen={isPostCheckoutOpen}
