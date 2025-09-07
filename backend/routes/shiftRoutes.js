@@ -1,3 +1,5 @@
+// C:\Users\Ibnu\Project\smart-pos\backend\routes\shiftRoutes.js
+
 const express = require('express');
 const db = require('../config/db');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
@@ -70,7 +72,8 @@ router.post('/close/:id', protect, async (req, res) => {
         `;
         const [[salesData]] = await connection.query(salesQuery, [userId, businessId, shift.start_time]);
 
-        const expenseQuery = `SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses WHERE user_id = ? AND created_at BETWEEN ? AND NOW()`;
+        // ✅ PERBAIKAN: Mengubah user_id menjadi created_by
+        const expenseQuery = `SELECT COALESCE(SUM(amount), 0) as total_expenses FROM expenses WHERE created_by = ? AND created_at BETWEEN ? AND NOW()`;
         const [[expenseData]] = await connection.query(expenseQuery, [userId, shift.start_time]);
         const total_expenses = parseFloat(expenseData.total_expenses);
 
